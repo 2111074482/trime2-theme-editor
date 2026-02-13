@@ -1,0 +1,1069 @@
+/*
+ * SPDX-FileCopyrightText: 2015 - 2025 Rime community
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+package com.osfans.trime;
+
+import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+
+import android.app.AlertDialog;
+import android.content.ClipboardManager;
+import android.content.DialogInterface;
+import android.content.res.Configuration;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.inputmethodservice.InputMethodService;
+import android.os.Build;
+import android.os.Handler;
+import android.os.IBinder;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayListAdapter;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.androlua.LuaActivity;
+import com.androlua.LuaContext;
+import com.androlua.LuaDialog;
+import com.androlua.LuaService;
+import com.osfans.trime.candidate.CandidatesManager;
+import com.osfans.trime.candidate.CandidateView;
+import com.osfans.trime.candidate.ExpandedCandidateView;
+import com.osfans.trime.candidate.ToolbarView;
+import com.osfans.trime.core.Rime;
+import com.osfans.trime.core.RimeMessage;
+import com.osfans.trime.core.RimeProto;
+import com.osfans.trime.data.opencc.OpenCCDictManager;
+import com.osfans.trime.dialog.OptionsDialog;
+import com.osfans.trime.dialog.SchemaDialog;
+import com.osfans.trime.dialog.StyleDialog;
+import com.osfans.trime.dialog.ThemeDialog;
+import com.osfans.trime.enums.InlineModeType;
+import com.osfans.trime.keyboard.ClipboardKeyboardView;
+import com.osfans.trime.keyboard.ModifierState;
+import com.osfans.trime.keyboard.SymbolsKeyboardView;
+import com.osfans.trime.theme.Style;
+import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
+
+import org.luaj.LuaValue;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TrimeService extends InputMethodService {
+    // 1. 常量与静态变量
+    private static final String TAG = "TrimeService";
+    private static TrimeService sInstance;
+
+
+
+    // 成员变量 - 逻辑处理与状态
+    private Rime mRime;
+    private final Handler mHandler = new Handler();
+    private final Rime.Consumer<RimeMessage<?>> mMessageHandler = this::handleRimeMessage;
+    private AlertDialog mOptionsDialog;
+    private CharSequence lastCommittedText;
+    private InlineModeType inlinePreedit = InlineModeType.INLINE_NONE;
+
+    // 成员变量 - 标志位
+    private boolean mShowExtractedCandidatesView = false;
+    private boolean keyUpNeeded;
+    private boolean enterAsLineBreak;
+    private String mActionLabel;
+    private boolean mTempAsciiMode;
+    private boolean canCompose;
+    private boolean reset_ascii_mode;
+    private boolean mAsciiMode;
+    private View mCustomView;
+    private List<String> mClipboard;
+    private ClipboardManager manager;
+    private ClipboardManager.OnPrimaryClipChangedListener mOnPrimaryClipChangedListener;
+    private int mClipboardSize = 100;
+    private ArrayList<String> mPhrase;
+    private RootInputView mRootInputView;
+    private int orientation;
+    private int uiMode;
+
+    // 3. 静态访问器与生命周期
+    public static TrimeService getInstance() {
+        return sInstance;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        CandidatesManager.initStroke(this);
+        sInstance = this;
+        ThemeManager.setTheme(Config.getTheme());
+        mRootInputView=new RootInputView(this);
+        mRime = new Rime(new Runnable() {
+            @Override
+            public void run() {
+                setKeyboard(".default");
+            }
+        });
+        mRime.startup();
+        Rime.registerRimeMessageHandler(mMessageHandler);
+        registerClipEvents();
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterClipEvents();
+        mHandler.removeCallbacksAndMessages(null);
+        sInstance = null;
+        Rime.unregisterRimeMessageHandler(mMessageHandler);
+        mRime.finalize();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onWindowShown() {
+        super.onWindowShown();
+        showToolbarView(true);
+        showClipboardView(false);
+        showSymbolsView(false);
+        showExtractedCandidatesView(false);
+        showCustomView(null);
+    }
+
+    @Override
+    public void onWindowHidden() {
+        if (Rime.isComposing()) {
+            onKey(KeyEvent.KEYCODE_ESCAPE, 0);
+            mRime.clearComposition();
+        }
+        super.onWindowHidden();
+    }
+
+    @Override
+    public View onCreateCandidatesView() {
+        return super.onCreateCandidatesView();
+    }
+
+    @Override
+    public View onCreateInputView() {
+        return mRootInputView;
+    }
+
+    @Override
+    public void onConfigureWindow(Window win, boolean isFullscreen, boolean isCandidatesOnly) {
+        super.onConfigureWindow(win, isFullscreen, isCandidatesOnly);
+        win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        win.setFormat(PixelFormat.RGBA_8888);
+     }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (orientation != newConfig.orientation) {
+            // Clear composing text and candidates for orientation change.
+            escape();
+            orientation = newConfig.orientation;
+            mRootInputView.setTheme(Config.getTheme());
+        }
+        if (uiMode != newConfig.uiMode) {
+            uiMode = newConfig.uiMode;
+            mRootInputView.setTheme(Config.getTheme());
+        }
+     }
+
+    public boolean isLandscape() {
+        return orientation == Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+
+    @Override
+    public void setInputView(View view) {
+        ViewParent parent = view.getParent();
+        if(parent!=null&&parent instanceof ViewGroup){
+            ((ViewGroup) parent).removeView(view);
+        }
+        //FrameLayout fr = new FrameLayout(this);
+        //fr.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
+        super.setInputView(view);
+        FrameLayout mInputFrame = getWindow().findViewById(android.R.id.inputArea);
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) view.getLayoutParams();
+        lp.height = getResources().getDisplayMetrics().heightPixels;
+        lp.width = getResources().getDisplayMetrics().widthPixels;
+        lp.gravity = Gravity.BOTTOM;
+        view.setLayoutParams(lp);
+        mInputFrame.updateViewLayout(view, lp);
+    }
+
+    @Override
+    public void onComputeInsets(InputMethodService.Insets outInsets) {
+        super.onComputeInsets(outInsets);
+        outInsets.contentTopInsets = outInsets.visibleTopInsets;
+        View mRoot = mRootInputView.getRoot();
+        if (mRoot == null) return;
+        int[] lc = getLocationInWindow(mRoot);
+        outInsets.touchableRegion.setEmpty();
+        if (Config.isKeyboardFloat()) {
+            outInsets.contentTopInsets = getHeight();
+            outInsets.visibleTopInsets = getHeight();
+            outInsets.touchableRegion.set(lc[0], lc[1], lc[0] + getWidth(), lc[1] + mRoot.getHeight());
+        } else {
+            outInsets.contentTopInsets = lc[1];
+            outInsets.visibleTopInsets = lc[1];
+            outInsets.touchableRegion.set(0, lc[1], mRoot.getWidth(), lc[1] + mRoot.getHeight());
+            View mPreedit=mRootInputView.getPreedit();
+            if (mPreedit.getVisibility() == View.VISIBLE) {
+                int[] plc = getLocationInWindow(mPreedit);
+                outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
+            }
+            View mCloud=mRootInputView.getCloud();
+            if (mCloud.getVisibility() == View.VISIBLE) {
+                int[] plc = getLocationInWindow(mCloud);
+                outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
+            }
+        }
+        outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION;
+    }
+
+
+    @Override
+    public void onStartInput(EditorInfo attribute, boolean restarting) {
+        // Function.printStackTrace("onStartInput");
+        if (BuildConfig.DEBUG)
+            android.util.Log.i(TAG, "onStartInput: " + attribute + ":" + restarting);
+        super.onStartInput(attribute, restarting);
+        // 获取 imeOptions 整数值
+        int imeOptions = attribute.imeOptions;
+        if ((imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0) {
+            // 提取主要的回车动作ID
+            // imeOptions & EditorInfo.IME_MASK_ACTION 会得到回车键的实际动作ID
+            int actionId = imeOptions & EditorInfo.IME_MASK_ACTION;
+            // 根据动作类型来更改你输入法界面的回车键显示
+            if (!TextUtils.isEmpty(attribute.actionLabel)) {
+                mActionLabel = attribute.actionLabel.toString();
+            } else {
+                switch (actionId) {
+                    case EditorInfo.IME_ACTION_SEARCH:
+                        // 将回车键显示为“搜索”图标或文字
+                        mActionLabel = ThemeManager.getActionLabel("search", "搜索");
+                        break;
+                    case EditorInfo.IME_ACTION_SEND:
+                        // 将回车键显示为“发送”
+                        mActionLabel = ThemeManager.getActionLabel("send", "发送");
+                        break;
+                    case EditorInfo.IME_ACTION_NEXT:
+                        // 将回车键显示为“发送”
+                        mActionLabel = ThemeManager.getActionLabel("next", "下一个");
+                        break;
+                    case EditorInfo.IME_ACTION_PREVIOUS:
+                        // 将回车键显示为“发送”
+                        mActionLabel = ThemeManager.getActionLabel("previous", "上一个");
+                        break;
+                    case EditorInfo.IME_ACTION_GO:
+                        // 将回车键显示为“发送”
+                        mActionLabel = ThemeManager.getActionLabel("go", "前往");
+                        break;
+                    case EditorInfo.IME_ACTION_DONE:
+                        // 将回车键显示为“发送”
+                        mActionLabel = ThemeManager.getActionLabel("done", "完成");
+                        break;
+                    default:
+                        // 默认回车键
+                        mActionLabel = ThemeManager.getActionLabel("none", "Enter");
+                        break;
+                }
+            }
+        }
+        canCompose = false;
+        enterAsLineBreak = false;
+        mTempAsciiMode = false;
+        int inputType = attribute.inputType;
+        int inputClass = inputType & InputType.TYPE_MASK_CLASS;
+        int variation = inputType & InputType.TYPE_MASK_VARIATION;
+        String keyboard = null;
+        switch (inputClass) {
+            case InputType.TYPE_CLASS_NUMBER:
+            case InputType.TYPE_CLASS_PHONE:
+            case InputType.TYPE_CLASS_DATETIME:
+                mTempAsciiMode = true;
+                keyboard = "number";
+                break;
+            case InputType.TYPE_CLASS_TEXT:
+                if (variation == InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE) {
+                    // Make enter-key as line-breaks for messaging.
+                    enterAsLineBreak = true;
+                }
+                if (variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                        || variation == InputType.TYPE_TEXT_VARIATION_PASSWORD
+                        || variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                        || variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS
+                        || variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD) {
+                    mTempAsciiMode = true;
+                    keyboard = "ascii";
+                } else {
+                    canCompose = true;
+                }
+                break;
+            default: //0
+                canCompose = (inputType > 0); //0x80000 FX重命名文本框
+                if (canCompose) break;
+                if (restarting)
+                    keyboard = "default";
+                break;
+        }
+        //Rime.get();
+        if (reset_ascii_mode) mAsciiMode = false;
+        // Select a keyboard based on the input type of the editing field.
+        //mKeyboardSwitch.init(getMaxWidth()); //橫豎屏切換時重置鍵盤
+        if (!TextUtils.isEmpty(keyboard))
+            setKeyboard(keyboard);
+        updateRimeOption();
+        canCompose = canCompose && !Rime.getCurrentRimeSchema().isEmpty();
+        //if (!onEvaluateInputViewShown()) setCandidatesViewShown(canCompose); //實體鍵盤進入文本框時顯示候選欄
+    }
+
+    public void sendEvent(String s) {
+        onEvent(new Event(s));
+    }
+
+    public void sendEvent(LuaValue s) {
+        onEvent(new Event(s));
+    }
+
+    // 5. 事件处理逻辑 (Event & Key Handling)
+    public void onEvent(Event event) {
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent: " + event);
+        String c = event.getCommit();
+        if (!TextUtils.isEmpty(c)) {
+            commitTextAndClearComposition(c);
+            return;
+        }
+
+        String s = event.getText();
+        if (!TextUtils.isEmpty(s)) {
+            onText(s);
+        } else if (event.getCode() > 0) {
+            int code = event.getCode();
+            if (code == KeyEvent.KEYCODE_SWITCH_CHARSET) {
+                commitText();
+                mRime.toggleRuntimeOption(event.getToggle());
+            } else if (code == KeyEvent.KEYCODE_EISU) {
+                setKeyboard(event.getSelect());
+            } else if (code == KeyEvent.KEYCODE_LANGUAGE_SWITCH) {
+                IBinder imeToken = getToken();
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (event.getSelect().contentEquals(".next")) {
+                    imm.switchToNextInputMethod(imeToken, false);
+                } else if (!TextUtils.isEmpty(event.getSelect())) {
+                    imm.switchToLastInputMethod(imeToken);
+                } else {
+                    ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker();
+                }
+            } else if (code == KeyEvent.KEYCODE_FUNCTION) {
+                String cmd = event.getCommand();
+                String opt = event.getOption();
+                if (cmd.endsWith(".lua") && TextUtils.isEmpty(opt)) {
+                    s = Function.handle(this, cmd, getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
+                } else {
+                    String arg = String.format(event.getOption(), getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
+                    if ((cmd.equals("gpt") || cmd.equals("gpt2")) && (TextUtils.isEmpty(arg) || (event.getOption().contains("%") && event.getOption().equals(arg)))) {
+                        Toast.makeText(this, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    s = Function.handle(this, event.getCommand(), arg);
+                }
+                if (s != null) commitText(s);
+            } else if (code == KeyEvent.KEYCODE_SETTINGS) {
+                switch (event.getOption()) {
+                    case "theme":
+                        showThemeDialog();
+                        break;
+                    case "color":
+                        showColorDialog();
+                        break;
+                    case "schema":
+                        showSchemaDialog();
+                        break;
+                    default:
+                        Function.showPrefDialog(this);
+                        break;
+                }
+            } else if (code == KeyEvent.KEYCODE_PROG_RED) {
+                showColorDialog();
+            } else {
+                onKey(event.getCode(), event.getMask());
+            }
+        }
+    }
+
+    public void onKey(int keyCode, int mask) {
+        if (BuildConfig.DEBUG) android.util.Log.i(TAG, "onKey: " + keyCode);
+        if (handleKey(keyCode, mask)) return;
+        if (keyCode >= Key.getSymbolStart()) {
+            keyUpNeeded = false;
+            commitText(Event.getDisplayLabel(keyCode));
+            return;
+        }
+        keyUpNeeded = false;
+        sendDownUpKeyEvents(keyCode, mask);
+    }
+
+    private boolean handleKey(int keyCode, int mask) {
+        keyUpNeeded = false;
+        long ms = System.currentTimeMillis();
+        if (onRimeKey(Event.getRimeEvent(keyCode, mask))) {
+            keyUpNeeded = true;
+        } else if (handleAction(keyCode, mask) || handleOption(keyCode) || handleEnter(keyCode) || handleBack(keyCode)) {
+            // Handled
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 && Function.openCategory(this, keyCode)) {
+            // Handled
+        } else {
+            keyUpNeeded = true;
+            return false;
+        }
+        return true;
+    }
+
+    public void onText(CharSequence text) {
+        String s = text.toString();
+        if(!isAsciiPrintable(s.charAt(0)))
+            commitText();
+        String t;
+        Pattern p = Pattern.compile("^(\\{[^{}]+\\}).*$");
+        Pattern pText = Pattern.compile("^((\\{Escape\\})?[^{}]+).*$");
+        Matcher m;
+        while (!s.isEmpty()) {
+            m = pText.matcher(s);
+            if (m.matches()) {
+                t = m.group(1);
+                if(!isAsciiPrintable(t.charAt(0)))
+                    commitText(t);
+                else
+                    mRime.simulateKeySequence(t);
+            } else {
+                m = p.matcher(s);
+                t = m.matches() ? m.group(1) : s.substring(0, 1);
+                onEvent(new Event(t));
+            }
+            s = s.substring(t.length());
+        }
+        keyUpNeeded = false;
+    }
+    /**
+     * 检查字符是否为 ASCII 可见字符 (码点在 32 到 126 之间)
+     * 包含空格、数字、字母、标准标点符号。
+     */
+    public static boolean isAsciiPrintable(char ch) {
+        return ch >= 32 && ch < 127;
+    }
+    // 6. 文本提交与 Rime 消息处理 (Text Commitment & Rime Logic)
+    public void commitText(CharSequence text) {
+        if (TextUtils.isEmpty(text)) return;
+        lastCommittedText = text;
+        InputConnection ic = getCurrentInputConnection();
+        if (ic != null) ic.commitText(text, 1);
+    }
+
+    public void commitTextAndClearComposition(CharSequence text) {
+        commitText(text);
+        mRime.clearComposition();
+    }
+
+    private boolean commitText() {
+        if(isComposing()){
+            String text = mRime.getComposingText();
+            if(!TextUtils.isEmpty(text)) {
+                commitText(text);
+            }
+            mRime.clearComposition();
+        }
+        return false; // 原有逻辑返回 false
+    }
+
+    private boolean onRimeKey(int[] event) {
+        boolean ret = mRime.processKey(event[0], event[1]);
+        Log.w(TAG, "onRimeKey: "+ret );
+        //commitText();
+        return ret;
+    }
+
+    private void handleRimeMessage(RimeMessage<?> message) {
+        Log.w("rime", "handleRimeMessage:1 " + message.getClass() + ":" + message.getData());
+        if (message instanceof RimeMessage.CommitTextMessage) {
+            commitText(((RimeMessage.CommitTextMessage) message).data.getText());
+        } else if (message instanceof RimeMessage.SchemaMessage) {
+            setKeyboard(((RimeMessage.SchemaMessage) message).getData().getId());
+        } else if (message instanceof RimeMessage.DeployMessage) {
+            RimeMessage.DeployMessage msg = (RimeMessage.DeployMessage) message;
+            if (msg.getData() == RimeMessage.DeployMessage.State.Success) {
+                setKeyboard(Rime.getRimeStatus().getSchemaId());
+            }
+         } else if (message instanceof RimeMessage.CompositionMessage) {
+            updateComposing(((RimeMessage.CompositionMessage) message).getData());
+        } else if (message instanceof RimeMessage.CandidateMenuMessage || message instanceof RimeMessage.CandidateListMessage) {
+            updateCandidate();
+        } else if (message instanceof RimeMessage.OptionMessage) {
+            updateRimeOption();
+            RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
+            if ("ascii_mode".equals(msg.getData().getOption())) {
+                mRootInputView.setAsciiMode(msg.getData().isValue());
+            }
+        } else if (message instanceof RimeMessage.StatusMessage) {
+            RimeProto.Status status = ((RimeMessage.StatusMessage) message).getData();
+            updateStatus(status);
+        }
+    }
+
+    private boolean mComposing;
+    // 1. 复用 Runnable，避免 GC 压力
+    private final Runnable mStatusRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 在执行时再次获取最新的状态，确保 UI 与数据同步
+            boolean isComp = mComposing;
+            showToolbarView(!isComp);
+            mRootInputView.invalidateComposingKeys();
+        }
+    };
+
+    private void updateStatus(RimeProto.Status status) {
+        boolean isComposing = status.isComposing();
+
+        // 2. 状态预判：如果状态没变，直接拦截，不往主线程 post 消息
+        if (mComposing == isComposing) {
+            return;
+        }
+
+        // 3. 更新状态变量（放在 post 之前）
+        mComposing = isComposing;
+
+        // 4. 防抖处理：撤回旧任务，确保队列里只有一个最新的状态切换任务
+        mHandler.removeCallbacks(mStatusRunnable);
+
+        // 5. 延迟/异步执行
+        // 如果对实时性要求极高，用 post；如果怕连续抖动，用 postDelayed(mStatusRunnable, 10)
+        mHandler.post(mStatusRunnable);
+    }
+
+    private void updateComposing(RimeProto.Context.Composition data) {
+        setComposingText(data.getPreedit());
+    }
+
+
+    public void updateComposing() {
+        InputConnection ic = getCurrentInputConnection();
+        if (inlinePreedit != InlineModeType.INLINE_NONE) {
+            String s = null;
+            switch (inlinePreedit) {
+                case INLINE_PREVIEW:
+                    s = mRime.getComposingText();
+                    break;
+                case INLINE_COMPOSITION:
+                    s = mRime.getCompositionCached().getPreedit();
+                    break;
+                case INLINE_INPUT:
+                    s = mRime.getRawInputCached();
+                    break;
+            }
+            if (s == null) s = "";
+            if (ic != null) {
+                CharSequence cs = ic.getSelectedText(0);
+                if (cs == null || !TextUtils.isEmpty(s)) ic.setComposingText(s, 1);
+            }
+        }
+    }
+
+    // 7. 视图状态管理与更新 (View State Management)
+
+    public void setTheme(String theme) {
+        ThemeManager.setTheme(theme);
+        mRootInputView.setTheme(theme);
+        //setInputView(onCreateInputView());
+        //showToolbarView(true);
+    }
+
+    public void setStyle(String theme) {
+        ThemeManager.setStyle(theme);
+        mRootInputView.setStyle(theme);
+        //setInputView(onCreateInputView());
+    }
+
+    public void showExtractedCandidatesView(boolean b) {
+        mRootInputView.showExtractedCandidatesView(b);
+        mShowExtractedCandidatesView = b;
+        updateCandidate();
+    }
+
+    public void showSymbolsView(boolean b) {
+        mRootInputView.showSymbolsView(b);
+
+    }
+
+    public void showCustomView(View keyboardView) {
+        mRootInputView.showCustomView(keyboardView);
+    }
+
+    private void updateCandidate() {
+        mRootInputView.updateCandidate();
+    }
+
+    public void setComposingText(String s) {
+        mRootInputView.setComposingText(s);
+    }
+
+    public void setCloudText(String s) {
+        mRootInputView.setCloudText(s);
+    }
+
+    public void setKeyboard(String id) {
+        mRootInputView.setKeyoard(id);
+    }
+
+    // 8. 输入法操作辅助 (Input Helpers)
+    public void selectCandidate(int index) {
+        mRime.selectCandidate(index);
+    }
+
+    public void selectRimeSchema(String id) {
+        mRime.selectSchema(id);
+    }
+
+    public void deploy() {
+        mRime.deploy();
+    }
+
+    private boolean isComposing() {
+        return Rime.isComposing();
+    }
+
+    public boolean isShifted() {
+        return mRootInputView.isShifted();
+    }
+
+    public void setShifted(boolean shifted) {
+        ModifierState.setShifted(shifted);
+        mRootInputView.setShifted(shifted);
+    }
+
+    private void onPickCandidate(int index) {
+    }
+
+    // 1. 复用 Runnable，减少内存抖动
+    private final Runnable mRimeOptionRunnable = new Runnable() {
+        @Override
+        public void run() {
+            mRootInputView.invalidateAllKeys();
+         }
+    };
+
+    private void updateRimeOption() {
+        // 2. 移除旧任务（去重）
+        mHandler.removeCallbacks(mRimeOptionRunnable);
+
+        // 3. 延迟一小段时间执行（节流）
+        // 10ms-16ms 是一个合理的区间，可以合并极短时间内的多次请求
+        mHandler.postDelayed(mRimeOptionRunnable, 10);
+    }
+
+    // 9. 按键与编辑操作辅助 (Key & Edit Helpers)
+    private boolean handleAction(int code, int mask) {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return false;
+        if (Event.hasModifier(mask, KeyEvent.META_CTRL_ON)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (code == KeyEvent.KEYCODE_V && Event.hasModifier(mask, KeyEvent.META_ALT_ON) && Event.hasModifier(mask, KeyEvent.META_SHIFT_ON))
+                    return ic.performContextMenuAction(android.R.id.pasteAsPlainText);
+                if (code == KeyEvent.KEYCODE_S && Event.hasModifier(mask, KeyEvent.META_ALT_ON)) {
+                    if (ic.getSelectedText(0) == null)
+                        ic.performContextMenuAction(android.R.id.selectAll);
+                    return ic.performContextMenuAction(android.R.id.shareText);
+                }
+                if (code == KeyEvent.KEYCODE_Y)
+                    return ic.performContextMenuAction(android.R.id.redo);
+                if (code == KeyEvent.KEYCODE_Z)
+                    return ic.performContextMenuAction(android.R.id.undo);
+            }
+            if (code == KeyEvent.KEYCODE_DEL && Event.hasModifier(mask, KeyEvent.META_SHIFT_ON)) {
+                backToSentence();
+                return true;
+            }
+            if (code == KeyEvent.KEYCODE_A)
+                return ic.performContextMenuAction(android.R.id.selectAll);
+            if (code == KeyEvent.KEYCODE_X) return ic.performContextMenuAction(android.R.id.cut);
+            if (code == KeyEvent.KEYCODE_C) return ic.performContextMenuAction(android.R.id.copy);
+            if (code == KeyEvent.KEYCODE_V) return ic.performContextMenuAction(android.R.id.paste);
+        }
+        return false;
+    }
+
+    public void backToSentence() {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return;
+        CharSequence text = ic.getTextBeforeCursor(1024, 0);
+        if (TextUtils.isEmpty(text)) return;
+        for (int i = text.length() - 1; i > 0; i--) {
+            if (",.!?\n，。！？：:".indexOf(text.charAt(i)) != -1) {
+                if (text.length() - i > 1) {
+                    ic.deleteSurroundingText(text.length() - i - 1, 0);
+                    return;
+                }
+            }
+        }
+        if (text.length() < 128) ic.deleteSurroundingText(text.length(), 0);
+    }
+
+    private void sendDownUpKeyEvents(int keyCode, int mask) {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return;
+        ic.clearMetaKeyStates(KeyEvent.META_FUNCTION_ON | KeyEvent.META_SHIFT_MASK | KeyEvent.META_ALT_MASK | KeyEvent.META_CTRL_MASK | KeyEvent.META_META_MASK | KeyEvent.META_SYM_ON);
+        if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_EQUALS) {
+            mask |= KeyEvent.META_NUM_LOCK_ON;
+        }
+
+        if (mRootInputView != null && mRootInputView.isShifted()) {
+            if (keyCode == KeyEvent.KEYCODE_MOVE_HOME || keyCode == KeyEvent.KEYCODE_MOVE_END || keyCode == KeyEvent.KEYCODE_PAGE_UP || keyCode == KeyEvent.KEYCODE_PAGE_DOWN || (keyCode >= KeyEvent.KEYCODE_DPAD_UP && keyCode <= KeyEvent.KEYCODE_DPAD_RIGHT))
+                mask |= KeyEvent.META_SHIFT_ON;
+        }
+        if (Event.hasModifier(mask, KeyEvent.META_SHIFT_ON))
+            sendKeyDown(ic, KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+        if (Event.hasModifier(mask, KeyEvent.META_CTRL_ON))
+            sendKeyDown(ic, KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+        if (Event.hasModifier(mask, KeyEvent.META_ALT_ON))
+            sendKeyDown(ic, KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+        sendKeyDown(ic, keyCode, mask);
+        sendKeyUp(ic, keyCode, mask);
+        if (Event.hasModifier(mask, KeyEvent.META_ALT_ON))
+            sendKeyUp(ic, KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+        if (Event.hasModifier(mask, KeyEvent.META_CTRL_ON))
+            sendKeyUp(ic, KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+        if (Event.hasModifier(mask, KeyEvent.META_SHIFT_ON))
+            sendKeyUp(ic, KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+    }
+
+    private void sendKeyDown(InputConnection ic, int key, int meta) {
+        sendKey(ic, key, meta, KeyEvent.ACTION_DOWN);
+    }
+
+    private void sendKeyUp(InputConnection ic, int key, int meta) {
+        sendKey(ic, key, meta, KeyEvent.ACTION_UP);
+    }
+
+    private void sendKey(InputConnection ic, int key, int meta, int action) {
+        long now = System.currentTimeMillis();
+        if (action == KeyEvent.ACTION_UP) now += 10;
+        if (ic != null) ic.sendKeyEvent(new KeyEvent(now, now, action, key, 0, meta));
+    }
+
+    private boolean handleOption(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            new OptionsDialog(this).show(getToken());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleEnter(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_ENTER) {
+            if (enterAsLineBreak) commitText("\n");
+            else sendKeyChar('\n');
+            return true;
+        }
+        return false;
+    }
+
+    private boolean handleBack(int keyCode) {
+        if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_ESCAPE) {
+            Function.printStackTrace("back");
+            requestHideSelf(0);
+            return true;
+        }
+        return false;
+    }
+
+    private void escape() {
+        if (isComposing()) onKey(KeyEvent.KEYCODE_ESCAPE, 0);
+    }
+
+    // 10. 对话框与测量辅助 (Dialog & Dimension Helpers)
+    public AlertDialog showDialog(AlertDialog dialog) {
+        Window window = dialog.getWindow();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        lp.token = getToken();
+        window.setAttributes(lp);
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+        dialog.show();
+        window = dialog.getWindow();
+        if (window != null) {
+            lp = window.getAttributes();
+            // 设置为屏幕宽度的 80%，避免撑满全屏
+            DisplayMetrics dm = getResources().getDisplayMetrics();
+            lp.width = (int) (dm.widthPixels * 0.5);
+            window.setAttributes(lp);
+        }
+        return dialog;
+    }
+    public AlertDialog showListDialog(AlertDialog dialog) {
+        Window window = dialog.getWindow();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        IBinder token = PrefLauncher.getToken();
+        if(token!=null){
+            lp.token = token;
+        }else {
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+            lp.token = getToken();
+        }
+        lp.gravity=Gravity.CENTER;
+        window.setAttributes(lp);
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+        try {
+            dialog.show();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return dialog;
+    }
+
+    private void showSchemaDialog() {
+        new SchemaDialog(this).show(getToken());
+    }
+
+    private void showColorDialog() {
+        new StyleDialog(this).show(getToken());
+    }
+
+    private void showThemeDialog() {
+        new ThemeDialog(this).show(getToken());
+    }
+
+    public IBinder getToken() {
+        return mRootInputView.getRoot().getWindowToken();
+    }
+
+    public int getHeight() {
+        return getResources().getDisplayMetrics().heightPixels;
+    }
+
+    public int getWidth() {
+        return getMaxWidth();
+    }
+
+    private int[] getLocationInWindow(View view) {
+        int[] ret = new int[2];
+        view.getLocationInWindow(ret);
+        return ret;
+    }
+
+    // 11. 文本获取辅助 (Text Extraction)
+    private String getActiveText(int type) {
+        if (type == 2) return mRime.getRawInputCached();
+        String s = mRime.getComposingText();
+        if (TextUtils.isEmpty(s)) {
+            InputConnection ic = getCurrentInputConnection();
+            if (ic == null) return "";
+            CharSequence cs = ic.getSelectedText(0);
+            if (type == 1 && TextUtils.isEmpty(cs)) cs = lastCommittedText;
+            if (TextUtils.isEmpty(cs)) cs = ic.getTextBeforeCursor(type == 4 ? 1024 : 1, 0);
+            if (TextUtils.isEmpty(cs)) cs = ic.getTextAfterCursor(1024, 0);
+            if (cs != null) s = cs.toString();
+        }
+        return s;
+    }
+
+    private String getAfterText() {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return "";
+        CharSequence cs = ic.getTextAfterCursor(10240, 0);
+        return cs != null ? cs.toString() : "";
+    }
+
+    private String getBeforeText() {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return "";
+        CharSequence cs = ic.getTextBeforeCursor(10240, 0);
+        return cs != null ? cs.toString() : "";
+    }
+
+    private String getBeforeChar() {
+        InputConnection ic = getCurrentInputConnection();
+        if (ic == null) return "";
+        CharSequence cs = ic.getTextBeforeCursor(1, 0);
+        return cs != null ? cs.toString() : "";
+    }
+
+    public boolean isLongPressPopup() {
+        return false;
+    }
+
+    public boolean isKeySwipeTap() {
+        return false;
+    }
+
+    public String getActionLabel() {
+        return mActionLabel;
+    }
+
+    public Object doFile(String path, String option) {
+        return null;
+    }
+
+    public Object doFile(String path, Object... option) {
+        return null;
+    }
+
+
+    private void registerClipEvents() {
+        loadClipboard();
+        loadPhrase();
+        manager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (manager == null)
+            return;
+        mOnPrimaryClipChangedListener = new ClipboardManager.OnPrimaryClipChangedListener() {
+            @Override
+            public void onPrimaryClipChanged() {
+                try {
+                    if (manager.hasPrimaryClip() && manager.getPrimaryClip().getItemCount() > 0) {
+                        CharSequence addedText = manager.getPrimaryClip().getItemAt(0).getText();
+                        if (!TextUtils.isEmpty(addedText)) {
+                            String text = addedText.toString();
+                            addClipboard(text);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+        manager.addPrimaryClipChangedListener(mOnPrimaryClipChangedListener);
+    }
+
+    private void unregisterClipEvents() {
+        if (manager == null)
+            return;
+        manager.removePrimaryClipChangedListener(mOnPrimaryClipChangedListener);
+    }
+
+
+    public void loadPhrase() {
+        mPhrase = JsonUtil.load(new File(Config.getDataDir(), "phrase.json"));
+    }
+
+    public void addPhrase(String text) {
+        if (mPhrase.contains(text))
+            mPhrase.remove(text);
+        mPhrase.add(0, text);
+        for (int size = mPhrase.size() - 1; size >= 120; size--) {
+            mPhrase.remove(size);
+        }
+        JsonUtil.save(new File(Config.getDataDir(), "phrase.json"), mPhrase);
+    }
+
+    public void removePhrase(int i) {
+        mPhrase.remove(i);
+        JsonUtil.save(new File(Config.getDataDir(), "phrase.json"), mPhrase);
+    }
+
+    public List<String> getPhrase() {
+        return mPhrase;
+    }
+
+    private void loadClipboard() {
+        mClipboard = JsonUtil.load(new File(Config.getDataDir(), "clipboard.json"));
+    }
+
+    public void addClipboard(String text) {
+        if (mClipboard.contains(text))
+            mClipboard.remove(text);
+        mClipboard.add(0, text);
+        for (int size = mClipboard.size() - 1; size >= mClipboardSize; size--) {
+            mClipboard.remove(size);
+        }
+        JsonUtil.save(new File(Config.getDataDir(), "clipboard.json"), mClipboard);
+    }
+
+    public void removeClipboard(int i) {
+        mClipboard.remove(i);
+        JsonUtil.save(new File(Config.getDataDir(), "clipboard.json"), mClipboard);
+    }
+
+    public List<String> getClipboard() {
+        return mClipboard;
+    }
+
+    public void showClipboardView(boolean b) {
+        mRootInputView.showClipboardView(b);
+    }
+
+    private void showToolbarView(boolean b) {
+        mRootInputView.showToolbarView(b);
+    }
+
+    public void restart() {
+        mRime.restart();
+    }
+    private AlertDialog mDlg;
+    public void sendMsg(final String text){
+        LuaActivity.logs.add(text);
+        Log.w(TAG, "sendMsg: "+text );
+        mHandler.post(new Runnable() {
+           @Override
+            public void run() {
+               try {
+                   sendMsgAux(text);
+               } catch (Exception e){
+                   e.printStackTrace();
+               }
+            }
+        });
+    }
+
+    public void sendMsgAux(final String text){
+        if(!isInputViewShown()&&PrefLauncher.getToken()==null){
+            Toast.makeText(this,text,Toast.LENGTH_SHORT).show();
+            //return;
+        }
+       if (mDlg == null) {
+            mDlg=showListDialog(new AlertDialog.Builder(this)
+                    .setTitle("提示")
+                    .setAdapter( new ArrayListAdapter<>(this,new String[]{text}),null)
+                    .setNegativeButton("取消",null)
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            mDlg=null;
+                        }
+                    })
+                    .create());
+        } else {
+            ArrayListAdapter<String> adapter = (ArrayListAdapter<String>) mDlg.getListView().getAdapter();
+            adapter.add(text);
+        }
+    }
+
+    public LuaDialog createDialog(String title, String[] items) {
+        LuaDialog dlg = new LuaDialog(this);
+        dlg.setTitle(title);
+        dlg.setItems(items);
+        dlg.setNegativeButton(getString(R.string.cancel), null);
+        return dlg;
+    }
+}

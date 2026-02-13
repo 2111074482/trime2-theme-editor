@@ -4,11 +4,13 @@
 
 package com.osfans.trime.data.opencc
 
-import com.osfans.trime.data.base.DataManager
+
+import com.androlua.LuaApplication
+import com.osfans.trime.TrimeApplication
+import com.osfans.trime.core.DataManager
 import com.osfans.trime.data.opencc.dict.Dictionary
 import com.osfans.trime.data.opencc.dict.OpenCCDictionary
 import com.osfans.trime.data.opencc.dict.TextDictionary
-import com.osfans.trime.util.appContext
 import timber.log.Timber
 import java.io.File
 import java.io.InputStream
@@ -19,8 +21,8 @@ object OpenCCDictManager {
         System.loadLibrary("rime_jni")
     }
 
-    private val sharedDir = File(DataManager.sharedDataDir, "opencc").also { it.mkdirs() }
-    private val userDir get() = File(DataManager.userDataDir, "opencc").also { it.mkdirs() }
+    private val sharedDir = File(DataManager.getSharedDataDir(), "opencc").also { it.mkdirs() }
+    private val userDir get() = File(DataManager.getUserDataDir(), "opencc").also { it.mkdirs() }
 
     fun sharedDictionaries(): List<Dictionary> = sharedDir
         .listFiles()
@@ -75,7 +77,7 @@ object OpenCCDictManager {
         stream: InputStream,
         name: String,
     ): OpenCCDictionary {
-        val tempFile = File(appContext.cacheDir, name)
+        val tempFile = File(LuaApplication.getInstance().cacheDir, name)
         tempFile.outputStream().use {
             stream.copyTo(it)
         }

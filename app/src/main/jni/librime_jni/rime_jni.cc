@@ -126,28 +126,28 @@ class Rime {
     rime->set_caret_pos(session(), caretPos);
   }
 
-  bool selectCandidate(size_t index, bool global) {
-    if (global) {
-      return rime->select_candidate(session(), index);
-    } else {
-      return rime->select_candidate_on_current_page(session(), index);
-    }
+  bool selectCandidateOnCurrentPage(size_t index) {
+    return rime->select_candidate_on_current_page(session(), index);
   }
 
-  bool deleteCandidate(size_t index, bool global) {
-    if (global) {
-      return rime->delete_candidate(session(), index);
-    } else {
-      return rime->delete_candidate_on_current_page(session(), index);
-    }
+  bool deleteCandidateOnCurrentPage(size_t index) {
+    return rime->delete_candidate_on_current_page(session(), index);
+  }
+
+  bool selectCandidate(size_t index) {
+    return rime->select_candidate(session(), index);
+  }
+
+  bool forgetCandidate(size_t index) {
+    return rime->delete_candidate(session(), index);
   }
 
   bool changePage(bool backward) {
     return rime->change_page(session(), backward);
   }
 
-  CandidateList getCandidates(int startIndex, int limit) {
-    CandidateList result;
+  std::vector<CandidateItem> getCandidates(int startIndex, int limit) {
+    std::vector<CandidateItem> result;
     result.reserve(limit);
     RimeCandidateListIterator iter{};
     if (rime->candidate_list_from_index(session(), &iter, startIndex)) {
@@ -161,15 +161,6 @@ class Rime {
       rime->candidate_list_end(&iter);
     }
     return std::move(result);
-  }
-
-  std::tuple<int, int, CandidateList> getBulkCandidates() {
-    constexpr int limit = 16;
-    auto list = getCandidates(0, limit);
-    // use -1 to indicate it's not sure how many candidates now
-    auto size = list.size() < limit ? list.size() : -1;
-    auto highlighted = rime_get_highlighted_candidate_index(session());
-    return std::make_tuple(size, highlighted, std::move(list));
   }
 
   void exit() {
@@ -367,19 +358,29 @@ Java_com_osfans_trime_core_Rime_setRimeCaretPos(JNIEnv *env, jclass /* thiz */,
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_osfans_trime_core_Rime_selectRimeCandidate(JNIEnv *env,
-                                                    jclass /* thiz */,
-                                                    jint index,
-                                                    jboolean global) {
-  return Rime::Instance().selectCandidate(index, global);
+Java_com_osfans_trime_core_Rime_selectRimeCandidateOnCurrentPage(
+    JNIEnv *env, jclass /* thiz */, jint index) {
+  return Rime::Instance().selectCandidateOnCurrentPage(index);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_osfans_trime_core_Rime_deleteRimeCandidate(JNIEnv *env,
+Java_com_osfans_trime_core_Rime_deleteRimeCandidateOnCurrentPage(
+    JNIEnv *env, jclass /* thiz */, jint index) {
+  return Rime::Instance().deleteCandidateOnCurrentPage(index);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_osfans_trime_core_Rime_selectRimeCandidate(JNIEnv *env,
                                                     jclass /* thiz */,
-                                                    jint index,
-                                                    jboolean global) {
-  return Rime::Instance().deleteCandidate(index, global);
+                                                    jint index) {
+  return Rime::Instance().selectCandidate(index);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_osfans_trime_core_Rime_forgetRimeCandidate(JNIEnv *env,
+                                                    jclass /* thiz */,
+                                                    jint index) {
+  return Rime::Instance().forgetCandidate(index);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -395,22 +396,4 @@ Java_com_osfans_trime_core_Rime_getRimeCandidates(JNIEnv *env, jclass clazz,
                                                   jint limit) {
   return rimeCandidateListToJObjectArray(
       env, Rime::Instance().getCandidates(start_index, limit));
-}
-
-extern "C" JNIEXPORT jobjectArray JNICALL
-Java_com_osfans_trime_core_Rime_getRimeBulkCandidates(JNIEnv *env,
-                                                      jclass clazz) {
-  auto [size, highlighted, list] = Rime::Instance().getBulkCandidates();
-  auto jSize = JRef(
-      env, env->NewObject(GlobalRef->Integer, GlobalRef->IntegerInit, size));
-  auto jHighlighted = JRef(
-      env,
-      env->NewObject(GlobalRef->Integer, GlobalRef->IntegerInit, highlighted));
-  auto jList =
-      JRef<jobjectArray>(env, rimeCandidateListToJObjectArray(env, list));
-  auto params = env->NewObjectArray(3, GlobalRef->Object, nullptr);
-  env->SetObjectArrayElement(params, 0, jSize);
-  env->SetObjectArrayElement(params, 1, jHighlighted);
-  env->SetObjectArrayElement(params, 2, jList);
-  return params;
 }

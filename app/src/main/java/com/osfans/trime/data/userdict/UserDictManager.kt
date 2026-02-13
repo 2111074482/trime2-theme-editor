@@ -5,14 +5,15 @@
 
 package com.osfans.trime.data.userdict
 
-import com.osfans.trime.util.appContext
+import com.androlua.LuaApplication
+import com.osfans.trime.TrimeApplication
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
 object UserDictManager {
     fun restoreUserDict(stream: InputStream, snapshotFile: String): Result<Unit> {
-        val tempFile = File(appContext.cacheDir, snapshotFile)
+        val tempFile = File(LuaApplication.getInstance().cacheDir, snapshotFile)
         try {
             tempFile.outputStream().use {
                 stream.copyTo(it)
@@ -29,7 +30,7 @@ object UserDictManager {
     }
 
     fun importUserDict(stream: InputStream, dictName: String, textFile: String): Result<Int> {
-        val tempFile = File(appContext.cacheDir, textFile)
+        val tempFile = File(LuaApplication.getInstance().cacheDir, textFile)
         try {
             tempFile.outputStream().use {
                 stream.copyTo(it)
@@ -48,7 +49,7 @@ object UserDictManager {
     }
 
     fun exportUserDict(dest: OutputStream, dictName: String, textFile: String): Result<Int> {
-        val tempFile = File(appContext.cacheDir, textFile)
+        val tempFile = File(LuaApplication.getInstance().cacheDir, textFile)
         try {
             val count = exportUserDict(dictName, tempFile.absolutePath)
             tempFile.inputStream().use {

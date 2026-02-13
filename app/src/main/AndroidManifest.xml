@@ -15,16 +15,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name="com.osfans.trime.TrimeApplication"
+        android:name="com.androlua.LuaApplication"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_app_icon"
+        android:icon="@drawable/icon"
         android:label="@string/trime_app_name"
         android:requestLegacyExternalStorage="true"
-        android:roundIcon="@mipmap/ic_app_icon_round"
         android:theme="@style/Theme.TrimeAppTheme">
 
         <service
-            android:name=".ime.core.TrimeInputMethodService"
+            android:name="com.osfans.trime.TrimeService"
             android:exported="true"
             android:label="@string/trime_app_name"
             android:permission="android.permission.BIND_INPUT_METHOD">
@@ -37,18 +36,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
         </service>
 
         <provider
-            android:name=".provider.RimeDataProvider"
-            android:authorities="${applicationId}.provider"
-            android:exported="true"
-            android:grantUriPermissions="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS">
-            <intent-filter>
-                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
-            </intent-filter>
-        </provider>
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name="android.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
@@ -57,46 +45,20 @@ SPDX-License-Identifier: GPL-3.0-or-later
                 android:resource="@xml/provider_paths" />
         </provider>
 
-        <!-- Settings activity -->
-        <activity
-            android:name=".ui.main.MainActivity"
-            android:exported="true"
-            android:launchMode="singleTask" />
-
-        <activity
-            android:name=".ui.setup.SetupActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.main.LogActivity"
-            android:exported="false"
-            android:launchMode="singleTask"
-            android:parentActivityName=".ui.main.MainActivity" />
-
-        <activity
-            android:name=".ui.main.ClipEditActivity"
-            android:autoRemoveFromRecents="true"
-            android:excludeFromRecents="true"
-            android:label="@string/edit"
-            android:launchMode="singleInstance"
-            android:taskAffinity=".ui.main.LiquidKeyboardEditActivity"
-            android:theme="@style/Theme.DialogTheme"
-            android:windowSoftInputMode="stateAlwaysVisible|adjustPan" />
 
         <!-- Using an activity alias to disable/enable the app icon in the launcher -->
-        <activity-alias
-            android:name="com.osfans.trime.MainLauncherAlias"
+        <activity
+            android:name="com.osfans.trime.PrefLauncher"
             android:exported="true"
             android:label="@string/trime_app_name"
-            android:launchMode="singleTask"
-            android:targetActivity=".ui.main.MainActivity">
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity-alias>
+        </activity>
 
         <!-- All activities must be declared above <activity-alias> tag -->
     </application>

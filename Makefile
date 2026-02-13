@@ -6,34 +6,24 @@ mainDir=app/src/main
 resDir=$(mainDir)/res
 jniDir=$(mainDir)/jni
 
-ifdef ComSpec
-    # Windows
-    GRADLEW := gradlew.bat
-else
-    # Unix-like system
-    GRADLEW := ./gradlew
-endif
-
-
-.PHONY: all clean build debug spotlessCheck spotlessApply clang-format-lint clang-format style-lint \
-style-apply patch-apply release install translate ndk android
+.PHONY: all clean build debug spotlessCheck spotlessApply clang-format-lint clang-format style-lint style-apply release install translate ndk android
 
 all: release
 
 clean:
 	rm -rf build app/build app/.cxx/
-	$(GRADLEW) clean
+	./gradlew clean
 
 build: style-lint
-	$(GRADLEW) build
+	./gradlew build
 
 spotlessCheck:
-	$(GRADLEW) spotlessCheck
+	./gradlew spotlessCheck
 
 spotlessApply:
-	$(GRADLEW) spotlessApply
+	./gradlew spotlessApply
 
-cmake-format:
+    cmake-format:
 	cmake-format -i app/src/main/jni/cmake/*.cmake app/src/main/jni/CMakeLists.txt
 
 clang-format-lint:
@@ -46,11 +36,8 @@ style-lint: spotlessCheck clang-format-lint
 
 style-apply: spotlessApply clang-format
 
-patch-apply:
-	-git apply --directory=$(jniDir)/librime-lua-deps patches/lua.patch
-
-debug: patch-apply
-	$(GRADLEW) :app:assembleDebug
+debug: style-lint
+	./gradlew assembleDebug
 
 # add SPDX license header
 reuse:
@@ -69,11 +56,11 @@ cliff:
 	git-cliff -o CHANGELOG.md
 
 TRANSLATE=$(resDir)/values-zh-rCN/strings.xml
-release: patch-apply
-	$(GRADLEW) :app:assembleRelease
+release: style-lint
+	./gradlew assembleRelease
 
 install: release
-	$(GRADLEW) installRelease
+	./gradlew installRelease
 
 $(TRANSLATE): $(resDir)/values-zh-rTW/strings.xml
 	@echo "translate traditional to simple Chinese: $@"

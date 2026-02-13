@@ -1,0 +1,850 @@
+/*
+ * SPDX-FileCopyrightText: 2015 - 2025 Rime community
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+package com.osfans.trime.keyboard;
+
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.animation.StateListAnimator;
+import android.animation.ValueAnimator;
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.graphics.drawable.TransitionDrawable;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.text.TextUtils;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+
+import com.osfans.trime.Event;
+import com.osfans.trime.Key;
+import com.osfans.trime.TrimeService;
+import com.osfans.trime.enums.KeyEventType;
+import com.osfans.trime.theme.KeyStyle;
+import com.osfans.trime.theme.Style;
+import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
+
+import java.util.ArrayList;
+
+public class KeyView extends FrameLayout implements View.OnClickListener {
+
+    // --- 1. 静态常量 ---
+    private static final Interpolator FAST_OUT_SLOW_IN = new FastOutSlowInInterpolator();
+
+    // --- 2. 成员变量 ---
+    private final TrimeService mTrime;
+    private final KeyStyle mKeyStyle;
+    private final KeyStyle mPressedStyle;
+    private Key mKey;
+    private TextView mClick;
+    private TextView mHint;
+    private TextView mLongClick;
+    private FrameLayout keyRoot;
+    private String mClickText;
+    private TransitionDrawable transition;
+    private boolean mPressed;
+    private boolean mRectInvalidated;
+    private boolean mSelected;
+    private TextView keyPreview;
+    private Animator.AnimatorListener mAnimatorListener;
+
+    // --- 3. 构造函数 ---
+    public KeyView(@NonNull Context context) {
+        super(context);
+        mTrime = TrimeService.getInstance();
+        mKeyStyle = ThemeManager.getStyle().getKeyStyle("key");
+        mPressedStyle = mKeyStyle.getKeyStyle("pressed",mKeyStyle);
+        initView();
+    }
+
+    public KeyView(@NonNull Context context, Key v) {
+        super(context);
+        mTrime = TrimeService.getInstance();
+        mKey = v;
+        mKeyStyle = ThemeManager.getStyle().getKeyStyle(v.getStyle(), ThemeManager.getStyle().getKeyStyle("key"));
+        mPressedStyle = mKeyStyle.getKeyStyle("pressed",mKeyStyle);
+        initView();
+        initKey();
+    }
+
+    public KeyView(@NonNull Context context, KeyStyle v) {
+        super(context);
+        mTrime = TrimeService.getInstance();
+        mKeyStyle = v;
+        mPressedStyle = mKeyStyle.getKeyStyle("pressed",mKeyStyle);
+        initView();
+    }
+
+    public KeyView(@NonNull Context context, Key v, KeyStyle s) {
+        super(context);
+        mTrime = TrimeService.getInstance();
+        mKey = v;
+        mKeyStyle = ThemeManager.getStyle().getKeyStyle(v.getStyle(), s);
+        mPressedStyle = mKeyStyle.getKeyStyle("pressed",mKeyStyle);
+        initView();
+        initKey();
+    }
+
+    // --- 4. 生命周期与重写方法 (Overrides) ---
+
+    @Override
+    public void onClick(View v) {
+        if (mLongClicked) {
+            mLongClicked = false;
+            return;
+        }
+        if (mKey != null) {
+            if (mKey.isShift()) {
+                if (ModifierState.isShiftLock()) {
+                    ModifierState.setShiftLock(false);
+                    mTrime.setShifted(false);
+                    //if(mKeyStyle.isVibrationEnabled()) {
+                    //    performHapticFeedback(
+                    //            HapticFeedbackConstants.KEYBOARD_TAP,
+                    //            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    //    );
+                    //}
+                } else {
+                    boolean shifted = !ModifierState.isShifted();
+                    if (mKey.isShiftLock())
+                        ModifierState.setShiftLock(shifted);
+                    mTrime.setShifted(shifted);
+                }
+                setSelected(ModifierState.isShifted());
+            } else {
+                mTrime.onEvent(mKey.getEvent());
+                if (ModifierState.isShifted() && !ModifierState.isShiftLock())
+                    mTrime.setShifted(false);
+            }
+            return;
+        }
+        if (TextUtils.isEmpty(mClickText)) return;
+        mTrime.onEvent(new Event(mClickText));
+    }
+
+    @Override
+    public void setBackgroundColor(int color) {
+        //super.setBackgroundColor(color);
+        keyRoot.setBackground(createButtonBackground(color, 24f));
+    }
+
+    public void setBackgroundColor(int color, float radius) {
+        //super.setBackgroundColor(color);
+        keyRoot.setBackground(createButtonBackground(color, radius));
+    }
+    // --- 4. 生命周期管理 (重点优化部分) ---
+
+    @Override
+    public void setPressed(boolean pressed) {
+        boolean changed = mPressed != pressed;
+        mPressed = pressed;
+        super.setPressed(pressed);
+        if (changed && pressed) {
+            if (mKeyStyle.isVibrationEnabled()) {
+                VibrationEffect ve = mKeyStyle.getVibrationEffect();
+                if (ve != null) {
+                    ThemeManager.vibrate(ve);
+                } else {
+                    boolean ret = performHapticFeedback(
+                            HapticFeedbackConstants.KEYBOARD_TAP,
+                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    );
+                }
+            }
+            if (mKeyStyle.isSoundEnabled()) {
+                int sound = mKeyStyle.getSoundEffect();
+                if (sound > 0) {
+                    ThemeManager.play(sound);
+                } else {
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                }
+            }
+        }
+
+        if (changed) {
+            if (direction == SWIPE_NONE)
+                showPreview(pressed, mClick.getText());
+        }
+
+
+        if (mKey != null && changed) {
+            if (pressed) {
+                setOnClickListener(this);
+                if (mKey.getLongClick() != null || mKey.getEvent().isRepeatable() || (mKey.isShift())) {
+                    postDelayed(mLongClickRunnable, mKeyStyle.getLongClickTime());
+                }
+            } else {
+                removeCallbacks(mLongClickRunnable);
+                removeCallbacks(mRepeatableRunnable);
+            }
+        }
+        if (mSelected && !pressed) {
+            mPressed = true;
+            return;
+        }
+        // 触发重构后的轻量级动画
+        if (changed) {
+            applyStateAnimation(pressed);
+        }
+    }
+
+    @Override
+    public void setSelected(boolean selected) {
+        mSelected = selected;
+        mPressed = selected;
+        super.setSelected(selected);
+        applyStateAnimation(selected);
+        if (!selected && transition != null)
+            transition.resetTransition();
+    }
+
+    private void applyStateAnimation(boolean isPressed) {
+
+        // 1. 缩放与位移动画 (ViewPropertyAnimator 自动管理)
+        float scaleX = isPressed ? mPressedStyle.getScaleX() : 1.0f;
+        float scaleY = isPressed ? mPressedStyle.getScaleY() : 1.0f;
+        float translationZ = isPressed ? mPressedStyle.getTranslationZ() : 0;
+        float translationY = isPressed ? mPressedStyle.getTranslationY() : 0;
+        float translationX = isPressed ? mPressedStyle.getTranslationX() : 0;
+
+        keyRoot.animate()
+                .scaleX(scaleX)
+                .scaleY(scaleY)
+                .translationZ(translationZ)
+                .translationY(translationY)
+                .translationX(translationX)
+                .setDuration(50)
+                .setInterpolator(FAST_OUT_SLOW_IN)
+                .start();
+
+        // 2. 背景过渡动画
+        if (transition != null) {
+            if (isPressed) {
+                transition.startTransition(50);
+            } else {
+                transition.reverseTransition(50);
+            }
+        } else {
+            Drawable bg = keyRoot.getBackground();
+            if (bg instanceof GradientDrawable) {
+                int dColor = isPressed ? mPressedStyle.getBackgroundColor(0xffaaaaaa)
+                        : mKeyStyle.getBackgroundColor();
+                ((GradientDrawable) bg).setColor(dColor);
+            }
+        }
+        updateTextColor(mClick, isPressed, mKeyStyle);
+        updateTextColor(mHint, isPressed, mKeyStyle.getHintKeyStyle());
+        updateTextColor(mLongClick, isPressed, mKeyStyle.getLongClickKeyStyle());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            int dShadowColor = mKeyStyle.getShadowColor();
+            if (dShadowColor != 0) {
+                if (isPressed) {
+                    int pShadowColor = mPressedStyle.getShadowColor();
+                    if (pShadowColor != 0) {
+                        keyRoot.setOutlineAmbientShadowColor(pShadowColor);
+                        keyRoot.setOutlineSpotShadowColor(pShadowColor);
+                    }
+                } else {
+                    keyRoot.setOutlineAmbientShadowColor(dShadowColor);
+                    keyRoot.setOutlineSpotShadowColor(dShadowColor);
+                }
+            }
+        }
+    }
+
+    private void showPreview(boolean isPressed, CharSequence text) {
+        if (mKey == null)
+            return;
+        if (keyPreview == null)
+            return;
+        if(!isPressed){
+            keyPreview.animate().cancel();
+            keyPreview.setVisibility(GONE);
+            return;
+        }
+        if (text != null) {
+            keyPreview.setText(text);
+        } else {
+            keyPreview.setVisibility(GONE);
+            return;
+        }
+        /*if (mAnimatorListener == null) {
+            mAnimatorListener = new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(@NonNull Animator animation) {
+                    if (isPressed)
+                        keyPreview.setVisibility(VISIBLE);
+                }
+
+                @Override
+                public void onAnimationEnd(@NonNull Animator animation) {
+                    if (!isPressed)
+                        keyPreview.setVisibility(GONE);
+                }
+
+                @Override
+                public void onAnimationCancel(@NonNull Animator animation) {
+                    keyPreview.setVisibility(GONE);
+                }
+
+                @Override
+                public void onAnimationRepeat(@NonNull Animator animation) {
+
+                }
+            };
+        }*/
+        if(isPressed){
+            keyPreview.setAlpha(0);
+            keyPreview.setScaleX(0.5f);
+            keyPreview.setScaleY(0.5f);
+            keyPreview.setTranslationY(0);
+            keyPreview.setTranslationZ(1);
+            keyPreview.setVisibility(VISIBLE);
+        }
+        keyPreview.animate()
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .translationZ(1)
+                .translationY(-getHeight())
+                .translationX(0)
+                .setDuration(100)
+                .alpha(1.f)
+                .setInterpolator(FAST_OUT_SLOW_IN)
+                //.setListener(mAnimatorListener)
+                .start();
+    }
+
+    private void updateTextColor(TextView view, boolean isPressed, KeyStyle style) {
+        view.setTextColor(isPressed ? style.getPressedStyle().getTextColor() : style.getTextColor());
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        // 确保 View 重新进入窗口时状态正确
+        if (keyRoot != null) {
+            keyRoot.setScaleX(1.0f);
+            keyRoot.setScaleY(1.0f);
+            keyRoot.setTranslationZ(0);
+            keyRoot.setTranslationY(0);
+            keyRoot.setTranslationX(0);
+        }
+        if (mSelected) {
+            mPressed = false;
+            setPressed(true);
+        }
+        if (keyPreview != null) {
+            keyPreview.animate().cancel();
+            keyPreview.setVisibility(GONE);
+        }
+    }
+
+
+    @Override
+    protected void onDetachedFromWindow() {
+        // 1. 停止并取消所有正在运行的属性动画，释放引用
+        if (keyRoot != null) {
+            keyRoot.animate().cancel();
+        }
+        if (keyPreview != null) {
+            keyPreview.animate().cancel();
+            keyPreview.setVisibility(GONE);
+        }
+        // 2. 彻底移除所有 Callback，防止销毁后执行 Runnable 导致的内存泄漏
+        removeCallbacks(mLongClickRunnable);
+        removeCallbacks(mRepeatableRunnable);
+
+        // 3. 重置 Transition 状态，释放 Drawable 资源
+        if (transition != null) {
+            transition.resetTransition();
+        }
+
+        // 4. 清除监听器，断开与 Service 的强关联
+        if (mKey != null)
+            setOnClickListener(null);
+        if (mPressed)
+            setPressed(false);
+        // 视图销毁时释放内存
+        if (maskBitmap != null) {
+            maskBitmap.recycle();
+            maskBitmap = null;
+        }
+        super.onDetachedFromWindow();
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        switch (action) {
+            case AccessibilityNodeInfo.ACTION_CLICK:
+                performClick();
+                return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
+    // 预先分配内存，整个生命周期只创建这一次
+    private final Rect mHitRect = new Rect();
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        // 布局变动时，仅标记失效，不立即计算（因为父容器可能还在变）
+        if (changed)
+            mRectInvalidated = true;
+    }
+
+    public boolean contains(int x, int y) {
+        // 只有在真正需要判定点击时，才计算绝对坐标
+        if (mRectInvalidated) {
+            updateHitRect();
+            mRectInvalidated = false;
+        }
+        return mHitRect.contains(x, y);
+    }
+
+    private void updateHitRect() {
+        int left = getLeft();
+        int top = getTop();
+
+        ViewParent parent = getParent();
+        // 1. 检查 parent 是否为 View 类型
+        // 2. 检查 parent 是否已经是 KeyboardView（目标根容器）
+        // 3. 只有 parent 是 View 且不是我们想要的根容器时，才继续累加
+        while (parent instanceof View && !(parent instanceof KeyboardView)) {
+            View parentView = (View) parent;
+            left += parentView.getLeft();
+            top += parentView.getTop();
+            // 继续向上寻找
+            parent = parentView.getParent();
+        }
+
+        // 最后更新 Rect 缓存
+        mHitRect.set(left, top, left + getWidth(), top + getHeight());
+    }
+
+    // --- 5. 公开 API 方法 (Setters & Getters) ---
+    public void setText(String text) {
+        setVisibility(text != null ? VISIBLE : INVISIBLE);
+        mClick.setText(text);
+        mClick.setSingleLine(false);
+        mClick.setMaxLines(4);
+        mClick.setEllipsize(TextUtils.TruncateAt.END);
+        setContentDescription(text);
+    }
+
+    public void setLabel(String text) {
+        if (TextUtils.isEmpty(text)) return;
+        setVisibility(VISIBLE);
+        mClick.setText(text);
+        mClick.setSingleLine(false);
+        setContentDescription(text);
+    }
+
+    public void setClickText(String text) {
+        mClickText = text;
+        setVisibility(text != null ? VISIBLE : INVISIBLE);
+        mClick.setText(text);
+        if (text != null)
+            mClick.setSingleLine(!text.contains("/n"));
+        setOnClickListener(this);
+        setContentDescription(text);
+    }
+
+    public void setKey(String key) {
+        mKey = new Key(key);
+        initKey();
+    }
+
+    public void setLongClickText(String text) {
+        mLongClick.setVisibility(text != null ? VISIBLE : GONE);
+        mLongClick.setText(text);
+    }
+
+    public void setHintText(String text) {
+        mHint.setVisibility(text != null ? VISIBLE : GONE);
+        mHint.setText(text);
+    }
+
+    @Keep
+    public void setTextColor(int color) {
+        mClick.setTextColor(color);
+    }
+
+    @Keep
+    public void setLongClickTextColor(int color) {
+        mLongClick.setTextColor(color);
+    }
+
+    @Keep
+    public void setHintTextColor(int color) {
+        mHint.setTextColor(color);
+    }
+
+    public void setTextPadding(int left, int top, int right, int bottom) {
+        keyRoot.setPadding(left, top, right, bottom);
+    }
+
+    public void invalidateKey() {
+        if (mKey != null) {
+            String click = mKey.getLabel();
+            if (!TextUtils.isEmpty(click)) {
+                setClickText(click);
+                setContentDescription(mKey.getDescription());
+            }
+            if (mKey.isShift()) {
+                setSelected(ModifierState.isShifted());
+            }
+        }
+    }
+
+    public boolean isComposingKey() {
+        return mKey != null && mKey.isComposingKey();
+    }
+
+    public boolean isShift() {
+        return mKey != null && mKey.isShift();
+    }
+
+    // --- 6. 私有初始化与辅助方法 ---
+    private void initView() {
+        setClipChildren(false);
+        setClipToPadding(false);
+        setClickable(true);
+        setFocusable(true);
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        //    setScreenReaderFocusable(true); // API 28+
+        //    setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        //}
+        keyRoot = new FrameLayout(getContext());
+        keyRoot.setClipChildren(false);
+        keyRoot.setClipToPadding(false);
+
+        // 阴影颜色 (P+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            int dShadowColor = mKeyStyle.getShadowColor();
+            if (dShadowColor != 0) {
+                keyRoot.setOutlineAmbientShadowColor(dShadowColor);
+                keyRoot.setOutlineSpotShadowColor(dShadowColor);
+            }
+        }
+        // 背景
+        //Drawable background = mKeyStyle.getBackground();
+        //if (background instanceof GradientDrawable) {
+        //    if (!mPressedStyle.hasKey("background"))
+        //        keyRoot.setBackground(createButtonBackground(background));
+        //    else
+        //        keyRoot.setBackground(background);
+        //    transition = null;
+        //} else {
+            Drawable[] layers = new Drawable[2];
+            layers[0] = mKeyStyle.getBackground();
+            layers[1] = mPressedStyle.getBackground();
+            transition = new TransitionDrawable(layers);
+            keyRoot.setBackground(transition);
+        //}
+
+        // 初始化 Click TextView
+        mClick = new TextView(getContext());
+        mClick.setSingleLine(true);
+        mClick.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mKeyStyle.getTextSize());
+        mClick.setTextColor(mKeyStyle.getTextColor());
+        // 初始化 Hint TextView
+        KeyStyle mHintStyle = mKeyStyle.getHintKeyStyle();
+        mHint = new TextView(getContext());
+        mHint.setSingleLine(true);
+        mHint.setVisibility(View.VISIBLE);
+        mHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mHintStyle.getTextSize(12));
+        mHint.setTextColor(mHintStyle.getTextColor());
+
+        // 初始化 LongClick TextView
+        KeyStyle mLongClickStyle = mKeyStyle.getLongClickKeyStyle();
+        mLongClick = new TextView(getContext());
+        mLongClick.setSingleLine(true);
+        mLongClick.setVisibility(View.VISIBLE);
+        mLongClick.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mLongClickStyle.getTextSize(12));
+        mLongClick.setTextColor(mLongClickStyle.getTextColor());
+
+        setVisibility(View.INVISIBLE);
+
+        // 布局添加
+        keyRoot.addView(mLongClick, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER));
+        keyRoot.addView(mHint, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER));
+        keyRoot.addView(mClick, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+        //createAnimator(keyRoot);
+
+        int elevation = mKeyStyle.getElevation();
+        keyRoot.setElevation(elevation);
+
+        Style margins = mKeyStyle.getStyle("margins");
+        LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        params.setMargins(margins.getSize("left", elevation / 3), margins.getSize("top", elevation / 3), margins.getSize("right", elevation / 3), margins.getSize("bottom", elevation / 3 * 2));
+        Style padding = mKeyStyle.getStyle("padding");
+        keyRoot.setPadding(padding.getSize("left", 0), padding.getSize("top", 0), padding.getSize("right", 0), padding.getSize("bottom", 0));
+        addView(keyRoot, params);
+        if (mKeyStyle.hasKey("preview")) {
+            KeyStyle previewStyle = mKeyStyle.getKeyStyle("preview", mKeyStyle);
+            keyPreview = new TextView(getContext());
+            // 关键修复 2：如果背景是自定义绘制的，强制设置轮廓提供者以产生阴影
+            keyPreview.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+            keyPreview.setClipToOutline(false); // 允许阴影溢出边界绘制
+            keyPreview.setBackground(previewStyle.getBackground());
+            keyPreview.setVisibility(GONE);
+            keyPreview.setGravity(Gravity.CENTER);
+            keyPreview.setElevation(previewStyle.getElevation());
+            keyPreview.setTextSize(TypedValue.COMPLEX_UNIT_DIP, previewStyle.getTextSize());
+            keyPreview.setTextColor(previewStyle.getTextColor());
+            addView(keyPreview, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+        keyRoot.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
+        keyRoot.setClipToOutline(false); // 允许阴影溢出边界绘制
+    }
+
+    private void initKey() {
+        if (mKey == null) return;
+        String click = mKey.getLabel();
+        if (!TextUtils.isEmpty(click)) setClickText(click);
+
+        String longClick = mKey.getSymbolLabel();
+        if (!TextUtils.isEmpty(longClick)) setLongClickText(longClick);
+
+        String hint = mKey.getHint();
+        if (!TextUtils.isEmpty(hint)) setHintText(hint);
+        setContentDescription(mKey.getDescription());
+    }
+
+    private Drawable createButtonBackground(int color, float radius) {
+        GradientDrawable content = new GradientDrawable();
+        content.setShape(GradientDrawable.RECTANGLE);
+        content.setColor(color);
+        content.setCornerRadius(radius);
+        return new RippleDrawable(ColorStateList.valueOf(Color.parseColor("#40000000")), content, content);
+    }
+
+
+    private Drawable createButtonBackground(Drawable content) {
+        return new RippleDrawable(ColorStateList.valueOf(Color.parseColor("#40000000")), content, content);
+    }
+
+    private boolean mLongClicked;
+    // --- 7. 内部类与 Runnables ---
+    private final Runnable mLongClickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isPressed()) return;
+            performHapticFeedback(
+                    HapticFeedbackConstants.LONG_PRESS,
+                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+            );
+            mLongClicked = true;
+            if (mKey.isShift()) {
+                ModifierState.setShiftLock(true);
+                mTrime.setShifted(true);
+                return;
+            }
+
+            if (mKey.getLongClick() != null) {
+                showPreview(true,mKey.getLongClick().getLabel());
+                TrimeService.getInstance().onEvent(mKey.getLongClick());
+                return;
+            }
+            postDelayed(mRepeatableRunnable, 200);
+        }
+    };
+
+    private final Runnable mRepeatableRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isPressed()) return;
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            onClick(KeyView.this);
+            postDelayed(this, mKeyStyle.getRepeatClickTime());
+        }
+    };
+
+    public void setClickPadding(int left, int top, int right, int bottom) {
+        mClick.setPadding(left, top, right, bottom);
+    }
+
+
+    private Bitmap maskBitmap;
+    private int lastWidth, lastHeight;
+    private boolean isShapeDetectionEnabled = false; // 默认关闭，提升性能
+
+    /**
+     * 设置是否开启异形形状触摸检测
+     *
+     * @param enabled true: 只有点在不透明区域才响应; false: 点击矩形区域均响应
+     */
+    public void setShapeDetectionEnabled(boolean enabled) {
+        this.isShapeDetectionEnabled = enabled;
+        // 如果关闭开关，建议释放内存
+        if (!enabled && maskBitmap != null) {
+            maskBitmap.recycle();
+            maskBitmap = null;
+        }
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (mKey == null||!mKey.hasSwipeEvent())
+            return super.onTouchEvent(event);
+        // A. 异形按键检测 (ACTION_DOWN)
+        if (isShapeDetectionEnabled && event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (isPixelTransparent(event)) return false;
+        }
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            // 请求父容器不要拦截后续的 MOVE 事件，哪怕我滑出了边界
+            ViewParent parent = getParent();
+            if (parent != null) {
+                parent.requestDisallowInterceptTouchEvent(true);
+            }
+        }
+        // B. 处理滑动逻辑
+        if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            handleSwipeEvent(event);
+        } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+            // C. 处理滑动后的上屏逻辑
+            if (direction != SWIPE_NONE) {
+                Event ev = mKey.getEvent(direction);
+                if (ev != null) mTrime.onEvent(ev);
+                // 重要：重置状态
+                showPreview(false, null);
+                direction = SWIPE_NONE;
+                lastDirection = SWIPE_NONE;
+                setPressed(false); // 手指是在外部抬起的，取消按键按下状态
+                return true; // 拦截事件，防止 super 触发 onClick
+            }
+            // 重置状态
+            lastDirection = SWIPE_NONE;
+            showPreview(false, null);
+        }
+        return super.onTouchEvent(event);
+    }
+
+    // 1. 定义方向常量
+    public static final int SWIPE_NONE = 0;
+    public static final int SWIPE_UP = KeyEventType.SWIPE_UP.ordinal();
+    public static final int SWIPE_DOWN = KeyEventType.SWIPE_DOWN.ordinal();
+    public static final int SWIPE_LEFT = KeyEventType.SWIPE_LEFT.ordinal();
+    public static final int SWIPE_RIGHT = KeyEventType.SWIPE_RIGHT.ordinal();
+    private int direction = 0;
+    private int lastDirection = 0;
+
+    private void handleSwipeEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+        float w = getWidth();
+        float h = getHeight();
+
+        // 1. 使用偏移量绝对值判断方向，解决“斜向滑动”的判定冲突
+        float dx = (x < 0) ? -x : (x > w ? x - w : 0);
+        float dy = (y < 0) ? -y : (y > h ? y - h : 0);
+
+        if (dx == 0 && dy == 0) {
+            direction = SWIPE_NONE;
+        } else if (dx > dy) {
+            direction = (x < 0) ? SWIPE_LEFT : SWIPE_RIGHT;
+        } else {
+            direction = (y < 0) ? SWIPE_UP : SWIPE_DOWN;
+        }
+
+        if (direction != lastDirection) {
+            if (direction != SWIPE_NONE) {
+                // 只要进入滑动状态，就移除长按和重复按键的回调，防止误触发
+                removeCallbacks(mLongClickRunnable);
+                removeCallbacks(mRepeatableRunnable);
+
+                Event ev = mKey.getEvent(direction);
+                if (ev != null) {
+                    showPreview(true, ev.getLabel());
+                } else {
+                    showPreview(false, null);
+                }
+            } else {
+                // 回到按键中心，恢复普通预览
+                showPreview(true, mKey.getLabel());
+            }
+            lastDirection = direction;
+        }
+    }
+
+    private boolean isPixelTransparent(MotionEvent event) {
+        int x = (int) event.getX() - keyRoot.getLeft();
+        int y = (int) event.getY() - keyRoot.getTop();
+        int w = keyRoot.getWidth();
+        int h = keyRoot.getHeight();
+
+        // 1. 边界防御：如果触摸点在矩形外，或者 View 还没加载完，视为透明
+        if (x < 0 || x >= w || y < 0 || y >= h || w <= 0 || h <= 0) {
+            return true;
+        }
+
+        // 2. 只有尺寸变化时才重新绘制 Mask，节省性能
+        if (maskBitmap == null || w != lastWidth || h != lastHeight) {
+            // 释放旧资源
+            if (maskBitmap != null) maskBitmap.recycle();
+
+            lastWidth = w;
+            lastHeight = h;
+
+            // ALPHA_8 格式最省内存，每个像素仅占 1 字节
+            maskBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
+            Canvas maskCanvas = new Canvas(maskBitmap);
+
+            Drawable bg = keyRoot.getBackground();
+            if (bg != null) {
+                // 复制一份背景，防止修改原背景的 Bounds
+                Drawable tempBg = bg.mutate();
+                tempBg.setBounds(0, 0, w, h);
+                tempBg.draw(maskCanvas);
+            }
+        }
+
+        // 3. 检测像素。对于 ALPHA_8，getPixel 返回的是位移后的 Alpha 值
+        // 允许一点点微弱的阴影/羽化边缘（阈值设为 10）
+        return (maskBitmap.getPixel(x, y) >> 24 & 0xff) < 10;
+    }
+
+    public void setTextSize(int i, float size) {
+        mClick.setTextSize(i,size);
+    }
+
+    public CharSequence getText() {
+        return mClick.getText();
+    }
+
+    @Override
+    public void setPadding(int left, int top, int right, int bottom) {
+        keyRoot.setPadding(left, top, right, bottom);
+    }
+}

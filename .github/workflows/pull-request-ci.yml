@@ -28,7 +28,7 @@ jobs:
       BUILD_ABI: armeabi-v7a,arm64-v8a,x86,x86_64
     steps:
       - name: Fetch source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           fetch-depth: 0
@@ -61,7 +61,7 @@ jobs:
             ./gradlew :app:calculateNativeCacheHash
 
       - name: Fetch JNI cache
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         id: jni-cache
         with:
           path: "app/prebuilt"
@@ -77,9 +77,10 @@ jobs:
         run: |
           make style-lint
 
+      # `make debug` works not well on Windows
       - name: Build debug Trime
         run: |
-          make debug
+          ./gradlew :app:assembleDebug
 
       - name: Add JNI cache
         if: ${{ !steps.jni-cache.outputs.cache-hit }}
@@ -87,7 +88,7 @@ jobs:
         run: cp -R app/build/intermediates/merged_native_libs/debug/mergeDebugNativeLibs/out/lib app/prebuilt
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v5
         with:
           name: trime-${{ matrix.os }}
           path: app/build/outputs/apk/debug/

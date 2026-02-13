@@ -11,6 +11,24 @@
 # Keep JNI interface
 -keep class com.osfans.trime.core.* { *; }
 
+# 1. 仅保护类名不被混淆（不进入大括号指定成员）
+-keep class com.androlua.**
+
+# 2. 显式保护公开（public）和受保护（protected）的成员
+# 这样私有（private）的方法和字段就会因为没有被匹配到而被混淆
+-keepclassmembers class com.androlua.** {
+    public protected <fields>;
+    public protected <methods>;
+}
+# 1. 仅保护类名不被混淆（不进入大括号指定成员）
+-keep class org.luaj.**
+
+# 2. 显式保护公开（public）和受保护（protected）的成员
+# 这样私有（private）的方法和字段就会因为没有被匹配到而被混淆
+-keepclassmembers class org.luaj.** {
+    public protected <fields>;
+    public protected <methods>;
+}
 # remove kotlin null checks
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
     static void checkNotNull(...);

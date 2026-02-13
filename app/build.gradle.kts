@@ -23,13 +23,26 @@ android {
     namespace = "com.osfans.trime"
     compileSdk = 35
     buildToolsVersion = "35.0.0"
+// 1. 定义签名配置
+    signingConfigs {
+        // 使用 findProperty 避免属性缺失时直接崩溃
+        val keyPath = project.findProperty("signKeyFile") as? String
 
+        if (!keyPath.isNullOrBlank()) {
+            create("myCustomConfig") {
+                storeFile = file(keyPath) // 关键：必须用 file() 包裹路径
+                storePassword = project.findProperty("signKeyStorePwd") as? String
+                keyAlias = project.findProperty("signKeyAlias") as? String
+                keyPassword = project.findProperty("signKeyPwd") as? String
+            }
+        }
+    }
     defaultConfig {
-        applicationId = "com.osfans.trime"
+        applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 20260301
-        versionName = "3.3.9"
+        versionCode = 18
+        versionName = "0.1.8"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")
@@ -52,21 +65,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig =
-                project.signKeyFile?.let {
-                    signingConfigs.create("release") {
-                        storeFile = it
-                        storePassword = project.signKeyStorePwd
-                        keyAlias = project.signKeyAlias
-                        keyPassword = project.signKeyPwd
-                    }
-                }
-
+            // 2. 引用它
+            signingConfig = signingConfigs.getByName("myCustomConfig")
             resValue("string", "trime_app_name", "@string/app_name_release")
         }
         debug {
-            applicationIdSuffix = ".debug"
-
+            // 2. 引用它
+            signingConfig = signingConfigs.getByName("myCustomConfig")
             resValue("string", "trime_app_name", "@string/app_name_debug")
         }
         all {
@@ -181,7 +186,8 @@ dependencies {
     implementation(libs.kaml)
     implementation(libs.timber)
     implementation(libs.xxpermissions)
-    implementation(libs.kodein.di)
+    ksp(libs.kotlin.inject.compiler)
+    implementation(libs.kotlin.inject.runtime)
     implementation(libs.splitties.bitflags)
     implementation(libs.splitties.systemservices)
     implementation(libs.splitties.views.dsl)
@@ -196,10 +202,10 @@ dependencies {
     }
 
     // Testing
-    testImplementation(libs.junit)
-    testImplementation(libs.kotest.runner.junit5)
-    testImplementation(libs.kotest.assertions.core)
-    androidTestImplementation(libs.junit)
+    //testImplementation(libs.junit)
+    //testImplementation(libs.kotest.runner.junit5)
+    //testImplementation(libs.kotest.assertions.core)
+    //androidTestImplementation(libs.junit)
 }
 
 configurations {

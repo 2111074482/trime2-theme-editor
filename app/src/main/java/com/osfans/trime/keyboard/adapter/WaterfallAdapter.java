@@ -132,6 +132,8 @@ public class WaterfallAdapter extends RecyclerView.Adapter<WaterfallAdapter.View
         lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
         holder.textView.setLayoutParams(lp);
         // 加载图片和文字
+        if(item.length()>100)
+            item=item.substring(0,100);
         holder.textView.setText(item);
     }
 

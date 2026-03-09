@@ -20,92 +20,150 @@ import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.SchemaItem;
 
+import java.lang.reflect.Array;
+import java.text.Collator;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
+
 public class OptionsDialog {
-    private AlertDialog mDig;
+    private AlertDialog mDialog; // 原 mDig
     private boolean mNeedUpdateRimeOption;
-    private IBinder mToken;
+    private IBinder mWindowToken; // 原 mToken
 
     public OptionsDialog(Context context) {
         if (TrimeService.getInstance() == null) {
             Toast.makeText(context, "请先启用输入法", Toast.LENGTH_SHORT).show();
             return;
         }
+
         AlertDialog.Builder builder =
                 new AlertDialog.Builder(context, ThemeManager.getDialogTheme())
                         .setTitle("选择方案")
-                        //.setCancelable(true)
                         .setPositiveButton(
                                 "设置",
                                 new DialogInterface.OnClickListener() {
                                     @Override
-                                    public void onClick(DialogInterface di, int id) {
-                                        Function.showPrefDialog(context); //全局設置
-                                        di.dismiss();
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        Function.showPrefDialog(context); // 全局设置
+                                        dialog.dismiss();
                                     }
                                 })
                         .setNegativeButton(android.R.string.cancel, null);
-        if (Rime.getCurrentRimeSchema().equals(".default")) {
-            builder.setMessage("没有方案，请先添加启用方案"); //提示安裝碼表
-        } else {
-            String id = Rime.getCurrentRimeSchema();
-            SchemaItem[] as = Rime.getRimeSchemaList();
-            if(as==null){
-                Toast.makeText(context,"请先启用输入法",Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String[] ss = new String[as.length];
-            int idx = 0;
-            for (int i = 0; i < as.length; i++) {
-                ss[i]=as[i].getName();
-                if(as[i].getId().equals(id))
-                    idx=i;
-            }
-            builder.setNeutralButton(
-                    "管理方案",
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface di, int id) {
-                            new SchemaDialog(context).show(mToken); //部署方案
-                            di.dismiss();
-                        }
-                    });
-            builder.setSingleChoiceItems(
-                    ss,
-                    idx,
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface di, int id) {
-                            di.dismiss();
-                            Rime.selectRimeSchema(as[id].getId()); //切換方案
-                            mNeedUpdateRimeOption = true;
-                            Function.saveString(context,"select_schema_id",as[id].getId());
-                        }
-                    });
+
+        // 获取当前正在使用的方案 ID
+        String currentSchemaId = Rime.getCurrentRimeSchema();
+
+        if (currentSchemaId.equals(".default")) {
+            builder.setMessage("没有方案，请先添加启用方案");
+            mDialog = builder.create();
+            return;
         }
-        mDig = builder.create();
+        // 获取所有可用的方案列表
+        SchemaItem[] availableSchemas = Rime.getRimeSchemaList(); // 原 as
+        if (availableSchemas == null) {
+            Toast.makeText(context, "请先启用输入法", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Arrays.sort(availableSchemas, new SortByName());
+
+        int schemaCount = availableSchemas.length;
+        String[] schemaNames = new String[schemaCount]; // 原 ss
+        int currentSelectedIndex = 0; // 原 idx
+
+        for (int i = 0; i < schemaCount; i++) {
+            schemaNames[i] = availableSchemas[i].getName();
+            // 匹配当前方案，用于设置单选框的初始选中项
+            if (availableSchemas[i].getId().equals(currentSchemaId)) {
+                currentSelectedIndex = i;
+            }
+        }
+
+        builder.setNeutralButton(
+                "管理方案",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        // 启动部署/管理方案对话框
+                        new SchemaDialog(context).show(mWindowToken);
+                        dialog.dismiss();
+                    }
+                });
+
+        builder.setSingleChoiceItems(
+                schemaNames,
+                currentSelectedIndex,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int index) {
+                        dialog.dismiss();
+                        String selectedId = availableSchemas[index].getId();
+                        Rime.selectRimeSchema(selectedId); // 切换方案
+                        mNeedUpdateRimeOption = true;
+                        Function.saveString(context, "select_schema_id", selectedId);
+                    }
+                });
+        mDialog = builder.create();
     }
 
-
     public void show() {
-        if(mDig==null)
-            return;
-        mDig.show();
+        if (mDialog == null) return;
+        mDialog.show();
     }
 
     public void show(IBinder token) {
-        if(mDig==null)
-            return;
-        mToken=token;
-        if(mToken==null){
+        if (mDialog == null) return;
+        mWindowToken = token;
+
+        if (mWindowToken == null) {
             show();
             return;
         }
-        Window win = mDig.getWindow();
-        WindowManager.LayoutParams attr = win.getAttributes();
-        attr.type=WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
-        win.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-        attr.token=token;
-        win.setAttributes(attr);
-        mDig.show();
+
+        Window window = mDialog.getWindow();
+        WindowManager.LayoutParams layoutParams = window.getAttributes(); // 原 attr
+
+        // 设置为输入法附着的对话框类型，确保其能显示在输入法窗口之上
+        layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        layoutParams.token = token;
+
+        window.setAttributes(layoutParams);
+        mDialog.show();
+    }
+
+    /**
+     * 按名称排序方案项
+     */
+    public static class SortByName implements Comparator<SchemaItem> {
+        private final LocaleComparator localeComp = new LocaleComparator(); // 原 comp
+
+        @Override
+        public int compare(SchemaItem item1, SchemaItem item2) {
+            String name1 = item1.getName();
+            String name2 = item2.getName();
+
+            // 优先比较名称，名称为空则比较 ID
+            if (name1 != null && name2 != null) {
+                return localeComp.compare(name1, name2);
+            }
+
+            String id1 = item1.getId();
+            String id2 = item2.getId();
+            return localeComp.compare(id1, id2);
+        }
+    }
+
+    /**
+     * 区域敏感的字符串比较器
+     */
+    public static class LocaleComparator implements Comparator<String> {
+        private final Collator collator = Collator.getInstance(java.util.Locale.getDefault());
+
+        @Override
+        public int compare(String s1, String s2) {
+            return collator.compare(s1, s2);
+        }
     }
 }

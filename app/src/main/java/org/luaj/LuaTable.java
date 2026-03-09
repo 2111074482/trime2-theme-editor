@@ -35,6 +35,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -1374,14 +1375,14 @@ public class LuaTable extends LuaValue implements Metatable {
 
     }
 
-    public Collection<?> values() {
-        Vector<Object> l = new Vector<>();
+    public List<?> values() {
+        ArrayList<Object> l = new ArrayList<>();
         LuaValue k = LuaValue.NIL;
         while (true) {
             Varargs n = next(k);
             if ((k = n.arg1()).isnil())
                 break;
-            l.addElement(CoerceLuaToJava.coerce(n.arg(2), Object.class));
+            l.add(CoerceLuaToJava.coerce(n.arg(2), Object.class));
         }
         return l;
     }
@@ -1396,6 +1397,15 @@ public class LuaTable extends LuaValue implements Metatable {
             l.addElement(n.arg(2).optjstring(""));
         }
         return l;
+    }
+
+    public void setmetamethod(String s, LuaValue value) {
+        LuaValue mt = getmetatable();
+        if(mt==null){
+            mt=new LuaTable();
+            setmetatable(mt);
+        }
+        mt.set(s,value);
     }
 
     /**

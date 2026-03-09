@@ -10,7 +10,7 @@ import java.util.Objects;
 public class CandidateItem {
     private final String text;
     private final String comment;
-    private int mIndex=0;
+    private int mIndex=-1;
 
     // Default constructor matching Kotlin's default arguments
     public CandidateItem(String text) {

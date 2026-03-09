@@ -1,5 +1,7 @@
 package com.osfans.trime.core;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,7 +24,7 @@ public final class RimeSchema {
     public static final class Switch {
         private final String name;
         private final List<String> options;
-        private final int reset;
+        private int reset;
         private final List<String> states;
 
         // Default constructor matching Kotlin's default arguments
@@ -72,6 +74,33 @@ public final class RimeSchema {
         @Override
         public String toString() {
             return "Switch(name='" + name + "', options=" + options + ", reset=" + reset + ", states=" + states + ")";
+        }
+
+        public String getState() {
+            if (!options.isEmpty()) {
+                return getStates().get(reset);
+            } else {
+                return getStates().get(Rime.getRimeOption(getName()) ? 1 : 0);
+            }
+        }
+
+        public String getUnState() {
+            if (!options.isEmpty()) {
+                return getStates().get((reset + 1) % options.size());
+            } else {
+                return getStates().get(Rime.getRimeOption(getName()) ? 0 : 1);
+            }
+        }
+
+        public void toggleOption() {
+            if (!options.isEmpty()) {
+                Rime.setRimeOption(options.get(reset), false);
+                reset = (reset + 1) % options.size();
+                Rime.setRimeOption(options.get(reset), true);
+            } else {
+                reset = 1 - reset;
+                Rime.setRimeOption(getName(), reset == 1);
+            }
         }
     }
 

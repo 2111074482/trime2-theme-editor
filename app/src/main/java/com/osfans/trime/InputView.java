@@ -51,15 +51,16 @@ public class InputView extends FrameLayout implements ResourceFinder {
     }
 
     private void setKeyboardView(KeyboardView keyboardView) {
-        if(keyboardView.equals(mKeyboardView))
+        if (keyboardView.equals(mKeyboardView))
             return;
         View oldView = mKeyboardView;
         mKeyboardView = keyboardView;
         ViewParent parent = keyboardView.getParent();
-        if(parent!=null&&parent instanceof ViewGroup){
+        if (parent != null && parent instanceof ViewGroup) {
             ((ViewGroup) parent).removeView(keyboardView);
         }
         Rime.setRimeOption("ascii_mode", keyboardView.isAsciiMode());
+        setShifted(false);
         addView(keyboardView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         if (oldView != null) {
             // 旧键盘淡出
@@ -79,7 +80,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
         View oldView = mKeyboardView;
         mKeyboardView = keyboardView;
         ViewParent parent = keyboardView.getParent();
-        if(parent!=null&&parent instanceof ViewGroup){
+        if (parent != null && parent instanceof ViewGroup) {
             ((ViewGroup) parent).removeView(keyboardView);
         }
         addView(keyboardView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -106,20 +107,33 @@ public class InputView extends FrameLayout implements ResourceFinder {
         Log.w("TAG", "setKeyboard: " + id);
         if (id == null || id.equals(mCurrentSchemaId)) return;
         mCurrentSchemaId = id;
-        if(id.isEmpty()){
-            id="qwerty36";
+        if (id.isEmpty()) {
+            String k = Config.getKeyboard(".default");
+            if (TextUtils.isEmpty(k)) {
+                id = ThemeManager.getKeyboard(".default");
+                if (TextUtils.isEmpty(id))
+                    id = "qwerty36";
+            } else {
+                id = k;
+            }
         }
-
 
         // 获取或创建 KeyboardView
         KeyboardView targetView = mViewCache.get(id);
         if (targetView == null) {
-            Log.w("TAG", "setKeyboard:2 " + id);
             if (!new File(findFile(id + ".lua")).exists()) {
-                if(id.equals(".default")||id.equals("default"))
-                    id = Rime.getRimeStatus().getSchemaId();
-                Log.w("TAG", "setKeyboard:3 " + id);
-                id = ThemeManager.getKeyboard(id);
+                if (id.equals(".default") || id.equals("default")) {
+                    id = Config.getKeyboard(".default");
+                    if(TextUtils.isEmpty(id)) {
+                        id = Rime.getRimeStatus().getSchemaId();
+                        id = ThemeManager.getKeyboard(id);
+                    }
+                } else {
+                    id = ThemeManager.getKeyboard(id);
+                }
+                if (id.isEmpty()) {
+                    id = "qwerty36";
+                }
             }
             Log.w("TAG", "setKeyboard:4 " + id);
             // 初始化 Lua 环境
@@ -129,7 +143,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
             try {
                 if (func.isfunction()) {
                     LuaValue ret = func.call();
-                    if(ret.isuserdata(View.class)){
+                    if (ret.isuserdata(View.class)) {
                         setKeyboardView(ret.touserdata(View.class));
                         return;
                     }
@@ -157,9 +171,8 @@ public class InputView extends FrameLayout implements ResourceFinder {
                 targetView = new RowKeyboardView(getContext(), globals);
             }
             mViewCache.put(id, targetView);
-            if(targetView.isLock()){
+            if (targetView.isLock()) {
                 mViewCache.put(".default", targetView);
-
             }
         }
         setKeyboardView(targetView);
@@ -182,7 +195,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
             if (BuildConfig.DEBUG)
                 e.printStackTrace();
         }
-        if(!name.endsWith(".lua"))
+        if (!name.endsWith(".lua"))
             return null;
         try {
             return getContext().getAssets().open("themes/default/keyboards/" + name);
@@ -214,7 +227,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
     }
 
     public void invalidateComposingKeys() {
-        if(mKeyboardView instanceof KeyboardView)
+        if (mKeyboardView instanceof KeyboardView)
             ((KeyboardView) mKeyboardView).invalidateComposingKeys();
     }
 
@@ -231,12 +244,12 @@ public class InputView extends FrameLayout implements ResourceFinder {
     }
 
     public void setShifted(boolean shifted) {
-        if(mKeyboardView instanceof KeyboardView)
+        if (mKeyboardView instanceof KeyboardView)
             ((KeyboardView) mKeyboardView).setShifted(shifted);
     }
 
     public void setAsciiMode(boolean asciiMode) {
-        if(mKeyboardView instanceof KeyboardView)
+        if (mKeyboardView instanceof KeyboardView)
             ((KeyboardView) mKeyboardView).setAsciiMode(asciiMode);
     }
 }

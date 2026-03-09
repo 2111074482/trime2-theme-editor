@@ -21,7 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.CandidateItem;
-import com.osfans.trime.theme.Style;
+import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.ThemeManager;
 
 import java.util.ArrayList;
@@ -29,14 +29,14 @@ import java.util.ArrayList;
 public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandidateAdapter.CandidateViewHolder> {
 
     private final ArrayList<CandidateItem> mData;
-    private final Style mCandidateStyle;
-    private final Style mCommentStyle;
+    private final KeyStyle mCandidateStyle;
+    private final KeyStyle mCommentStyle;
     private boolean mIsLoading;
 
     public FlexboxCandidateAdapter(ArrayList<CandidateItem> data) {
         this.mData = data;
-        mCandidateStyle = ThemeManager.getStyle().getStyle("candidate");
-        mCommentStyle = mCandidateStyle.getStyle("comment",mCandidateStyle);
+        mCandidateStyle = ThemeManager.getStyle().getKeyStyle("candidate");
+        mCommentStyle = mCandidateStyle.getKeyStyle("comment",mCandidateStyle);
     }
 
     @NonNull
@@ -52,8 +52,9 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
         layout.setClickable(true);
         layout.setGravity(Gravity.CENTER);
         layout.setOrientation(LinearLayout.VERTICAL);
-        int dp = ThemeManager.dp2px(8);
-        layout.setPadding(dp, dp, dp, dp);
+        int dp = ThemeManager.dp2px(12);
+        int dp2 = ThemeManager.dp2px(6);
+        layout.setPadding(dp, dp2, dp, dp2);
         // 关键：必须使用 FlexboxLayoutManager.LayoutParams
         // 宽度设为 WRAP_CONTENT，高度设为 WRAP_CONTENT
         FlexboxLayoutManager.LayoutParams lp = new FlexboxLayoutManager.LayoutParams(
@@ -69,14 +70,18 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
                 ViewGroup.LayoutParams.WRAP_CONTENT);
 
         TextView tvComment = new TextView(context);
+        tvComment.setIncludeFontPadding(false);
         tvComment.setTextColor(mCommentStyle.getTextColor(0xff444444));
         tvComment.setTextSize(TypedValue.COMPLEX_UNIT_DIP,mCommentStyle.getTextSize(12));
         tvComment.setLayoutParams(childLp);
+        tvComment.setTypeface(mCommentStyle.getFont());
 
         TextView tvText = new TextView(context);
+        tvText.setIncludeFontPadding(false);
         tvText.setTextColor(mCandidateStyle.getTextColor(0xff000000));
         tvText.setTextSize(TypedValue.COMPLEX_UNIT_DIP,mCandidateStyle.getTextSize(22));
         tvText.setLayoutParams(childLp);
+        tvText.setTypeface(mCandidateStyle.getFont());
 
         layout.addView(tvComment);
         layout.addView(tvText);
@@ -147,6 +152,10 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
         mData.clear();
         mData.addAll(next);
         notifyDataSetChanged();
+    }
+
+    public ArrayList<CandidateItem> getData() {
+        return mData;
     }
 
     public static class CandidateViewHolder extends RecyclerView.ViewHolder {

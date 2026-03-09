@@ -16,9 +16,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 18,
-      "versionName": "0.1.8",
-      "outputFile": "com.nirenr.trime-v3.3.8-23-g31853752-armeabi-v7a-release.apk"
+      "versionCode": 38,
+      "versionName": "0.3.8",
+      "outputFile": "com.nirenr.trime-v3.3.8-24-g040c9c05-armeabi-v7a-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -29,9 +29,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 18,
-      "versionName": "0.1.8",
-      "outputFile": "com.nirenr.trime-v3.3.8-23-g31853752-x86_64-release.apk"
+      "versionCode": 38,
+      "versionName": "0.3.8",
+      "outputFile": "com.nirenr.trime-v3.3.8-24-g040c9c05-x86_64-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -42,9 +42,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 18,
-      "versionName": "0.1.8",
-      "outputFile": "com.nirenr.trime-v3.3.8-23-g31853752-x86-release.apk"
+      "versionCode": 38,
+      "versionName": "0.3.8",
+      "outputFile": "com.nirenr.trime-v3.3.8-24-g040c9c05-x86-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -55,9 +55,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 18,
-      "versionName": "0.1.8",
-      "outputFile": "com.nirenr.trime-v3.3.8-23-g31853752-arm64-v8a-release.apk"
+      "versionCode": 38,
+      "versionName": "0.3.8",
+      "outputFile": "com.nirenr.trime-v3.3.8-24-g040c9c05-arm64-v8a-release.apk"
     }
   ],
   "elementType": "File",

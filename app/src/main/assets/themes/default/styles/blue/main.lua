@@ -1,4 +1,4 @@
-name = "默认"
+name = "深蓝"
 author = "nirenr"
 --输入主颜色或图片
 background = 0xff333333
@@ -52,7 +52,14 @@ key.long_click = {
     --长按文字颜色
     text_color = 0xff444444,
     --长按文字大小
-    text_size = 12
+    text_size = 12,
+    vibration_enabled = true,--震动开关
+    vibration_effect = {
+        {0, 12, 10, 20},--时长
+        {0, 80, 0, 160} --强度
+    },
+    sound_enabled = true,--震动开关
+    sound_effect="click.ogg"
 }
 --按键按下状态
 key.pressed = {
@@ -144,10 +151,14 @@ candidate = {
 }
 
 candidate.pressed = {
-    background = 0xffffffff,
-    ripple_color = 0x40000000,
+    background = 0x4488888888,
+    text_color = 0xFFA9B2BC,
 }
 candidate.comment = {
+    text_size = 12,
+    text_color = 0xff888888
+}
+candidate.comment.pressed = {
     text_size = 12,
     text_color = 0xff888888
 }

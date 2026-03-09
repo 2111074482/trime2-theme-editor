@@ -1073,6 +1073,7 @@ public class LuaUtil {
                     .show();
             return;
         }
+        checkPermissionAndNotify(activity);
     }
 
     private static boolean isSelect(Context context) {
@@ -1082,4 +1083,34 @@ public class LuaUtil {
         return false;
     }
 
+    private static void checkPermissionAndNotify(Activity activity) {
+        // 1. 只有 Android 13 (API 33) 及以上需要动态申请
+        if (Build.VERSION.SDK_INT >= 33) { // 33 即 Build.VERSION_CODES.TIRAMISU
+
+            if (activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    == PackageManager.PERMISSION_GRANTED) {
+
+            } else {
+                if (activity.checkCallingOrSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    new AlertDialog.Builder(activity)
+                            .setTitle("获取通知权限")
+                            .setMessage("输入法需要通知权限播报状态改变")
+                            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 2. 直接向系统请求权限
+                                    // 如果需要解释原因，可以先判断 shouldShowRequestPermissionRationale
+                                    activity.requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                                            1111);
+                                }
+                            })
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .create()
+                            .show();
+
+                }
+            }
+        }
+    }
 }

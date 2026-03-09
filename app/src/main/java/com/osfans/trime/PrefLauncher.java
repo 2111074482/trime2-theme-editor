@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayListAdapter;
@@ -23,6 +24,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +32,7 @@ import androidx.annotation.Nullable;
 import com.androlua.LuaUtil;
 import com.osfans.trime.core.DataManager;
 import com.osfans.trime.dialog.DeployDialog;
+import com.osfans.trime.dialog.KeyboardDialog;
 import com.osfans.trime.dialog.OptionsDialog;
 import com.osfans.trime.dialog.SchemaDialog;
 import com.osfans.trime.dialog.SchemaGroupDialog;
@@ -52,6 +55,7 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
             setTheme(android.R.style.Theme_DeviceDefault);
         }
         super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         DataManager.sync();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -62,7 +66,8 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
                 "管理方案",
                 "输入方案",
                 "键盘主题",
-                "颜色样式"
+                "颜色样式",
+                "默认键盘"
         });
         ListView mListView = new ListView(this);
         // 解决内容被导航栏遮挡的关键：应用 WindowInsets
@@ -97,6 +102,10 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (TrimeService.getInstance() == null) {
+            Toast.makeText(this, "请先启用输入法", Toast.LENGTH_SHORT).show();
+            return super.onOptionsItemSelected(item);
+        }
         if(item.getItemId()==1){
             new DeployDialog(this).show();
         }
@@ -141,6 +150,9 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
                 break;
             case 5:
                 new StyleDialog(this).show();
+                break;
+            case 6:
+                new KeyboardDialog(this).show();
                 break;
         }
     }

@@ -11,7 +11,6 @@ import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -21,9 +20,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.osfans.trime.Config;
-import com.osfans.trime.Event;
 import com.osfans.trime.TrimeService;
-import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.keyboard.adapter.ListPagerAdapter;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
@@ -108,7 +105,7 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager,mAdapter).smoothScrollBy(0,-ThemeManager.getHeight());
+                getListView(viewPager,mAdapter).smoothScrollBy(0,-ThemeManager.getContentHeight());
             }
         });
         KeyView mNext = new KeyView(getContext(),mKeyStyle);
@@ -117,7 +114,7 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getHeight());
+                getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getContentHeight());
             }
         });
         KeyView backSpace = new KeyView(getContext(), mKeyStyle);

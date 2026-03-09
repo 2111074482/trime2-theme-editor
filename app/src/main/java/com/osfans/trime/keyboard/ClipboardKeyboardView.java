@@ -9,6 +9,7 @@ import android.content.Context;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -45,9 +46,13 @@ public class ClipboardKeyboardView extends LinearLayout {
 
     private void initView() {
         LinearLayout root = new LinearLayout(getContext());
+        root.setClipChildren(false);
+        root.setClipToPadding(false);
         root.setOrientation(VERTICAL);
 
         LinearLayout buttons = new LinearLayout(getContext());
+        buttons.setClipChildren(false);
+        buttons.setClipToPadding(false);
         buttons.setOrientation(HORIZONTAL);
 
         clipboardTitle = new KeyView(getContext(),mKeyStyle);
@@ -81,7 +86,9 @@ public class ClipboardKeyboardView extends LinearLayout {
         root.addView(buttons,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         mListView=new RecyclerView(getContext());
-        root.addView(mListView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout fr = new FrameLayout(getContext());
+        fr.addView(mListView,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(fr,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         mListView.setClipChildren(false);
         mListView.setClipToPadding(false);
         // 参数说明：2 代表列数，VERTICAL 代表垂直滚动
@@ -100,8 +107,8 @@ public class ClipboardKeyboardView extends LinearLayout {
         mButtonBar.setClipChildren(false);
         mButtonBar.setClipToPadding(false);
 
-        addView(root,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ThemeManager.getHeight(),1));
-        addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getHeight()));
+        addView(root,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ThemeManager.getContentHeight(),1));
+        addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
         mListView.setAdapter(mAdapter=new WaterfallAdapter(mTrime.getClipboard()));
         KeyView mHide = new KeyView(getContext(),mKeyStyle);
         mHide.setText("△");
@@ -118,7 +125,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0,-ThemeManager.getHeight());
+                mListView.smoothScrollBy(0,-ThemeManager.getContentHeight());
             }
         });
         KeyView mNext = new KeyView(getContext(),mKeyStyle);
@@ -127,7 +134,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0,ThemeManager.getHeight());
+                mListView.smoothScrollBy(0,ThemeManager.getContentHeight());
             }
         });
         mChar = new KeyView(getContext(),mKeyStyle);

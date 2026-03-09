@@ -21,6 +21,7 @@
  ******************************************************************************/
 package org.luaj;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -123,7 +124,21 @@ public class Globals extends LuaTable {
 	public PrintStream STDERR = System.err;
 
 	/** The installed ResourceFinder for looking files by name. */
-	public ResourceFinder finder;
+	public ResourceFinder finder=new ResourceFinder() {
+        @Override
+        public InputStream findResource(String filename) {
+            try {
+                return new FileInputStream(filename);
+            } catch (FileNotFoundException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public String findFile(String filename) {
+            return filename;
+        }
+    };
 	
 	/** The currently running thread.  Should not be changed by non-library code. */
 	public LuaThread running = new LuaThread(this);

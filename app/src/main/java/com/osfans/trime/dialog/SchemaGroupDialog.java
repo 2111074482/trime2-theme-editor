@@ -23,6 +23,7 @@ import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.SchemaItem;
 
 import java.io.File;
+import java.util.Arrays;
 
 public class SchemaGroupDialog {
     private AlertDialog mDig;
@@ -63,10 +64,11 @@ public class SchemaGroupDialog {
         //} else
         {
             String id = Config.getGroup();
-            String[] ss = Config.getGroups();
+            String[] groups = Config.getGroups();
+            Arrays.sort(groups, new OptionsDialog.LocaleComparator());
             int idx = 0;
-            for (int i = 0; i < ss.length; i++) {
-                if(ss[i].equals(id))
+            for (int i = 0; i < groups.length; i++) {
+                if(groups[i].equals(id))
                     idx=i;
             }
             builder.setNeutralButton(
@@ -79,13 +81,13 @@ public class SchemaGroupDialog {
                         }
                     });
             builder.setSingleChoiceItems(
-                    ss,
+                    groups,
                     idx,
                     new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface di, int id) {
                             di.dismiss();
-                            Config.setGroup(ss[id]);
+                            Config.setGroup(groups[id]);
                             mNeedUpdateRimeOption = true;
                             TrimeService trime = TrimeService.getInstance();
                             if(trime!=null){

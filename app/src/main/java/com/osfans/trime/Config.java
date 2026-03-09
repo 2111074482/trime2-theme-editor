@@ -5,24 +5,22 @@
 
 package com.osfans.trime;
 
-import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
 import android.os.Environment;
 import android.util.Log;
-import android.util.TypedValue;
 
 import com.androlua.LuaApplication;
+import com.osfans.trime.core.Rime;
 import com.osfans.trime.util.Function;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.Map;
 
 public class Config {
 
     private static String mGroup = null;
     private static String mTheme = null;
     private static String mStyle = null;
+    private static String mKeyboard;
 
 
     public static boolean isSpeakKeyLabel() {
@@ -63,7 +61,10 @@ public class Config {
         return dir.getAbsolutePath();
     }
 
-    public static String getScriptsDir(String name) {
+    public static String getScriptsPath(String name) {
+        File f = new File(getThemeDir(getTheme()), "scripts/" + name);
+        if(f.exists())
+            return f.getAbsolutePath();
         return new File(getScriptsDir(), name).getAbsolutePath();
     }
 
@@ -103,6 +104,14 @@ public class Config {
         File dir = new File(getThemeDir(), s);
         return dir.getAbsolutePath();
     }
+    public static String getThemePath(String s) {
+        File dir = new File(getThemeDir(getTheme()), s);
+        return dir.getAbsolutePath();
+    }
+    public static String getThemePath(String d,String s) {
+        File dir = new File(getThemeDir(d), s);
+        return dir.getAbsolutePath();
+    }
 
     public static String getKeyboardDir() {
         File dir = new File(getThemeDir(getTheme()), "keyboards");
@@ -122,6 +131,7 @@ public class Config {
         });
         if(list==null)
             list=new String[0];
+
         return list;
     }
 
@@ -184,4 +194,52 @@ public class Config {
         return new File(getThemeDir(getTheme()),"sounds/"+s).getAbsolutePath();
     }
 
+    public static String getFontPath(String s) {
+        File f = new File(getStylePath(s));
+        if(f.exists())
+            return f.getAbsolutePath();
+        f = new File(getThemePath("fonts/"+s));
+        if(f.exists())
+            return f.getAbsolutePath();
+        f = new File(getDataDir(),"fonts/"+s);
+        if(f.exists())
+            return f.getAbsolutePath();
+        return "null";
+    }
+
+    public static String getKeyboard() {
+        mKeyboard = Function.loadString(LuaApplication.getInstance(), getTheme()+"_"+Rime.getCurrentRimeSchema()+"_keyboard", "");
+        Log.w("config", "getKeyboard: "+Rime.getCurrentRimeSchema()+";"+ mKeyboard);
+        setKeyboard(".default",mKeyboard);
+        return mKeyboard;
+    }
+
+    public static String getKeyboard(String id) {
+        //if (mKeyboard == null)
+        return Function.loadString(LuaApplication.getInstance(), getTheme()+"_"+id+"_keyboard", "");
+    }
+
+    public static void setKeyboard(String s) {
+        mKeyboard = s;
+         Function.saveString(LuaApplication.getInstance(), getTheme()+"_"+Rime.getCurrentRimeSchema()+"_keyboard", s);
+    }
+
+    public static void setKeyboard(String id, String s) {
+        Function.saveString(LuaApplication.getInstance(), getTheme()+"_"+id+"_keyboard", s);
+    }
+
+    public static String[] getKeyboards() {
+        return new File(getKeyboardDir()).list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".lua");
+            }
+        });
+    }
+
+
+
+    public static String getKeyboardPath(String keyboardId) {
+        return new File(getKeyboardDir(),keyboardId+".lua").getAbsolutePath();
+    }
 }

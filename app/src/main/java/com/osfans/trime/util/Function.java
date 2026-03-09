@@ -34,6 +34,7 @@ import java.io.File;
 import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -236,13 +237,14 @@ public class Function {
         String s = null;
         if (command == null)
             return s;
-        String path = Config.getScriptsDir(command);
+        String path = Config.getScriptsPath(command);
+        Log.w(TAG, "handle: "+path );
         if (new File(path).exists()) {
             Object ret = context.doFile(path, option);
             if (ret == null)
                 return null;
             if (ret instanceof LuaTable) {
-                //context.setCandidates(new ArrayList<String>(((LuaTable) ret).values()));
+                context.setCandidates(new ArrayList<String>((Collection<? extends String>) ((LuaTable) ret).checktable().values()));
                 return null;
             }
             return ret.toString();
@@ -254,7 +256,8 @@ public class Function {
         String s = null;
         if (command == null)
             return s;
-       String path = Config.getScriptsDir(command);
+       String path = Config.getScriptsPath(command);
+        Log.w(TAG, "handle: "+path );
         if (new File(path).exists()) {
             Object ret = context.doFile(path, option);
             if (ret == null)

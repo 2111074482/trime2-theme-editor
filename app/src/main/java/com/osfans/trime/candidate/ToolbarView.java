@@ -7,14 +7,18 @@ package com.osfans.trime.candidate;
 
 import android.content.Context;
 import android.os.Build;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
+import com.osfans.trime.Event;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
+import com.osfans.trime.core.Rime;
+import com.osfans.trime.core.RimeSchema;
 import com.osfans.trime.keyboard.KeyView;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
@@ -24,12 +28,14 @@ import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ToolbarView extends LinearLayout implements View.OnClickListener {
     private final TrimeService mTrime;
     private final Style mToolbarStyle;
     private final KeyStyle mKeyStyle;
-    private ArrayList<KeyView> mKeys=new ArrayList<>();;
+    private ArrayList<KeyView> mKeys = new ArrayList<>();
+    ;
 
     public ToolbarView(Context context) {
         super(context);
@@ -73,18 +79,49 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
 
         root.addView(mListView, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height, 1));
         root.addView(mHide, new LayoutParams(height, height));
+        try {
+            if(mToolbarStyle.get("schema_switches").optboolean(false)&&!Rime.getCurrentRimeSchema().equals(".default")) {
+                RimeSchema currentRimeSchema = new RimeSchema(Rime.getCurrentRimeSchema());
+                List<RimeSchema.Switch> switches = currentRimeSchema.getSwitches();
+                for (RimeSchema.Switch aSwitch : switches) {
+                    if (aSwitch.getStates().isEmpty())
+                        continue;
+                    KeyView key = new KeyView(getContext(), mKeyStyle) {
+                        @Override
+                        public void invalidateKey() {
+                            super.invalidateKey();
+                            setText(aSwitch.getState());
+                        }
+                    };
+                    key.setOnClickListener(new OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            aSwitch.toggleOption();
+                        }
+                    });
+                    key.setText(aSwitch.getState());
+                    itemsLayout.addView(key, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                    key.setMinimumWidth(height);
+                    mKeys.add(key);
+                    Rime.setRimeOption(aSwitch.getName(), aSwitch.getReset() != 0);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         LuaValue keys = mToolbarStyle.get("keys").opttable(new LuaTable());
         int len = keys.length();
         for (int i = 0; i < len; i++) {
             LuaValue s = keys.get(i + 1);
             if (s.istable()) {
-                KeyView key = new KeyView(getContext(), new Key(s), mKeyStyle);
-                itemsLayout.addView(key,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                KeyView key = new KeyView(getContext(), s.get("click").isnil() ? new Key(new Event(s)) : new Key(s), mKeyStyle);
+                itemsLayout.addView(key, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 key.setMinimumWidth(height);
-                itemsLayout.addView(key,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                mKeys.add(key);
             } else if (s.isstring()) {
-                KeyView key = new KeyView(getContext(),new Key(s.tojstring()), mKeyStyle);
-                itemsLayout.addView(key,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                KeyView key = new KeyView(getContext(), new Key(s.tojstring()), mKeyStyle);
+                itemsLayout.addView(key, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 key.setMinimumWidth(height);
                 mKeys.add(key);
             }
@@ -100,5 +137,10 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
         for (KeyView key : mKeys) {
             key.invalidateKey();
         }
+    }
+
+    public void setSchema(String id) {
+        removeAllViews();
+        initView();
     }
 }

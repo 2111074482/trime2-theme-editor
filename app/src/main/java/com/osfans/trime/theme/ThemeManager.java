@@ -51,7 +51,7 @@ public class ThemeManager {
     private static SoundPool mSoundPool;
 
     public static ResourceFinder getFinder(){
-        return mGlobals.finder;
+        return mResourceFinder;
     }
 
     public static void vibrate(VibrationEffect ve) {
@@ -72,59 +72,62 @@ public class ThemeManager {
             }
         }
     }
+    private final static ResourceFinder mResourceFinder=new ResourceFinder() {
+        @Override
+        public InputStream findResource(String name) {
+            if(TextUtils.isEmpty(name)) {
+                try {
+                    return LuaApplication.getInstance().getAssets().open("themes/default/main.lua");
+                } catch (Exception ioe) {
+                    ioe.printStackTrace();
+                }
+                return null;
+            }
+            try {
+                if(name.startsWith("themes/default/"))
+                    return LuaApplication.getInstance().getAssets().open(name);
+            } catch (Exception ioe) {
+                ioe.printStackTrace();
+            }
+            try {
+                if (new File(name).exists())
+                    return new FileInputStream(name);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                File f = new File(Config.getThemeDir(), Config.getTheme() + "/" + name);
+                if(f.exists())
+                    return new FileInputStream(f);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if(!name.endsWith(".lua"))
+                return null;
+            /*try {
+                return LuaApplication.getInstance().getAssets().open("themes/default/"+name);
+            } catch (Exception ioe) {
+                ioe.printStackTrace();
+            }*/
+            return null;
+        }
+
+        @Override
+        public String findFile(String filename) {
+            if(TextUtils.isEmpty(filename))
+                return null;
+            if (filename.startsWith("/"))
+                return filename;
+            return new File(Config.getThemeDir(),filename).getAbsolutePath();
+        }
+    };
 
     public static void setTheme(String name){
         mStyle=null;
         clearSound();
         Config.setTheme(name);
         mGlobals = JsePlatform.standardGlobals();
-        mGlobals.finder = new ResourceFinder() {
-            @Override
-            public InputStream findResource(String name) {
-                if(TextUtils.isEmpty(name)) {
-                    try {
-                        return LuaApplication.getInstance().getAssets().open("themes/default/main.lua");
-                    } catch (Exception ioe) {
-                        ioe.printStackTrace();
-                    }
-                    return null;
-                }
-                try {
-                    if (new File(name).exists())
-                        return new FileInputStream(name);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                try {
-                    return new FileInputStream(new File(Config.getThemeDir(),Config.getTheme()+"/"+ name));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                if(!name.endsWith(".lua"))
-                    return null;
-                try {
-                    return LuaApplication.getInstance().getAssets().open("themes/default/"+name);
-                } catch (Exception ioe) {
-                    ioe.printStackTrace();
-                }
-                try {
-                    //if(name.startsWith("themes/default/"))
-                        return LuaApplication.getInstance().getAssets().open(name);
-                } catch (Exception ioe) {
-                    ioe.printStackTrace();
-                }
-                return null;
-            }
-
-            @Override
-            public String findFile(String filename) {
-                if(TextUtils.isEmpty(filename))
-                    return null;
-                if (filename.startsWith("/"))
-                    return filename;
-                return new File(Config.getThemeDir(),filename).getAbsolutePath();
-            }
-        };
+        mGlobals.finder = mResourceFinder;
         try {
             LuaValue func = mGlobals.loadfilex("main.lua");
             if(func.isfunction()) {
@@ -160,14 +163,24 @@ public class ThemeManager {
         String path="styles/" + name + "/main.lua";
         try {
             LuaValue func = mGlobals.loadfilex(path, mColor);
-            if(func.isfunction())
+            if(func.isfunction()) {
                 func.call();
-            else
+                return;
+            } else {
                 sendMsg("setStyle "+func.tojstring());
+            }
         } catch (Exception e){
             sendMsg("setStyle "+e);
         }
-      }
+        try {
+            LuaValue func = mGlobals.loadfilex("themes/default/styles/light/main.lua", mColor);
+            if(func.isfunction()) {
+                func.call();
+            }
+        } catch (Exception e){
+            Log.e("theme", "setStyle: " + e );
+        }
+    }
 
     public static Style getStyle(){
         if(mStyle==null)
@@ -177,6 +190,10 @@ public class ThemeManager {
 
     public static int getHeight() {
         return getStyle().getSize("height",mCandidateHeight+mKeyboardHeight);
+    }
+
+    public static int getContentHeight() {
+        return getCandidateHeight()+getKeyboardHeight();
     }
 
     public static int getCandidateHeight() {
@@ -196,7 +213,20 @@ public class ThemeManager {
 
 
     public static LuaValue getPresetKeys() {
-        return mGlobals.get("preset_keys").opttable(new LuaTable());
+        LuaTable keys = mGlobals.get("preset_keys").opttable(new LuaTable());
+        LuaTable env = new LuaTable();
+        try {
+            env.setmetamethod("__index", mGlobals);
+            LuaValue func = mGlobals.loadfilex("themes/default/main.lua",env);
+            if(func.isfunction())
+                func.call();
+        }catch (Exception e){
+            e.printStackTrace();
+            return keys;
+        }
+        if(env.rawget("preset_keys").istable())
+            keys.setmetamethod("__index",env.get("preset_keys").opttable(new LuaTable()));
+        return keys;
     }
 
     public static String getActionLabel(String key, String def) {
@@ -215,6 +245,10 @@ public class ThemeManager {
     }
 
     public static String getKeyboard(String id) {
+        String k = Config.getKeyboard();
+        Log.w("TAG", "getKeyboard: "+id+";"+k );
+        if(!TextUtils.isEmpty(k))
+            return k;
         LuaValue fun = mGlobals.get("get_keyboard");
         if(fun.isfunction()){
             try {

@@ -5,10 +5,10 @@
 
 package com.osfans.trime.theme;
 
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.VibrationEffect;
-import android.text.TextUtils;
 import android.view.Gravity;
 
 import com.osfans.trime.Config;
@@ -16,7 +16,6 @@ import com.osfans.trime.Config;
 import org.luaj.LuaValue;
 
 import java.io.File;
-import java.util.Map;
 
 /**
  * 缓存优化的 KeyStyle
@@ -60,6 +59,9 @@ public class KeyStyle extends Style {
     private boolean mSoundEnabled;
     private long mLongClickTime;
     private long mRepeatClickTime;
+    private Typeface mTypeface;
+    private boolean mShow;
+    private boolean mHasCachedShow;
 
     public KeyStyle(LuaValue t) {
         super(t);
@@ -263,4 +265,20 @@ public class KeyStyle extends Style {
             mRepeatClickTime=get("repeat_click_time").optlong(200);
         return mRepeatClickTime;
     }
+
+    public Typeface getFont(){
+        if(mTypeface==null)
+            mTypeface = getFont("font");
+        return mTypeface;
+    }
+
+    public boolean isShow(){
+        if(!mHasCachedShow) {
+            LuaValue show = get("show");
+            mShow = show.isnil() || show.toboolean();
+            mHasCachedShow = true;
+        }
+        return mShow;
+    }
+
 }

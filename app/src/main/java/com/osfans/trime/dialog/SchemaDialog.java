@@ -13,7 +13,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.osfans.trime.PrefLauncher;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.DataManager;
 import com.osfans.trime.core.Rime;
@@ -21,10 +20,11 @@ import com.osfans.trime.core.SchemaItem;
 import com.osfans.trime.theme.ThemeManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class SchemaDialog {
-    private AlertDialog mDig;
-    private IBinder mToken;
+    private AlertDialog mDialog; // 原 mDig
+    private IBinder mWindowToken; // 原 mToken
 
     public SchemaDialog(Context context) {
         DataManager.sync();
@@ -32,38 +32,51 @@ public class SchemaDialog {
             Toast.makeText(context, "请先启用输入法", Toast.LENGTH_SHORT).show();
             return;
         }
-        SchemaItem[] as = Rime.getAvailableRimeSchemaList();
-        SchemaItem[] bs = Rime.getSelectedRimeSchemaList();
 
-        String[] ss = new String[as.length];
-        boolean[] sb = new boolean[as.length];
-        ArrayList<String> rs = new ArrayList<>();
-        for (int i = 0; i < as.length; i++) {
-            ss[i] = as[i].getName();
-            if (checkSchema(bs, as[i])) {
-                sb[i] = true;
-                rs.add(as[i].getId());
+        // 获取所有可用方案和已选方案
+        SchemaItem[] availableSchemas = Rime.getAvailableRimeSchemaList(); // 原 availableRimeSchemaList
+        SchemaItem[] selectedSchemas = Rime.getSelectedRimeSchemaList();  // 原 selectedRimeSchemaList
+        Arrays.sort(availableSchemas, new OptionsDialog.SortByName());
+
+        int schemaCount = availableSchemas.length;
+        String[] schemaNames = new String[schemaCount]; // 原 name
+        boolean[] checkedStates = new boolean[schemaCount]; // 原 checkedItems
+
+        // 存储当前选中的 Schema ID 列表
+        ArrayList<String> currentSelectedIds = new ArrayList<>(); // 原 rs
+
+        for (int i = 0; i < schemaCount; i++) {
+            SchemaItem item = availableSchemas[i];
+            schemaNames[i] = item.getName();
+
+            if (isSchemaSelected(selectedSchemas, item)) { // 原 checkSchema
+                checkedStates[i] = true;
+                currentSelectedIds.add(item.getId());
             }
         }
-        mDig=new AlertDialog.Builder(context, ThemeManager.getDialogTheme())
+
+        mDialog = new AlertDialog.Builder(context, ThemeManager.getDialogTheme())
                 .setTitle("管理方案")
-                .setMultiChoiceItems(ss, sb, new DialogInterface.OnMultiChoiceClickListener() {
+                .setMultiChoiceItems(schemaNames, checkedStates, new DialogInterface.OnMultiChoiceClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                        String schemaId = availableSchemas[which].getId();
                         if (isChecked) {
-                            rs.add(as[which].getId());
+                            currentSelectedIds.add(schemaId);
                         } else {
-                            rs.remove(as[which].getId());
+                            currentSelectedIds.remove(schemaId);
                         }
                     }
                 })
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String[] rr = new String[rs.size()];
-                        rs.toArray(rr);
-                        Rime.selectRimeSchemas(rr);
-                        new DeployDialog(mDig.getContext()).show(mToken);
+                        // 将 List 转换为 Array 提交给 Rime 核心
+                        String[] selectedIdsArray = currentSelectedIds.toArray(new String[0]); // 原 rr
+                        Rime.selectRimeSchemas(selectedIdsArray);
+
+                        // 部署新方案
+                        new DeployDialog(mDialog.getContext()).show(mWindowToken);
                     }
                 })
                 .setNegativeButton("取消", null)
@@ -71,32 +84,39 @@ public class SchemaDialog {
     }
 
     public void show() {
-        if(mDig==null)
-            return;
-        mDig.show();
+        if (mDialog == null) return;
+        mDialog.show();
     }
 
     public void show(IBinder token) {
-        if(mDig==null)
-            return;
-        mToken=token;
-        if(mToken==null){
+        if (mDialog == null) return;
+        mWindowToken = token;
+
+        if (mWindowToken == null) {
             show();
             return;
         }
-        Window win = mDig.getWindow();
-        WindowManager.LayoutParams attr = win.getAttributes();
-        attr.type=WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
-        win.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
-        attr.token=token;
-        win.setAttributes(attr);
-        mDig.show();
+
+        Window window = mDialog.getWindow();
+        WindowManager.LayoutParams layoutParams = window.getAttributes(); // 原 attr
+
+        // 设置对话框类型，使其能依附于输入法窗口
+        layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+        layoutParams.token = token;
+
+        window.setAttributes(layoutParams);
+        mDialog.show();
     }
 
-    private boolean checkSchema(SchemaItem[] bs, SchemaItem a) {
-        for (SchemaItem b : bs) {
-            if(b.getId().equals(a.getId()))
+    /**
+     * 检查某个方案是否在已选列表中
+     */
+    private boolean isSchemaSelected(SchemaItem[] selectedList, SchemaItem targetItem) { // 原 checkSchema(bs, a)
+        for (SchemaItem selectedItem : selectedList) {
+            if (selectedItem.getId().equals(targetItem.getId())) {
                 return true;
+            }
         }
         return false;
     }

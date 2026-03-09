@@ -1,9 +1,12 @@
 package com.androlua;
 
 import android.app.Application;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
@@ -40,8 +43,30 @@ public class LuaApplication extends TrimeApplication implements LuaContext {
         instance = this;
         LuaUtil.rmDir(getExternalFilesDir("dexfiles"));
         CrashHandler.getInstance().init(this);
+        createNotificationChannel();
     }
 
+    public void createNotificationChannel() {
+        // 只有在 API 26+ (Android O) 及以上版本才需要创建通知通道
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelId = "rime_deploy_channel"; // 必须与发送通知时的 ID 一致
+            CharSequence name = "Rime 部署服务"; // 用户在系统设置中看到的名称
+            String description = "显示词库部署进度及状态"; // 用户看到的描述
+            int importance = NotificationManager.IMPORTANCE_DEFAULT; // 优先级
+
+            NotificationChannel channel = new NotificationChannel(channelId, name, importance);
+            channel.setDescription(description);
+            // 如果需要，可以配置呼吸灯或振动
+            // channel.enableLights(true);
+            // channel.setLightColor(Color.BLUE);
+
+            // 注册到系统
+            NotificationManager notificationManager = LuaApplication.getInstance().getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
     @Override
     public ArrayList<ClassLoader> getClassLoaders() {
         return null;

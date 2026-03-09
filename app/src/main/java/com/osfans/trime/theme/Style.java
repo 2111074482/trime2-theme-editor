@@ -7,9 +7,13 @@ package com.osfans.trime.theme;
 
 import static com.osfans.trime.theme.ThemeManager.dp2px;
 
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.fonts.Font;
+import android.graphics.fonts.FontFamily;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 
 import com.androlua.LuaBitmapDrawable;
@@ -19,7 +23,9 @@ import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Style {
@@ -249,4 +255,47 @@ public class Style {
     public LuaValue get(String key) {
         return mTable.get(key);
     }
+
+    public Typeface getFont(String key) {
+        LuaValue n = get(key);
+        if (n.isnil()) {
+            return Typeface.DEFAULT;
+        }
+        if (n.istable()) {
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    ArrayList<FontFamily> lt = new ArrayList<>();
+                    for (int i = 1; i <= n.length(); i++) {
+                        try {
+                            File f = new File(Config.getFontPath(n.get(i).optjstring("")));
+                            if(f.exists())
+                                lt.add(new FontFamily.Builder(new Font.Builder(f).build()).build());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (lt.isEmpty())
+                        return Typeface.DEFAULT;
+                    Typeface.CustomFallbackBuilder tf = new Typeface.CustomFallbackBuilder(lt.get(0));
+                    for (int i = 1; i < lt.size(); i++) {
+                        tf.addCustomFallback(lt.get(i));
+                    }
+                    return tf.build();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        String name = n.optjstring("");
+        if (name != null) {
+            try {
+                File f = new File(Config.getFontPath(name));
+                if (f.exists()) return Typeface.createFromFile(f);
+            } catch (Exception e) {
+                  e.printStackTrace();
+            }
+        }
+        return Typeface.DEFAULT;
+    }
+
 }

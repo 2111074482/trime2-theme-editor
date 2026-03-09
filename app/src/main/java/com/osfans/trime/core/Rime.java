@@ -5,10 +5,17 @@
 package com.osfans.trime.core;
 
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.os.SystemClock;
 import android.util.Log;
+
+import androidx.core.app.NotificationCompat;
 
 import com.androlua.LuaApplication;
 import com.osfans.trime.BuildConfig;
+import com.osfans.trime.R;
 import com.osfans.trime.TrimeApplication;
 //import com.osfans.trime.core.isStorageAvailable;
 import com.osfans.trime.data.opencc.OpenCCDictManager;
@@ -516,8 +523,51 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
 
         } else if (message instanceof RimeMessage.DeployMessage) {
             RimeMessage.DeployMessage msg = (RimeMessage.DeployMessage) message;
+            Context context = LuaApplication.getInstance();
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            int notificationId = 1001; // 固定 ID 以便更新同一条通知
+            long startTime = SystemClock.elapsedRealtime(); // 记录起始点
+
             if (msg.getData() == RimeMessage.DeployMessage.State.Start) {
                 OpenCCDictManager.buildOpenCCDict();
+
+                // 发送通知，并实时显示耗时
+                Notification notification = new NotificationCompat.Builder(context, "rime_deploy_channel")
+                        .setContentTitle("正在部署")
+                        .setContentText("请稍候...")
+                        .setSmallIcon(R.drawable.icon) // 替换为你的图标
+                        .setOngoing(true) // 设置为正在进行，防止被划掉
+                        .setUsesChronometer(true) // 核心：开启计时器
+                        .setWhen(System.currentTimeMillis())
+                        .build();
+                notificationManager.notify(notificationId, notification);
+
+            } else if (msg.getData() == RimeMessage.DeployMessage.State.Success) {
+                // 计算总耗时（秒）
+                long duration = (SystemClock.elapsedRealtime() - startTime) / 1000;
+
+                // 显示完成通知，并显示总耗时
+                Notification notification = new NotificationCompat.Builder(context, "rime_deploy_channel")
+                        .setContentTitle("部署成功")
+                        .setContentText("部署已完成，总耗时：" + duration + "秒")
+                        .setSmallIcon(R.drawable.icon) // 替换为你的图标
+                        .setOngoing(false) // 允许划掉
+                        .setUsesChronometer(false) // 停止计时
+                        .setTimeoutAfter(duration<5?1000:30000)
+                        .build();
+                notificationManager.notify(notificationId, notification);
+
+            } else if (msg.getData() == RimeMessage.DeployMessage.State.Failure) {
+                long duration = (SystemClock.elapsedRealtime() - startTime) / 1000;
+
+                // 显示失败通知，并显示总耗时
+                Notification notification = new NotificationCompat.Builder(context, "rime_deploy_channel")
+                        .setContentTitle("部署失败")
+                        .setContentText("部署过程中出现错误，已停止。耗时：" + duration + "秒")
+                        .setSmallIcon(R.drawable.icon) // 替换为你的图标
+                        .setOngoing(false)
+                        .build();
+                notificationManager.notify(notificationId, notification);
             }
 
         } else if (message instanceof RimeMessage.CompositionMessage) {
@@ -686,6 +736,10 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
     public static native boolean forgetRimeCandidate(int index);
 
     public static native boolean changeRimeCandidatePage(boolean backward);
+
+    public static native boolean highlightRimeCandidate(int index);
+
+    public static native int getHighlightRimeCandidate();
 
     public static native SchemaItem[] getAvailableRimeSchemaList();
 

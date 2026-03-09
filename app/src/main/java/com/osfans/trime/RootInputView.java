@@ -9,10 +9,13 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -22,10 +25,14 @@ import androidx.annotation.NonNull;
 
 import com.osfans.trime.candidate.CandidateView;
 import com.osfans.trime.candidate.ExpandedCandidateView;
+import com.osfans.trime.core.CandidateItem;
+import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.ClipboardKeyboardView;
 import com.osfans.trime.keyboard.SymbolsKeyboardView;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
+
+import java.util.ArrayList;
 
 public class RootInputView extends FrameLayout {
 
@@ -47,22 +54,25 @@ public class RootInputView extends FrameLayout {
     private FrameLayout mCenterLayout;
     private View mCustomView;
     private boolean mShowExtractedCandidatesView;
-    private final Handler mHandler=new Handler(Looper.getMainLooper());
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private ClipboardKeyboardView mClipboardKeyboardView;
 
     public RootInputView(@NonNull Context context) {
         super(context);
         initView(context);
+        //setFitsSystemWindows(false);
     }
+
     private void initView(@NonNull Context context) {
         setClipChildren(false);
         setClipToPadding(false);
-        mExpandedCandidateView=null;
-        mClipboardKeyboardView=null;
-        mCustomView=null;
+        mExpandedCandidateView = null;
+        mClipboardKeyboardView = null;
+        mCustomView = null;
         mSymbolsKeyboardView = null;
-       
+
         mRoot = new LinearLayout(context);
+
         mRoot.setClipChildren(false);
         mRoot.setClipToPadding(false);
         mRoot.setOrientation(LinearLayout.HORIZONTAL);
@@ -84,9 +94,9 @@ public class RootInputView extends FrameLayout {
         mCenterLayout = new FrameLayout(context);
         mCenterLayout.setClipChildren(false);
         mCenterLayout.setClipToPadding(false);
-        mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ThemeManager.getContentHeight()));
+        mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight()));
+        mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ThemeManager.getContentHeight()));
 
         mInputViewRoot = new LinearLayout(context);
         mInputViewRoot.setClipChildren(false);
@@ -122,6 +132,50 @@ public class RootInputView extends FrameLayout {
         addView(mCloud, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT));
         addView(mRoot, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getHeight(), Gravity.BOTTOM));
         showToolbarView(true);
+
+        mRoot.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @NonNull
+            @Override
+            public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
+                // 将系统栏占用的空间转化为 ListView 的 Padding
+                /*v.setPadding(
+                        insets.getSystemWindowInsetLeft(),
+                        insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(),
+                        insets.getSystemWindowInsetBottom()
+                );*/
+                if (mRoot != null) {
+                    ViewGroup.LayoutParams lp = mRoot.getLayoutParams();
+                    lp.height = ThemeManager.getHeight() + insets.getSystemWindowInsetBottom();
+                    mRoot.setLayoutParams(lp);
+                }
+                Log.w("TAG", "onApplyWindowInsets: " + insets.getSystemWindowInsetBottom());
+                if (insets.getSystemWindowInsetBottom() > 1) {
+                    Window win = TrimeService.getInstance().getWindow().getWindow();
+                    if (win != null) {
+                        //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+                        //win.setDecorFitsSystemWindows(false);
+
+                        win.setNavigationBarColor(ThemeManager.getStyle().getBackgroundColor(0));
+                    }
+                } else {
+                    Window win = TrimeService.getInstance().getWindow().getWindow();
+                    if (win != null) {
+                        //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+                        //win.setDecorFitsSystemWindows(false);
+                        win.setNavigationBarColor(ThemeManager.getStyle().getBackgroundColor(0));
+                    }
+                }
+                return insets.consumeSystemWindowInsets();
+            }
+        });
+        mRoot.requestApplyInsets();
+        Window win = TrimeService.getInstance().getWindow().getWindow();
+        if (win != null) {
+            //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+            //win.setDecorFitsSystemWindows(false);
+            win.setNavigationBarColor(ThemeManager.getStyle().getBackgroundColor(0));
+        }
     }
 
     public View getRoot() {
@@ -137,7 +191,7 @@ public class RootInputView extends FrameLayout {
     }
 
     public void invalidateComposingKeys() {
-        if(mInputView!=null)
+        if (mInputView != null)
             mInputView.invalidateComposingKeys();
     }
 
@@ -151,7 +205,7 @@ public class RootInputView extends FrameLayout {
         initView(getContext());
     }
 
-    public void showCustomView(View keyboardView){
+    public void showCustomView(View keyboardView) {
         if (mCustomView != null) {
             mCenterLayout.removeView(mCustomView);
         }
@@ -162,8 +216,8 @@ public class RootInputView extends FrameLayout {
         }
         mCenterLayout.addView(mCustomView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         mInputViewRoot.setVisibility(View.GONE);
-    }  
-    
+    }
+
     public void showExtractedCandidatesView(boolean b) {
         showCustomView(null);
         if (mExpandedCandidateView == null) {
@@ -176,6 +230,15 @@ public class RootInputView extends FrameLayout {
         mExpandedCandidateView.setVisibility(b ? View.VISIBLE : View.GONE);
         mInputViewRoot.setVisibility(!b ? View.VISIBLE : View.GONE);
         mShowExtractedCandidatesView = b;
+        if (b) {
+            mExpandedCandidateView.setData(mCandidateView.getData());
+            mExpandedCandidateView.setIdx(mCandidateView.getIdx());
+        } else {
+            if (mExpandedCandidateView != null) {
+                mCandidateView.setData(mExpandedCandidateView.getData());
+                mCandidateView.setIdx(mExpandedCandidateView.getIdx());
+            }
+        }
     }
 
     public void showSymbolsView(boolean b) {
@@ -273,7 +336,7 @@ public class RootInputView extends FrameLayout {
         mHandler.post(mCloudRunnable);
     }
 
-    public void setKeyoard(String id) {
+    public void setKeyboard(String id) {
         mHandler.post(() -> {
             if (mCustomView != null) {
                 mCenterLayout.removeView(mCustomView);
@@ -290,6 +353,7 @@ public class RootInputView extends FrameLayout {
                     showClipboardView(true);
                     return;
                 default:
+                    showSymbolsView(false);
                     mInputView.setKeyboard(id);
                     return;
             }
@@ -320,6 +384,8 @@ public class RootInputView extends FrameLayout {
         }
         mClipboardKeyboardView.setVisibility(b ? View.VISIBLE : View.GONE);
         mInputViewRoot.setVisibility(!b ? View.VISIBLE : View.GONE);
+        if (!b)
+            return;
         mClipboardKeyboardView.show();
 
     }
@@ -330,5 +396,35 @@ public class RootInputView extends FrameLayout {
 
     public void setAsciiMode(boolean asciiMode) {
         mInputView.setAsciiMode(asciiMode);
+    }
+
+    public void setSchema(String id) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                String soft_cursor_key = "soft_cursor";
+                Rime.setRimeOption(soft_cursor_key, true); //軟光標
+                mInputView.setKeyboard(id);
+                mCandidateView.setSchema(id);
+            }
+        });
+    }
+
+    public boolean prevCandidate() {
+        return mCandidateView.prevCandidate();
+    }
+
+    public boolean nextCandidate() {
+        return mCandidateView.nextCandidate();
+    }
+
+    public void setCandidates(final ArrayList<CandidateItem> items) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mCandidateView.setData(items);
+                showToolbarView(items.isEmpty());
+            }
+        });
     }
 }

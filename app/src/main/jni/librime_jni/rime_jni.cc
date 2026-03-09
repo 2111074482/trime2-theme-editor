@@ -146,6 +146,14 @@ class Rime {
     return rime->change_page(session(), backward);
   }
 
+  bool highlightCandidate(size_t index) {
+    return rime->highlight_candidate(session(), index);
+  }
+
+  size_t getHighlightCandidate() {
+    return rime_get_highlighted_candidate_index(session());
+  }
+
   std::vector<CandidateItem> getCandidates(int startIndex, int limit) {
     std::vector<CandidateItem> result;
     result.reserve(limit);
@@ -388,6 +396,19 @@ Java_com_osfans_trime_core_Rime_changeRimeCandidatePage(JNIEnv *env,
                                                         jclass clazz,
                                                         jboolean backward) {
   return Rime::Instance().changePage(backward);
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_osfans_trime_core_Rime_highlightRimeCandidate(JNIEnv *env,
+                                                    jclass /* thiz */,
+                                                    jint index) {
+  return Rime::Instance().highlightCandidate(index);
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_osfans_trime_core_Rime_getHighlightRimeCandidate(JNIEnv *env,
+                                                       jclass /* thiz */) {
+  return Rime::Instance().getHighlightCandidate();;
 }
 
 extern "C" JNIEXPORT jobjectArray JNICALL

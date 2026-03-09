@@ -2,6 +2,7 @@ name = "默认"
 author = "nirenr"
 style="light"
 keyboard="qwerty26"
+
 function get_keyboard(id,alphabet)
     if id=="" then
         return keyboard
@@ -72,7 +73,7 @@ preset_keys = {
     redo = { label = "重做", send = "Control+Shift+z" }, -->=Android 6.0
     undo = { label = "撤销", send = "Control+z" }, -->=Android 6.0
     -- rime組合鍵
-    F4 = { label = "菜单", send = "F4" },
+    F4 = { label = "菜单", send = "Control+grave" },
     BackToPreviousSyllable = { label = "删音节", send = "Control+BackSpace" },
     CommitRawInput = { label = "编码", send = "Control+Return" },
     CommitScriptText = { label = "编码", send = "Shift+Return" },
@@ -108,6 +109,7 @@ preset_keys = {
     Comment_switch = { toggle = "_hide_comment", send = "Mode_switch", states = { "有注释", "无注释" } },
     Hint_switch = { toggle = "_hide_key_hint", send = "Mode_switch", states = { "有助記", "無助記" } },
     -- trime命令
+    LunarDate = {label= "农历", command= "nongli.lua"},
     Date = { label = "日期", command = "date", option = "yyyy-MM-dd" },
     ChineseDate = { label = "农历", command = "date", option = "zh_CN@calendar=chinese" }, --農曆等日期(>=Android 7.0)：date 語言@calendar=曆法 格式。具體參見https=//developer.android.com/reference/android/icu/util/Calendar.html
     Time = { label = "时间", command = "date", option = "HH=mm=ss" }, --時間： date 格式

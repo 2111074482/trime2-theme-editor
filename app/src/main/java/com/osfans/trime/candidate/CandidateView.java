@@ -6,6 +6,7 @@
 package com.osfans.trime.candidate;
 
 import static android.widget.LinearLayout.HORIZONTAL;
+import static com.osfans.trime.keyboard.KeyboardView.isTouchExplorationEnabled;
 import static com.osfans.trime.theme.ThemeManager.dp2px;
 
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.os.Build;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -21,6 +23,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.osfans.trime.TrimeService;
+import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.KeyView;
 import com.osfans.trime.theme.Style;
@@ -28,7 +31,7 @@ import com.osfans.trime.theme.ThemeManager;
 
 import java.util.ArrayList;
 
-public class CandidateView extends LinearLayout implements View.OnClickListener{
+public class CandidateView extends LinearLayout implements View.OnClickListener {
 
     private final TrimeService mTrime;
     private final Style mCandidateStyle;
@@ -40,15 +43,20 @@ public class CandidateView extends LinearLayout implements View.OnClickListener{
 
     public CandidateView(@NonNull Context context) {
         super(context);
-        mTrime=TrimeService.getInstance();
-        mCandidateStyle=ThemeManager.getStyle().getStyle("candidate");
+        mTrime = TrimeService.getInstance();
+        mCandidateStyle = ThemeManager.getStyle().getStyle("candidate");
         setClipChildren(false);
         setClipToPadding(false);
         initView();
     }
 
     private void initView() {
-        root = new LinearLayout(getContext());
+        root = new LinearLayout(getContext()) {
+            @Override
+            public CharSequence getAccessibilityClassName() {
+                return "com.nirenr.trime.candidate.CandidateItem";
+            }
+        };
         root.setOrientation(HORIZONTAL);
         root.setBackground(mCandidateStyle.getBackground(0xffdddddd));
         int elevation = mCandidateStyle.getSize("elevation", 2);
@@ -61,11 +69,11 @@ public class CandidateView extends LinearLayout implements View.OnClickListener{
             }
         }
         // 设置 CandidateView 自身的高度，防止输入法界面闪烁
-        int height = mCandidateStyle.getHeight(48)-elevation;
+        int height = mCandidateStyle.getHeight(48) - elevation;
         LayoutParams lp = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.setMargins(0,0,0,elevation);
-        addView(root,lp);
-        mListView=new RecyclerView(getContext());
+        lp.setMargins(0, 0, 0, elevation);
+        addView(root, lp);
+        mListView = new RecyclerView(getContext());
         mListView.setClipChildren(false);
         mListView.setClipToPadding(false);
         // 性能优化：横向候选栏通常变动频繁，关闭动画更流畅
@@ -79,19 +87,19 @@ public class CandidateView extends LinearLayout implements View.OnClickListener{
         mListView.setLayoutManager(layoutManager);
         // 必须设为 false，否则 RecyclerView 会跳过尺寸计算
         mListView.setHasFixedSize(false);
-        mHide=new KeyView(getContext(),mCandidateStyle.getKeyStyle("key",ThemeManager.getStyle().getKeyStyle("key")));
+        mHide = new KeyView(getContext(), mCandidateStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
         mHide.setText("▽");
         mHide.setContentDescription("更多候选");
         mHide.setOnClickListener(this);
-        root.addView(mListView,new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,height,1));
-        root.addView(mHide,new LayoutParams(height,height));
-        mListView.setAdapter(mAdapter=new CandidateAdapter(new ArrayList<>()));
+        root.addView(mListView, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height, 1));
+        root.addView(mHide, new LayoutParams(height, height));
+        mListView.setAdapter(mAdapter = new CandidateAdapter(new ArrayList<>()));
     }
 
 
     @Override
     public void onClick(View v) {
-        if(Rime.isComposing())
+        if (mAdapter.getItemCount()>0)
             mTrime.showExtractedCandidatesView(true);
         else
             mTrime.requestHideSelf(0);
@@ -107,9 +115,18 @@ public class CandidateView extends LinearLayout implements View.OnClickListener{
         mAdapter.setData(CandidatesManager.next());
         mListView.scrollToPosition(0);
         //mListView.invalidateItemDecorations();
+        announceCandidate(0);
     }
 
-    public void show(){
+    public void show() {
+
+        int mIdx = Rime.getHighlightRimeCandidate();
+        if (mIdx > 0) {
+            mAdapter.setIdx(mIdx);
+            announceCandidate(mIdx);
+            return;
+        }
+
         if (mListView.isComputingLayout()) {
             mListView.post(this::update);
             return;
@@ -121,20 +138,80 @@ public class CandidateView extends LinearLayout implements View.OnClickListener{
         mListView.scrollToPosition(0);
         //mListView.invalidateItemDecorations();
         mListView.requestLayout();
+        announceCandidate(0);
+    }
+
+    private void announceCandidate(int index) {
+        if (index < 0 || index >= mAdapter.getItemCount()) return;
+
+        if(!isTouchExplorationEnabled())
+            return;
+        // 设置朗读文本
+        String text = mAdapter.getItem(index).getText();
+        root.setContentDescription(text);
+        // 发送事件
+        root.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SELECTED);
     }
 
     public void showToolbarView(boolean b) {
-        if(mToolbarView==null) {
+        if (mToolbarView == null) {
             mToolbarView = new ToolbarView(getContext());
-            addView(mToolbarView,new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            addView(mToolbarView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
         mToolbarView.setVisibility(b ? View.VISIBLE : View.GONE);
         root.setVisibility(!b ? View.VISIBLE : View.GONE);
     }
 
     public void invalidateAllKeys() {
-        if(mToolbarView!=null) {
+        if (mToolbarView != null) {
             mToolbarView.invalidateAllKeys();
+        }
+    }
+
+    public void setSchema(String id) {
+        mToolbarView.setSchema(id);
+    }
+
+    public boolean prevCandidate() {
+        return mAdapter.prevCandidate();
+    }
+
+    public boolean nextCandidate() {
+        return mAdapter.nextCandidate();
+    }
+
+    public ArrayList<CandidateItem> getData() {
+        return mAdapter.getData();
+    }
+
+    public void setData(ArrayList<CandidateItem> data) {
+        mAdapter.setData(data);
+    }
+
+    public int getIdx() {
+        // 1. 获取 LayoutManager 并转型
+        RecyclerView.LayoutManager layoutManager = mListView.getLayoutManager();
+
+        if (layoutManager instanceof LinearLayoutManager) {
+            LinearLayoutManager linearManager = (LinearLayoutManager) layoutManager;
+
+            // 2. 获取第一个“可见”项的序号（只要露出一像素就算）
+            int firstVisibleItemPosition = linearManager.findFirstVisibleItemPosition();
+
+            // 3. 获取第一个“完全可见”项的序号（整个 Item 都在屏幕内）
+            int firstCompletelyVisibleItemPosition = linearManager.findFirstCompletelyVisibleItemPosition();
+
+            return firstCompletelyVisibleItemPosition;
+        }
+        return 0;
+    }
+
+    public void setIdx(int idx) {
+        LinearLayoutManager layoutManager = (LinearLayoutManager) mListView.getLayoutManager();
+        if (layoutManager != null) {
+            // 参数1：目标索引
+            // 参数2：偏移量（0 表示完全置顶）
+            layoutManager.scrollToPositionWithOffset(idx, 0);
         }
     }
 }

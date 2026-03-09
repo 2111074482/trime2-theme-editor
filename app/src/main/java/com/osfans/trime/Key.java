@@ -17,6 +17,8 @@
  */
 package com.osfans.trime;
 
+import static com.osfans.trime.keyboard.KeyView.SWIPE_UP;
+
 import android.app.backup.BackupAgent;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
@@ -125,6 +127,7 @@ public class Key {
     private List popupKeys;
     private boolean speak_key_label;
     public Event[] events = new Event[EVENT_NUM];
+    public String[] hints = new String[EVENT_NUM];
     public int edgeFlags;
     private static int symbolStart = androidKeys.contains("A") ? Key.androidKeys.indexOf("A") : 284;
     private static String symbols = "ABCDEFGHIJKLMNOPQRSTUVWXYZ~!@#$%^&*()_+[]\\{}|;':\",./<>?";
@@ -152,6 +155,7 @@ public class Key {
     private boolean mAbsolute;
     private String mStyle = "";
     private boolean mHasSwipeEvent;
+    private Key mAsciiKey;
 
 
     /**
@@ -163,7 +167,7 @@ public class Key {
     /**
      * Create an empty key with no attributes.
      *
-     * @param mk     從YAML中解析得到的Map
+     * @param mk 從YAML中解析得到的Map
      */
     public Key(LuaValue mk) {
         String s;
@@ -171,12 +175,21 @@ public class Key {
                 new String[]{
                         "click", "long_click", "swipe_left", "swipe_right", "swipe_up", "swipe_down", "combo"
                 };
+        String[] hintTypes =
+                new String[]{
+                        "hint", "hint_long_click", "hint_left", "hint_right", "hint_up", "hint_down", "combo"
+                };
         for (int i = 0; i < EVENT_NUM; i++) {
+            String hintType = hintTypes[i];
+            LuaValue h = mk.get(hintType);
+            if (h.isstring()) {
+                hints[i] = h.tojstring();
+            }
             String eventType = eventTypes[i];
             //s = mk.get(eventType).optjstring("");
             LuaValue o = mk.get(eventType);
-            if(i>=2&&!mHasSwipeEvent&&!o.isnil()){
-                mHasSwipeEvent=true;
+            if (i >= 2 && !mHasSwipeEvent && !o.isnil()) {
+                mHasSwipeEvent = true;
             }
             if (o != null && o.istable()) {
                 events[i] = new Event(o);
@@ -207,8 +220,16 @@ public class Key {
             mComposingKey = true;
         }
 
-        s = mk.get("ascii").optjstring("");
-        if (!TextUtils.isEmpty(s)) ascii = new Event(s);
+        LuaValue a = mk.get("ascii");
+        if (a.isstring()){
+            ascii = new Event(a.tojstring());
+        } else if(a.istable()){
+            if(!a.get("click").isnil()){
+                mAsciiKey=new Key(a);
+            } else {
+                ascii=new Event(a);
+            }
+        }
         mStyle = mk.get("style").optjstring(mk.get("click").optjstring("key"));
         label = mk.get("label").optjstring("");
         hint = mk.get("hint").optjstring("");
@@ -278,6 +299,10 @@ public class Key {
         events[0] = new Event(s);
         if (s.length() == 1 && Character.isLetter(s.charAt(0)))
             events[0].setCommit(s);
+    }
+
+    public Key(Event e) {
+        events[0] = e;
     }
 
     public boolean isComposingKey() {
@@ -598,6 +623,10 @@ public class Key {
         return getClick();
     }
 
+    public Event getRawEvent(int i) {
+        return events[i];
+    }
+
     public int getCode() {
         return getClick().getCode();
     }
@@ -608,29 +637,27 @@ public class Key {
 
     public String getLabel() {
         Event event = getEvent();
-
-        if (event.getCode() == KeyEvent.KEYCODE_ENTER && !Rime.isComposing() && event == getClick() && "action_labels".equals(event.getLabel())) {
-            TrimeService trime = TrimeService.getInstance();
-            if (trime != null) {
-                String action = trime.getActionLabel();
-                if (!TextUtils.isEmpty(action))
-                    return action;
+        if (event == getClick() /*&& (ascii == null || !Rime.isAsciiMode())*/) {
+            if (event.getCode() == KeyEvent.KEYCODE_ENTER && !Rime.isComposing() && "action_labels".equals(event.getLabel())) {
+                TrimeService trime = TrimeService.getInstance();
+                if (trime != null) {
+                    String action = trime.getActionLabel();
+                    if (!TextUtils.isEmpty(action))
+                        return action;
+                }
             }
-        }
-        if (event.getCode() == KeyEvent.KEYCODE_SPACE && event == getClick()) {
+            if (Rime.isAsciiMode())
+                return event.getLabel();
             if (!TextUtils.isEmpty(label))
                 return label;
-            if (!Rime.isAsciiMode()) {
-                String id = Rime.getRimeStatus().getSchemaName();
-                if (!TextUtils.isEmpty(id))
-                    return id;
-            } else {
-                return event.getLabel();
+            if (event.getCode() == KeyEvent.KEYCODE_SPACE) {
+                 if (!Rime.isAsciiMode()) {
+                    String id = Rime.getRimeStatus().getSchemaName();
+                    if (!TextUtils.isEmpty(id))
+                        return id;
+                }
             }
         }
-
-        if (!TextUtils.isEmpty(label) && event == getClick() && (ascii == null && !Rime.isAsciiMode()))
-            return label; //中文狀態顯示標籤
         return event.getLabel();
     }
 
@@ -675,6 +702,12 @@ public class Key {
                 .append("code:")
                 .append(getCode())
                 .append(",")
+                .append("long_click:")
+                .append(getLongClick())
+                .append(",")
+                .append("ascii:")
+                .append(ascii)
+                .append(",")
                 .append(" ")
                 .append(getX())
                 .append(",")
@@ -709,5 +742,19 @@ public class Key {
 
     public boolean hasSwipeEvent() {
         return mHasSwipeEvent;
+    }
+
+    public String getHint(int swipe) {
+        String h = hints[swipe];
+        if (h != null)
+            return h;
+        Event ev = events[swipe];
+        if (ev != null)
+            return ev.getLabel();
+        return null;
+    }
+
+    public Key getAsciiKey() {
+        return mAsciiKey;
     }
 }

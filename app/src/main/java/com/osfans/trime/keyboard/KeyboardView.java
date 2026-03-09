@@ -31,7 +31,7 @@ public class KeyboardView extends FrameLayout {
     private boolean mAsciiModeLock;
     private boolean mLock;
 
-    private static boolean isTouchExplorationEnabled() {
+    public static boolean isTouchExplorationEnabled() {
         if (mAm == null) {
             Context context = LuaApplication.getInstance();
             if (context != null) {

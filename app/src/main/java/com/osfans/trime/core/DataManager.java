@@ -143,6 +143,7 @@ public class DataManager {
             }
             //if (BuildConfig.DEBUG || Config.getThemes().length==0) {
                 LuaApplication.getInstance().unApk("assets/themes", Config.getThemeDir());
+            LuaApplication.getInstance().unApk("assets/scripts", Config.getScriptsDir());
             //}
         } catch (Exception e) {
             e.printStackTrace();

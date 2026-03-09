@@ -89,20 +89,8 @@ public class PackageLib extends TwoArgFunction {
      * The default value to use for package.path.  This can be set with the system property
      * <code>"luaj.package.path"</code>, and is <code>"?.lua"</code> by default.
      */
-    public static final String DEFAULT_LUA_PATH;
+    public static final String DEFAULT_LUA_PATH= "?.lua;?/init.lua;?/main.lua";
 
-    static {
-        String path = null;
-        try {
-            path = System.getProperty("luaj.package.path");
-        } catch (Exception e) {
-            System.out.println(e.toString());
-        }
-        if (path == null) {
-            path = "?.lua";
-        }
-        DEFAULT_LUA_PATH = path;
-    }
 
     private static final LuaString _T = valueOf("_T");
     private static final LuaString _M = valueOf("_M");

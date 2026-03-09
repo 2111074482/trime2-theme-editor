@@ -5,11 +5,8 @@
 
 package com.osfans.trime;
 
-import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-
 import android.app.AlertDialog;
 import android.content.ClipboardManager;
-import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
@@ -21,7 +18,6 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -32,42 +28,37 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayListAdapter;
-import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.androlua.LuaActivity;
-import com.androlua.LuaContext;
 import com.androlua.LuaDialog;
-import com.androlua.LuaService;
+import com.androlua.LuaUtil;
 import com.osfans.trime.candidate.CandidatesManager;
-import com.osfans.trime.candidate.CandidateView;
-import com.osfans.trime.candidate.ExpandedCandidateView;
-import com.osfans.trime.candidate.ToolbarView;
+import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
-import com.osfans.trime.data.opencc.OpenCCDictManager;
 import com.osfans.trime.dialog.OptionsDialog;
 import com.osfans.trime.dialog.SchemaDialog;
 import com.osfans.trime.dialog.StyleDialog;
 import com.osfans.trime.dialog.ThemeDialog;
 import com.osfans.trime.enums.InlineModeType;
-import com.osfans.trime.keyboard.ClipboardKeyboardView;
 import com.osfans.trime.keyboard.ModifierState;
-import com.osfans.trime.keyboard.SymbolsKeyboardView;
-import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
 import com.osfans.trime.util.Function;
 
+import org.luaj.Globals;
+import org.luaj.LuaTable;
 import org.luaj.LuaValue;
+import org.luaj.lib.ResourceFinder;
+import org.luaj.lib.jse.JsePlatform;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,7 +67,6 @@ public class TrimeService extends InputMethodService {
     // 1. 常量与静态变量
     private static final String TAG = "TrimeService";
     private static TrimeService sInstance;
-
 
 
     // 成员变量 - 逻辑处理与状态
@@ -105,6 +95,8 @@ public class TrimeService extends InputMethodService {
     private RootInputView mRootInputView;
     private int orientation;
     private int uiMode;
+    private String mLastInputClass;
+    private Globals globals;
 
     // 3. 静态访问器与生命周期
     public static TrimeService getInstance() {
@@ -117,11 +109,19 @@ public class TrimeService extends InputMethodService {
         CandidatesManager.initStroke(this);
         sInstance = this;
         ThemeManager.setTheme(Config.getTheme());
-        mRootInputView=new RootInputView(this);
+        mRootInputView = new RootInputView(this);
+        LuaUtil.rmDir(new File(Config.getDataDir()), "LOCK");
         mRime = new Rime(new Runnable() {
             @Override
             public void run() {
-                setKeyboard(".default");
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // String soft_cursor_key = "soft_cursor";
+                        // Rime.setRimeOption(soft_cursor_key, true); //軟光標
+                        // mRootInputView.setSchema(Rime.getCurrentRimeSchema());
+                    }
+                });
             }
         });
         mRime.startup();
@@ -147,10 +147,23 @@ public class TrimeService extends InputMethodService {
         showSymbolsView(false);
         showExtractedCandidatesView(false);
         showCustomView(null);
+        String soft_cursor_key = "soft_cursor";
+        Rime.setRimeOption(soft_cursor_key, true); //軟光標
+    }
+
+    @Override
+    public void onFinishInput() {
+        Log.w(TAG, "onFinishInput: "+Rime.isComposing() );
+        if (Rime.isComposing()) {
+            onKey(KeyEvent.KEYCODE_ESCAPE, 0);
+            mRime.clearComposition();
+        }
+        super.onFinishInput();
     }
 
     @Override
     public void onWindowHidden() {
+        Log.w(TAG, "onWindowHidden: "+Rime.isComposing() );
         if (Rime.isComposing()) {
             onKey(KeyEvent.KEYCODE_ESCAPE, 0);
             mRime.clearComposition();
@@ -173,7 +186,7 @@ public class TrimeService extends InputMethodService {
         super.onConfigureWindow(win, isFullscreen, isCandidatesOnly);
         win.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         win.setFormat(PixelFormat.RGBA_8888);
-     }
+    }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -188,7 +201,7 @@ public class TrimeService extends InputMethodService {
             uiMode = newConfig.uiMode;
             mRootInputView.setTheme(Config.getTheme());
         }
-     }
+    }
 
     public boolean isLandscape() {
         return orientation == Configuration.ORIENTATION_LANDSCAPE;
@@ -198,7 +211,7 @@ public class TrimeService extends InputMethodService {
     @Override
     public void setInputView(View view) {
         ViewParent parent = view.getParent();
-        if(parent!=null&&parent instanceof ViewGroup){
+        if (parent != null && parent instanceof ViewGroup) {
             ((ViewGroup) parent).removeView(view);
         }
         //FrameLayout fr = new FrameLayout(this);
@@ -229,12 +242,12 @@ public class TrimeService extends InputMethodService {
             outInsets.contentTopInsets = lc[1];
             outInsets.visibleTopInsets = lc[1];
             outInsets.touchableRegion.set(0, lc[1], mRoot.getWidth(), lc[1] + mRoot.getHeight());
-            View mPreedit=mRootInputView.getPreedit();
+            View mPreedit = mRootInputView.getPreedit();
             if (mPreedit.getVisibility() == View.VISIBLE) {
                 int[] plc = getLocationInWindow(mPreedit);
                 outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
             }
-            View mCloud=mRootInputView.getCloud();
+            View mCloud = mRootInputView.getCloud();
             if (mCloud.getVisibility() == View.VISIBLE) {
                 int[] plc = getLocationInWindow(mCloud);
                 outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
@@ -318,23 +331,28 @@ public class TrimeService extends InputMethodService {
                         || variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD) {
                     mTempAsciiMode = true;
                     keyboard = "ascii";
+                    inputClass = 0;
                 } else {
                     canCompose = true;
+                    keyboard = "default";
                 }
                 break;
             default: //0
                 canCompose = (inputType > 0); //0x80000 FX重命名文本框
-                if (canCompose) break;
-                if (restarting)
-                    keyboard = "default";
+                //if (canCompose) break;
+                //if (restarting)
+                keyboard = "default";
                 break;
         }
         //Rime.get();
         if (reset_ascii_mode) mAsciiMode = false;
         // Select a keyboard based on the input type of the editing field.
         //mKeyboardSwitch.init(getMaxWidth()); //橫豎屏切換時重置鍵盤
-        if (!TextUtils.isEmpty(keyboard))
+        if (BuildConfig.DEBUG)
+            android.util.Log.i(TAG, "onStartInput: " + keyboard);
+        if (!TextUtils.isEmpty(keyboard) && !keyboard.equals(mLastInputClass))
             setKeyboard(keyboard);
+        mLastInputClass = keyboard;
         updateRimeOption();
         canCompose = canCompose && !Rime.getCurrentRimeSchema().isEmpty();
         //if (!onEvaluateInputViewShown()) setCandidatesViewShown(canCompose); //實體鍵盤進入文本框時顯示候選欄
@@ -351,13 +369,17 @@ public class TrimeService extends InputMethodService {
     // 5. 事件处理逻辑 (Event & Key Handling)
     public void onEvent(Event event) {
         if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent: " + event);
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent:1 " + event.getCode());
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent:2 " + event.getMask());
         String c = event.getCommit();
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent:3 " + c);
         if (!TextUtils.isEmpty(c)) {
             commitTextAndClearComposition(c);
             return;
         }
 
         String s = event.getText();
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onEvent:4 " + s);
         if (!TextUtils.isEmpty(s)) {
             onText(s);
         } else if (event.getCode() > 0) {
@@ -428,7 +450,10 @@ public class TrimeService extends InputMethodService {
 
     private boolean handleKey(int keyCode, int mask) {
         keyUpNeeded = false;
-        long ms = System.currentTimeMillis();
+        //if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT&&mRootInputView.prevCandidate())
+        //    return true;
+        //if(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT&&mRootInputView.nextCandidate())
+        //    return true;
         if (onRimeKey(Event.getRimeEvent(keyCode, mask))) {
             keyUpNeeded = true;
         } else if (handleAction(keyCode, mask) || handleOption(keyCode) || handleEnter(keyCode) || handleBack(keyCode)) {
@@ -444,7 +469,7 @@ public class TrimeService extends InputMethodService {
 
     public void onText(CharSequence text) {
         String s = text.toString();
-        if(!isAsciiPrintable(s.charAt(0)))
+        if (!isAsciiPrintable(s.charAt(0)))
             commitText();
         String t;
         Pattern p = Pattern.compile("^(\\{[^{}]+\\}).*$");
@@ -454,7 +479,7 @@ public class TrimeService extends InputMethodService {
             m = pText.matcher(s);
             if (m.matches()) {
                 t = m.group(1);
-                if(!isAsciiPrintable(t.charAt(0)))
+                if (!isAsciiPrintable(t.charAt(0)))
                     commitText(t);
                 else
                     mRime.simulateKeySequence(t);
@@ -467,6 +492,7 @@ public class TrimeService extends InputMethodService {
         }
         keyUpNeeded = false;
     }
+
     /**
      * 检查字符是否为 ASCII 可见字符 (码点在 32 到 126 之间)
      * 包含空格、数字、字母、标准标点符号。
@@ -474,6 +500,7 @@ public class TrimeService extends InputMethodService {
     public static boolean isAsciiPrintable(char ch) {
         return ch >= 32 && ch < 127;
     }
+
     // 6. 文本提交与 Rime 消息处理 (Text Commitment & Rime Logic)
     public void commitText(CharSequence text) {
         if (TextUtils.isEmpty(text)) return;
@@ -488,9 +515,9 @@ public class TrimeService extends InputMethodService {
     }
 
     private boolean commitText() {
-        if(isComposing()){
+        if (isComposing()) {
             String text = mRime.getComposingText();
-            if(!TextUtils.isEmpty(text)) {
+            if (!TextUtils.isEmpty(text)) {
                 commitText(text);
             }
             mRime.clearComposition();
@@ -500,23 +527,39 @@ public class TrimeService extends InputMethodService {
 
     private boolean onRimeKey(int[] event) {
         boolean ret = mRime.processKey(event[0], event[1]);
-        Log.w(TAG, "onRimeKey: "+ret );
+        Log.w(TAG, "onRimeKey: " + ret);
         //commitText();
         return ret;
     }
 
+    private int idx=0;
     private void handleRimeMessage(RimeMessage<?> message) {
         Log.w("rime", "handleRimeMessage:1 " + message.getClass() + ":" + message.getData());
         if (message instanceof RimeMessage.CommitTextMessage) {
             commitText(((RimeMessage.CommitTextMessage) message).data.getText());
         } else if (message instanceof RimeMessage.SchemaMessage) {
-            setKeyboard(((RimeMessage.SchemaMessage) message).getData().getId());
+            mRootInputView.setSchema(((RimeMessage.SchemaMessage) message).getData().getId());
         } else if (message instanceof RimeMessage.DeployMessage) {
             RimeMessage.DeployMessage msg = (RimeMessage.DeployMessage) message;
             if (msg.getData() == RimeMessage.DeployMessage.State.Success) {
-                setKeyboard(Rime.getRimeStatus().getSchemaId());
+                idx=0;
+                //setKeyboard(Rime.getCurrentRimeSchema());
+                //Log.w(TAG, "handleRimeMessage:getCurrentRimeSchema " + Rime.getCurrentRimeSchema());
+                mHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(idx++>20)
+                            return;
+                        //Log.w(TAG, "handleRimeMessage:getCurrentRimeSchema " + Rime.getCurrentRimeSchema());
+                        if (TextUtils.isEmpty(Rime.getCurrentRimeSchema())) {
+                            mHandler.postDelayed(this, 10);
+                        } else {
+                            mRootInputView.setSchema(Rime.getCurrentRimeSchema());
+                        }
+                    }
+                }, 10);
             }
-         } else if (message instanceof RimeMessage.CompositionMessage) {
+        } else if (message instanceof RimeMessage.CompositionMessage) {
             updateComposing(((RimeMessage.CompositionMessage) message).getData());
         } else if (message instanceof RimeMessage.CandidateMenuMessage || message instanceof RimeMessage.CandidateListMessage) {
             updateCandidate();
@@ -594,6 +637,10 @@ public class TrimeService extends InputMethodService {
     // 7. 视图状态管理与更新 (View State Management)
 
     public void setTheme(String theme) {
+        if (Rime.isComposing()) {
+            onKey(KeyEvent.KEYCODE_ESCAPE, 0);
+            mRime.clearComposition();
+        }
         ThemeManager.setTheme(theme);
         mRootInputView.setTheme(theme);
         //setInputView(onCreateInputView());
@@ -601,6 +648,10 @@ public class TrimeService extends InputMethodService {
     }
 
     public void setStyle(String theme) {
+        if (Rime.isComposing()) {
+            onKey(KeyEvent.KEYCODE_ESCAPE, 0);
+            mRime.clearComposition();
+        }
         ThemeManager.setStyle(theme);
         mRootInputView.setStyle(theme);
         //setInputView(onCreateInputView());
@@ -609,7 +660,7 @@ public class TrimeService extends InputMethodService {
     public void showExtractedCandidatesView(boolean b) {
         mRootInputView.showExtractedCandidatesView(b);
         mShowExtractedCandidatesView = b;
-        updateCandidate();
+        //updateCandidate();
     }
 
     public void showSymbolsView(boolean b) {
@@ -634,9 +685,12 @@ public class TrimeService extends InputMethodService {
     }
 
     public void setKeyboard(String id) {
-        mRootInputView.setKeyoard(id);
+        mRootInputView.setKeyboard(id);
     }
 
+    public void setKeyboard(View id) {
+        mRootInputView.showCustomView(id);
+    }
     // 8. 输入法操作辅助 (Input Helpers)
     public void selectCandidate(int index) {
         mRime.selectCandidate(index);
@@ -671,7 +725,7 @@ public class TrimeService extends InputMethodService {
         @Override
         public void run() {
             mRootInputView.invalidateAllKeys();
-         }
+        }
     };
 
     private void updateRimeOption() {
@@ -696,10 +750,12 @@ public class TrimeService extends InputMethodService {
                         ic.performContextMenuAction(android.R.id.selectAll);
                     return ic.performContextMenuAction(android.R.id.shareText);
                 }
-                if (code == KeyEvent.KEYCODE_Y)
-                    return ic.performContextMenuAction(android.R.id.redo);
-                if (code == KeyEvent.KEYCODE_Z)
+                if (code == KeyEvent.KEYCODE_Z) {
+                    if (Event.hasModifier(mask, KeyEvent.META_SHIFT_ON))
+                        return ic.performContextMenuAction(android.R.id.redo);
+
                     return ic.performContextMenuAction(android.R.id.undo);
+                }
             }
             if (code == KeyEvent.KEYCODE_DEL && Event.hasModifier(mask, KeyEvent.META_SHIFT_ON)) {
                 backToSentence();
@@ -821,22 +877,23 @@ public class TrimeService extends InputMethodService {
         }
         return dialog;
     }
+
     public AlertDialog showListDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
         IBinder token = PrefLauncher.getToken();
-        if(token!=null){
+        if (token != null) {
             lp.token = token;
-        }else {
+        } else {
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
             lp.token = getToken();
         }
-        lp.gravity=Gravity.CENTER;
+        lp.gravity = Gravity.CENTER;
         window.setAttributes(lp);
         window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
         try {
             dialog.show();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return dialog;
@@ -922,10 +979,108 @@ public class TrimeService extends InputMethodService {
     }
 
     public Object doFile(String path, String option) {
+        if(globals==null) {
+            globals = JsePlatform.standardGlobals();
+            globals.finder = new ResourceFinder() {
+                @Override
+                public InputStream findResource(String filename) {
+                    File f = new File(filename);
+                    if (f.exists()) {
+                        try {
+                            return new FileInputStream(f);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    f = new File(Config.getThemeDir(Config.getTheme()), filename);
+                    if (f.exists()) {
+                        try {
+                            return new FileInputStream(f);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    f = new File(Config.getScriptsDir(), filename);
+                    if (f.exists()) {
+                        try {
+                            return new FileInputStream(f);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    return null;
+                }
+
+                @Override
+                public String findFile(String filename) {
+                    File f = new File(filename);
+                    if (f.exists()) {
+                        return f.getAbsolutePath();
+                    }
+                    f = new File(Config.getScriptsDir(), filename);
+                    if (f.exists()) {
+                        return f.getAbsolutePath();
+                    }
+                    return filename;
+                }
+            };
+        }
+        LuaTable env = new LuaTable();
+        env.setmetamethod("__index",globals);
+        try {
+            return globals.loadfile(path).jcall(option);
+        }catch (Exception e){
+            sendMsg(e.toString());
+        }
         return null;
     }
 
     public Object doFile(String path, Object... option) {
+        if(globals==null) {
+            globals = JsePlatform.standardGlobals();
+            globals.finder = new ResourceFinder() {
+                @Override
+                public InputStream findResource(String filename) {
+                    File f = new File(filename);
+                    if (f.exists()) {
+                        try {
+                            return new FileInputStream(f);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    f = new File(Config.getScriptsDir(), filename);
+                    if (f.exists()) {
+                        try {
+                            return new FileInputStream(f);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    return null;
+                }
+
+                @Override
+                public String findFile(String filename) {
+                    File f = new File(filename);
+                    if (f.exists()) {
+                        return f.getAbsolutePath();
+                    }
+                    f = new File(Config.getScriptsDir(), filename);
+                    if (f.exists()) {
+                        return f.getAbsolutePath();
+                    }
+                    return filename;
+                }
+            };
+        }
+        LuaTable env = new LuaTable();
+        env.setmetamethod("__index",globals);
+        try {
+            return globals.loadfile(path).jcall(option);
+        }catch (Exception e){
+            sendMsg(e.toString());
+        }
         return null;
     }
 
@@ -1020,28 +1175,33 @@ public class TrimeService extends InputMethodService {
     public void restart() {
         mRime.restart();
     }
+
     private AlertDialog mDlg;
-    public void sendMsg(final String text){
+
+    public void sendMsg(final String text) {
+        Function.printStackTrace("sendMsg " + text);
         LuaActivity.logs.add(text);
-        Log.w(TAG, "sendMsg: "+text );
+        Log.w(TAG, "sendMsg: " + text);
+        sendMsgAux(text);
         mHandler.post(new Runnable() {
-           @Override
+            @Override
             public void run() {
-               try {
-                   sendMsgAux(text);
-               } catch (Exception e){
-                   e.printStackTrace();
-               }
+                try {
+                    sendMsgAux(text);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
 
-    public void sendMsgAux(final String text){
-        if(!isInputViewShown()&&PrefLauncher.getToken()==null){
-            Toast.makeText(this,text,Toast.LENGTH_SHORT).show();
-            //return;
-        }
-       if (mDlg == null) {
+    public void sendMsgAux(final String text) {
+        Log.w(TAG, "sendMsgAux: " + text);
+        //if(!isInputViewShown()&&PrefLauncher.getToken()==null){
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
+        //return;
+        //}
+       /*if (mDlg == null) {
             mDlg=showListDialog(new AlertDialog.Builder(this)
                     .setTitle("提示")
                     .setAdapter( new ArrayListAdapter<>(this,new String[]{text}),null)
@@ -1056,7 +1216,7 @@ public class TrimeService extends InputMethodService {
         } else {
             ArrayListAdapter<String> adapter = (ArrayListAdapter<String>) mDlg.getListView().getAdapter();
             adapter.add(text);
-        }
+        }*/
     }
 
     public LuaDialog createDialog(String title, String[] items) {
@@ -1065,5 +1225,17 @@ public class TrimeService extends InputMethodService {
         dlg.setItems(items);
         dlg.setNegativeButton(getString(R.string.cancel), null);
         return dlg;
+    }
+
+    public void setCandidates(ArrayList<String> list) {
+        if(list==null){
+           list=new ArrayList<>();
+        }
+        ArrayList<CandidateItem> items = new ArrayList<CandidateItem>(list.size());
+        for (String s : list) {
+            items.add(new CandidateItem(s));
+        }
+        mRootInputView.setCandidates(items);
+        mComposing=!items.isEmpty();
     }
 }

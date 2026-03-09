@@ -1,4 +1,4 @@
-name = "默认"
+name = "白昼"
 author = "nirenr"
 --输入主颜色或图片
 background = 0xffdddddd
@@ -29,6 +29,9 @@ key = {
     long_click_time = 1000,
     --按键重复执行间隔
     repeat_click_time = 200
+    --按键字体
+    --font="b.ttf"
+    --font={"a.ttf","b.ttf"}
 }
 --按键四周留白
 key.margins = {
@@ -38,7 +41,37 @@ key.margins = {
     bottom = 3
 }
 --按键助记
+--在按键使用hint默认hint,或者使用hint_up,hint_down,hint_left,hint_right定义四个方向hint
 key.hint = {
+    show=true,
+    --助记文字颜色
+    text_color = 0xff444444,
+    --助记文字大小
+    text_size = 12
+}
+key.hint.up = {
+    show=true,
+    --助记文字颜色
+    text_color = 0xff444444,
+    --助记文字大小
+    text_size = 12
+}
+key.hint.down = {
+    show=true,
+    --助记文字颜色
+    text_color = 0xff444444,
+    --助记文字大小
+    text_size = 12
+}
+key.hint.left = {
+    show=true,
+    --助记文字颜色
+    text_color = 0xff444444,
+    --助记文字大小
+    text_size = 12
+}
+key.hint.right = {
+    show=true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
@@ -46,10 +79,17 @@ key.hint = {
 }
 --按键长按
 key.long_click = {
+    show=true,
     --长按文字颜色
     text_color = 0xff444444,
     --长按文字大小
-    text_size = 12
+    text_size = 12,
+    vibration_enabled = true,--震动开关
+    --定义位置
+    --gravity="top|left",
+    --定义偏移
+    --offset_x=10,
+    --offset_y=10,
 }
 --按键按下状态
 key.pressed = {
@@ -153,10 +193,16 @@ candidate = {
 }
 
 candidate.pressed = {
-    background = 0xffffffff,
-    ripple_color = 0x40000000,
+    background = 0x44888888,
+    text_color = 0xff000000,
+    corner_radius = 0,
 }
+
 candidate.comment = {
+    text_size = 12,
+    text_color = 0xff444444
+}
+candidate.comment.pressed = {
     text_size = 12,
     text_color = 0xff444444
 }
@@ -224,7 +270,10 @@ clipboard.item.padding = {
 
 --工具栏样式
 toolbar = table.clone(candidate)
-toolbar.keys = { "F4", "Mode_switch", "Keyboard_clipboard" }
+--显示方案定义的开关
+toolbar.schema_switches=false
+--支持添加preset_keys按键，也可以直接写事件的表，
+toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" }
 toolbar.key.text_size = 22
 toolbar.key.padding = {
     left = 8,

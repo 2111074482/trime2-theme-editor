@@ -10,7 +10,11 @@
 
 # Keep JNI interface
 -keep class com.osfans.trime.core.* { *; }
-
+-keep class android.widget.**
+-keepclassmembers class android.widget.** {
+    public protected <fields>;
+    public protected <methods>;
+}
 # 1. 仅保护类名不被混淆（不进入大括号指定成员）
 -keep class com.androlua.**
 

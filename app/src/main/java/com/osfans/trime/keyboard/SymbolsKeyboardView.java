@@ -40,6 +40,8 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
     private final KeyStyle mKeyStyle;
     private final TrimeService mTrime;
     private final Style mSymbolStyle;
+    private ViewPager2 viewPager;
+    private ListPagerAdapter mAdapter;
 
     public SymbolsKeyboardView(@NonNull Context context) {
         super(context);
@@ -75,13 +77,13 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         tabLayout.setTabTextColors(mKeyStyle.getTextColor(),mKeyStyle.getKeyStyle("pressed",mKeyStyle).getTextColor());
         tabLayout.setSelectedTabIndicatorColor(mSymbolStyle.getColor("indicator_color",mKeyStyle.getKeyStyle("pressed",mKeyStyle).getTextColor()));
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
-        ViewPager2 viewPager = new ViewPager2(getContext());
+        viewPager = new ViewPager2(getContext());
         LinearLayout root = new LinearLayout(getContext());
         root.setOrientation(LinearLayout.VERTICAL);
         root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         addView(root, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT,1));
-        ListPagerAdapter mAdapter = new ListPagerAdapter(mKeyMap);
+        mAdapter = new ListPagerAdapter(mKeyMap);
         viewPager.setAdapter(mAdapter);
         // 2. 使用 TabLayoutMediator 连接 TabLayout 和 ViewPager2
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
@@ -132,7 +134,15 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         mButtonBar.addView(backSpace,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
         addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
     }
+    public boolean pageDown() {
+        getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getContentHeight());
+        return true;
+    }
 
+    public boolean pageUp() {
+        getListView(viewPager,mAdapter).smoothScrollBy(0,-ThemeManager.getContentHeight());
+        return true;
+    }
     private RecyclerView getListView(ViewPager2 viewPager2, ListPagerAdapter mAdapter){
         // 1. 获取当前页码
         int currentPos = viewPager2.getCurrentItem();
@@ -172,7 +182,7 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
              e.printStackTrace();*/
         }
         try {
-            return getContext().getAssets().open("themes/default/keyboards/qwerty36.lua");
+            return getContext().getAssets().open("themes/default/keyboards/symbols.lua");
         } catch (Exception ioe) {
            /*if (BuildConfig.DEBUG)
              e.printStackTrace();*/

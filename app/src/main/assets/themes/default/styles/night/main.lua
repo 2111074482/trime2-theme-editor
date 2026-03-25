@@ -93,7 +93,7 @@ functional=table.clone(key)
 functional.text_size=18
 functional.background = 0xff222222
 functional.pressed.background = 0xff888888
-functional.pressed.text_color = 0xffffffff
+functional.pressed.text_color = 0xff000000
 
 --符号面板
 symbol={

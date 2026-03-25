@@ -167,7 +167,7 @@ public class CandidatesManager {
      * 设置/累加笔画过滤条件
      */
     public static void filterStroke(String strokeChar, String tipChar) {
-        if (strokeChar == null) {
+        if (TextUtils.isEmpty(strokeChar)) {
             mFilterStroke = null;
             mFilterStrokeTip = null;
         } else {

@@ -4,12 +4,14 @@ ascii_mode=true
 --flex_box 弹性盒子键盘，高度和宽度为dp，
 --direction设置布局方向，row纵向，column横向，
 --grow表示份数占比
+--可以通过style设置区域背景
 flex_box = {
     direction="row",
     --第一列
     {
          direction="column",
          width=64,
+         style="key",
          keys = {
             { click = "+" },
             { click = "-" },
@@ -57,7 +59,7 @@ flex_box = {
             keys = {
                 { click = "Keyboard_default", style = "functional"},
                 { click = "KP_0"},
-                { click = "space" ,label="␣"},
+                { click = "space1"},
             }
         },
     },

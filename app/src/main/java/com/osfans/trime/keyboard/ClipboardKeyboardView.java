@@ -151,6 +151,16 @@ public class ClipboardKeyboardView extends LinearLayout {
         mButtonBar.addView(mChar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
     }
 
+    public boolean pageDown() {
+        mListView.smoothScrollBy(0,ThemeManager.getContentHeight());
+        return true;
+    }
+
+    public boolean pageUp() {
+        mListView.smoothScrollBy(0,-ThemeManager.getContentHeight());
+        return true;
+    }
+
     public void update() {
         if (mListView.isComputingLayout()) {
             // 如果正在布局，延迟一帧更新，防止冲突
@@ -175,5 +185,18 @@ public class ClipboardKeyboardView extends LinearLayout {
          mListView.scrollToPosition(0);
          clipboardTitle.setSelected(true);
          phraseTitle.setSelected(false);
+    }
+
+
+    public void showPhrase() {
+        if (mListView.isComputingLayout()) {
+            // 如果正在布局，延迟一帧更新，防止冲突
+            mListView.post(this::show);
+            return;
+        }
+        mAdapter.setData(true);
+        mListView.scrollToPosition(0);
+        clipboardTitle.setSelected(false);
+        phraseTitle.setSelected(true);
     }
 }

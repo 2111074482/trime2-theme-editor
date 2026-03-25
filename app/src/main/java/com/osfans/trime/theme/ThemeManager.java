@@ -22,6 +22,7 @@ import android.util.Log;
 import android.util.TypedValue;
 
 import com.androlua.LuaApplication;
+import com.androlua.LuaUtil;
 import com.osfans.trime.BuildConfig;
 import com.osfans.trime.Config;
 import com.osfans.trime.Key;
@@ -38,6 +39,8 @@ import org.luaj.lib.jse.JsePlatform;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ThemeManager {
 
@@ -50,7 +53,7 @@ public class ThemeManager {
     private static Vibrator vibrator;
     private static SoundPool mSoundPool;
 
-    public static ResourceFinder getFinder(){
+    public static ResourceFinder getFinder() {
         return mResourceFinder;
     }
 
@@ -66,16 +69,17 @@ public class ThemeManager {
                 }
             }
         }
-        if(vibrator!=null){
+        if (vibrator != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 vibrator.vibrate(ve);
             }
         }
     }
-    private final static ResourceFinder mResourceFinder=new ResourceFinder() {
+
+    private final static ResourceFinder mResourceFinder = new ResourceFinder() {
         @Override
         public InputStream findResource(String name) {
-            if(TextUtils.isEmpty(name)) {
+            if (TextUtils.isEmpty(name)) {
                 try {
                     return LuaApplication.getInstance().getAssets().open("themes/default/main.lua");
                 } catch (Exception ioe) {
@@ -84,7 +88,7 @@ public class ThemeManager {
                 return null;
             }
             try {
-                if(name.startsWith("themes/default/"))
+                if (name.startsWith("themes/default/"))
                     return LuaApplication.getInstance().getAssets().open(name);
             } catch (Exception ioe) {
                 ioe.printStackTrace();
@@ -97,12 +101,12 @@ public class ThemeManager {
             }
             try {
                 File f = new File(Config.getThemeDir(), Config.getTheme() + "/" + name);
-                if(f.exists())
+                if (f.exists())
                     return new FileInputStream(f);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(!name.endsWith(".lua"))
+            if (!name.endsWith(".lua"))
                 return null;
             /*try {
                 return LuaApplication.getInstance().getAssets().open("themes/default/"+name);
@@ -114,100 +118,100 @@ public class ThemeManager {
 
         @Override
         public String findFile(String filename) {
-            if(TextUtils.isEmpty(filename))
+            if (TextUtils.isEmpty(filename))
                 return null;
             if (filename.startsWith("/"))
                 return filename;
-            return new File(Config.getThemeDir(),filename).getAbsolutePath();
+            return new File(Config.getThemeDir(), filename).getAbsolutePath();
         }
     };
 
-    public static void setTheme(String name){
-        mStyle=null;
+    public static void setTheme(String name) {
+        mStyle = null;
         clearSound();
         Config.setTheme(name);
         mGlobals = JsePlatform.standardGlobals();
         mGlobals.finder = mResourceFinder;
         try {
             LuaValue func = mGlobals.loadfilex("main.lua");
-            if(func.isfunction()) {
+            if (func.isfunction()) {
                 func.call();
             } else {
-                sendMsg("setTheme "+func.tojstring());
+                sendMsg("setTheme " + func.tojstring());
                 func = mGlobals.loadfilex("themes/default/main.lua");
-                if(func.isfunction())
+                if (func.isfunction())
                     func.call();
             }
-        } catch (Exception e){
-            sendMsg("setTheme "+e.toString());
+        } catch (Exception e) {
+            sendMsg("setTheme " + e.toString());
         }
-        String styleName = Function.loadString(LuaApplication.getInstance(), name + "_style", mGlobals.get("style").optjstring("light"));
+        String styleName = Function.loadString(LuaApplication.getInstance(), Config.getStyleKey(name), mGlobals.get("style").optjstring("light"));
         setStyle(styleName);
-        Key.presetKeys=getPresetKeys();
+        Key.presetKeys = getPresetKeys();
     }
 
     public static void sendMsg(String s) {
         TrimeService trime = TrimeService.getInstance();
-        if(trime!=null)
+        if (trime != null)
             trime.sendMsg(s);
     }
 
-    public static void setStyle(String name){
-        mStyle=null;
+    public static void setStyle(String name) {
+        mStyle = null;
         clearSound();
         Config.setStyle(name);
-        mColor=new LuaTable(mGlobals);
+        mColor = new LuaTable(mGlobals);
         LuaTable mt = new LuaTable(mGlobals);
         mt.set("__index", mGlobals);
         mColor.setmetatable(mt);
-        String path="styles/" + name + "/main.lua";
+        String path = "styles/" + name + "/main.lua";
         try {
             LuaValue func = mGlobals.loadfilex(path, mColor);
-            if(func.isfunction()) {
+            if (func.isfunction()) {
                 func.call();
                 return;
             } else {
-                sendMsg("setStyle "+func.tojstring());
+                sendMsg("setStyle " + func.tojstring());
             }
-        } catch (Exception e){
-            sendMsg("setStyle "+e);
+        } catch (Exception e) {
+            sendMsg("setStyle " + e);
         }
         try {
             LuaValue func = mGlobals.loadfilex("themes/default/styles/light/main.lua", mColor);
-            if(func.isfunction()) {
+            if (func.isfunction()) {
                 func.call();
             }
-        } catch (Exception e){
-            Log.e("theme", "setStyle: " + e );
+        } catch (Exception e) {
+            Log.e("theme", "setStyle: " + e);
         }
     }
 
-    public static Style getStyle(){
-        if(mStyle==null)
-            mStyle=new Style(mColor);
+    public static Style getStyle() {
+        if (mStyle == null)
+            mStyle = new Style(mColor);
         return mStyle;
     }
 
     public static int getHeight() {
-        return getStyle().getSize("height",mCandidateHeight+mKeyboardHeight);
+        return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight);
     }
 
     public static int getContentHeight() {
-        return getCandidateHeight()+getKeyboardHeight();
+        return getCandidateHeight() + getKeyboardHeight();
     }
 
     public static int getCandidateHeight() {
-        return getStyle().getStyle("candidate").getSize("height",mCandidateHeight);
+        return getStyle().getStyle("candidate").getSize("height", mCandidateHeight);
     }
 
     public static int getKeyboardHeight() {
-        return getStyle().getStyle("keyboard").getSize("height",mKeyboardHeight);
+        return getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight);
     }
 
-    private static final DisplayMetrics mDisplayMetrics=Resources.getSystem().getDisplayMetrics();
+    private static final DisplayMetrics mDisplayMetrics = Resources.getSystem().getDisplayMetrics();
 
     public static int dp2px(float f) {
-        return (int)(TypedValue.applyDimension(
+        return (int) (TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, f, mDisplayMetrics));
     }
 
@@ -217,26 +221,26 @@ public class ThemeManager {
         LuaTable env = new LuaTable();
         try {
             env.setmetamethod("__index", mGlobals);
-            LuaValue func = mGlobals.loadfilex("themes/default/main.lua",env);
-            if(func.isfunction())
+            LuaValue func = mGlobals.loadfilex("themes/default/main.lua", env);
+            if (func.isfunction())
                 func.call();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return keys;
         }
-        if(env.rawget("preset_keys").istable())
-            keys.setmetamethod("__index",env.get("preset_keys").opttable(new LuaTable()));
+        if (env.rawget("preset_keys").istable())
+            keys.setmetamethod("__index", env.get("preset_keys").opttable(new LuaTable()));
         return keys;
     }
 
     public static String getActionLabel(String key, String def) {
         LuaValue action = mGlobals.get("action_labels");
-        if(!action.istable())
+        if (!action.istable())
             return def;
         return action.get(key).optjstring(def);
     }
 
-    public static int getDialogTheme(){
+    public static int getDialogTheme() {
         if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
             return android.R.style.Theme_DeviceDefault_Dialog_Alert;
         } else {
@@ -246,17 +250,39 @@ public class ThemeManager {
 
     public static String getKeyboard(String id) {
         String k = Config.getKeyboard();
-        Log.w("TAG", "getKeyboard: "+id+";"+k );
-        if(!TextUtils.isEmpty(k))
+        Log.w("theme", "getKeyboard:Config " + id + ";" + k);
+        if (!TextUtils.isEmpty(k))
             return k;
         LuaValue fun = mGlobals.get("get_keyboard");
-        if(fun.isfunction()){
+        if (fun.isfunction()) {
             try {
-                RimeSchema schema = new RimeSchema(id);
-                LuaValue ret = fun.call(LuaValue.valueOf(id), LuaValue.valueOf(schema.getAlphabet()));
-                if(ret.isstring())
-                    id=ret.tojstring();
-            }catch (Exception e){
+                String alphabet = "abcdefghijklmnopqrstuvwxyz";
+                try {
+                    RimeSchema schema = new RimeSchema(id);
+                    alphabet = schema.getAlphabet();
+                } catch (Exception e) {
+                    File f = new File(Config.getUserDataDir(), id + ".schema.yaml");
+                    if (f.exists()) {
+                        String input = new String(LuaUtil.readAll(f.getAbsolutePath()));
+                        String regex = "alphabet:\\s*(.*)";
+                        Pattern pattern = Pattern.compile(regex);
+                        Matcher matcher = pattern.matcher(input);
+                        if (matcher.find()) {
+                            // matcher.group(1) 提取第一个括号内的内容
+                            String result = matcher.group(1);
+                            if (!TextUtils.isEmpty(result)) {
+                                alphabet = result;
+                                Log.w("theme", "getKeyboard:alphabet " + alphabet);
+                            }
+                        }
+                    }
+
+                }
+                LuaValue ret = fun.call(LuaValue.valueOf(id), LuaValue.valueOf(alphabet));
+                Log.w("theme", "getKeyboard:ret " + ret);
+                if (ret.isstring())
+                    id = ret.tojstring();
+            } catch (Exception e) {
                 if(BuildConfig.DEBUG)
                   e.printStackTrace();
             }
@@ -265,8 +291,8 @@ public class ThemeManager {
     }
 
     public static int loadSound(String soundPath) {
-        Log.w("theme", "loadSound: "+soundPath );
-        if(mSoundPool==null){
+        Log.w("theme", "loadSound: " + soundPath);
+        if (mSoundPool == null) {
             AudioAttributes attributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA) // 提示音类型
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -279,8 +305,8 @@ public class ThemeManager {
                 @Override
                 public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
                     //if (status != 0) {
-                        // status 为 0 表示成功，非 0 表示失败
-                        Log.e("SoundHelper", "加载失败！ID: " + sampleId + " 状态码: " + status);
+                    // status 为 0 表示成功，非 0 表示失败
+                    Log.e("SoundHelper", "加载失败！ID: " + sampleId + " 状态码: " + status);
                     //}
                 }
             });
@@ -291,7 +317,7 @@ public class ThemeManager {
             Log.e("SoundHelper", "文件根本不存在: " + soundPath);
             return -1;
         }
-        return mSoundPool.load(soundPath,1);
+        return mSoundPool.load(soundPath, 1);
     }
 
     public static void play(int soundId) {
@@ -301,10 +327,10 @@ public class ThemeManager {
         }
     }
 
-    public static void clearSound(){
-        if(mSoundPool!=null){
+    public static void clearSound() {
+        if (mSoundPool != null) {
             mSoundPool.release();
-            mSoundPool=null;
+            mSoundPool = null;
         }
     }
 }

@@ -11,6 +11,7 @@ import static com.osfans.trime.theme.ThemeManager.dp2px;
 
 import android.content.Context;
 import android.os.Build;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,8 @@ import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.KeyView;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
+
+import org.luaj.LuaValue;
 
 import java.util.ArrayList;
 
@@ -87,16 +90,29 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         mListView.setLayoutManager(layoutManager);
         // 必须设为 false，否则 RecyclerView 会跳过尺寸计算
         mListView.setHasFixedSize(false);
+        LuaValue hide = mCandidateStyle.get("key");
         mHide = new KeyView(getContext(), mCandidateStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
-        mHide.setText("▽");
+        if (hide.istable()) {
+            mHide.setText(hide.get("text").optjstring("▽"));
+        }
+
         mHide.setContentDescription("更多候选");
         mHide.setOnClickListener(this);
+        mHide.setMinimumWidth(height);
         root.addView(mListView, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height, 1));
-        root.addView(mHide, new LayoutParams(height, height));
+        root.addView(mHide, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, height));
         mListView.setAdapter(mAdapter = new CandidateAdapter(new ArrayList<>()));
     }
 
+    public boolean pageDown() {
+        mListView.smoothScrollBy(mListView.getWidth(), 0);
+        return true;
+    }
 
+    public boolean pageUp() {
+        mListView.smoothScrollBy(mListView.getWidth(), 0);
+        return true;
+    }
     @Override
     public void onClick(View v) {
         if (mAdapter.getItemCount()>0)
@@ -119,7 +135,6 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
     }
 
     public void show() {
-
         int mIdx = Rime.getHighlightRimeCandidate();
         if (mIdx > 0) {
             mAdapter.setIdx(mIdx);
@@ -128,7 +143,7 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         }
 
         if (mListView.isComputingLayout()) {
-            mListView.post(this::update);
+            mListView.post(this::show);
             return;
         }
         CandidatesManager.reset();
@@ -173,11 +188,17 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
     }
 
     public boolean prevCandidate() {
-        return mAdapter.prevCandidate();
+        boolean ret = mAdapter.prevCandidate();
+        if(ret)
+            announceCandidate(Rime.getHighlightRimeCandidate());
+        return ret;
     }
 
     public boolean nextCandidate() {
-        return mAdapter.nextCandidate();
+        boolean ret = mAdapter.nextCandidate();
+        if(ret)
+            announceCandidate(Rime.getHighlightRimeCandidate());
+        return ret;
     }
 
     public ArrayList<CandidateItem> getData() {
@@ -207,6 +228,8 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
     }
 
     public void setIdx(int idx) {
+        if(idx<0||idx>=mAdapter.getItemCount()-1)
+            return;
         LinearLayoutManager layoutManager = (LinearLayoutManager) mListView.getLayoutManager();
         if (layoutManager != null) {
             // 参数1：目标索引

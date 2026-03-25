@@ -7,9 +7,11 @@ package com.osfans.trime;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,6 +26,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -55,7 +58,7 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
             setTheme(android.R.style.Theme_DeviceDefault);
         }
         super.onCreate(savedInstanceState);
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         DataManager.sync();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -71,26 +74,33 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
         });
         ListView mListView = new ListView(this);
         // 解决内容被导航栏遮挡的关键：应用 WindowInsets
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
-        {
-            mListView.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-                @NonNull
-                @Override
-                public WindowInsets onApplyWindowInsets(@NonNull View v, @NonNull WindowInsets insets) {
-                    // 将系统栏占用的空间转化为 ListView 的 Padding
-                    v.setPadding(
-                            insets.getSystemWindowInsetLeft(),
-                            insets.getSystemWindowInsetTop(),
-                            insets.getSystemWindowInsetRight(),
-                            insets.getSystemWindowInsetBottom()
-                    );
-                    return insets.consumeSystemWindowInsets();
-                }
+         mListView.setAdapter(adapter);
+        // 修改后的布局结构逻辑
+        LinearLayout root = new LinearLayout(this);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            root.setOnApplyWindowInsetsListener((v, insets) -> {
+                // 获取系统状态栏和导航栏的 Insets，但不包含键盘 (ime)
+                Insets systemBars = insets.getInsets(WindowInsets.Type.systemBars());
+                // 获取键盘高度
+                Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                v.setPadding(
+                        systemBars.left,
+                        systemBars.top,
+                        systemBars.right,
+                        systemBars.bottom
+                );
+                return WindowInsets.CONSUMED;
             });
         }
-        mListView.setAdapter(adapter);
-        mListView.addFooterView(new EditText(this));
-        setContentView(mListView);
+        root.setOrientation(LinearLayout.VERTICAL);
+        EditText editText = new EditText(this);
+        root.addView(mListView, new LinearLayout.LayoutParams(-1, -2)); // ListView 占据剩余空间
+        root.addView(editText, new LinearLayout.LayoutParams(-1, -2)); // EditText 固定在底部
+        TextView tv = new TextView(this);
+        tv.setAutoLinkMask(Linkify.ALL);
+        tv.setText("下载更多版本：https://github.com/nirenr/trime2/releases");
+        root.addView(tv, new LinearLayout.LayoutParams(-1, -2)); // EditText 固定在底部
+        setContentView(root);
         mListView.setOnItemClickListener(this);
      }
 

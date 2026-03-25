@@ -115,7 +115,7 @@ public class ExpandedCandidateView extends LinearLayout{
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0,-ThemeManager.getContentHeight());
+                pageUp();
             }
         });
         KeyView mNext = new KeyView(getContext(),mKeyStyle);
@@ -124,7 +124,7 @@ public class ExpandedCandidateView extends LinearLayout{
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0,ThemeManager.getContentHeight());
+                pageDown();
             }
         });
         mChar = new KeyView(getContext(),mKeyStyle);
@@ -141,6 +141,17 @@ public class ExpandedCandidateView extends LinearLayout{
         mButtonBar.addView(mNext,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
         mButtonBar.addView(mChar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
     }
+
+    public boolean pageDown() {
+        mListView.smoothScrollBy(0,ThemeManager.getContentHeight());
+        return true;
+    }
+
+    public boolean pageUp() {
+        mListView.smoothScrollBy(0,-ThemeManager.getContentHeight());
+        return true;
+    }
+
     private void addStrokeKey(LinearLayout parent, String stroke, String label,String cd) {
         KeyView key = new KeyView(getContext(), mKeyStyle);
         key.setText(label);
@@ -209,7 +220,8 @@ public class ExpandedCandidateView extends LinearLayout{
     }
 
     public void setIdx(int idx) {
-        Log.w("TAG", "setIdx: "+idx );
+        if(idx<0||idx>=mAdapter.getItemCount()-1)
+            return;
         FlexboxLayoutManager layoutManager = (FlexboxLayoutManager) mListView.getLayoutManager();
         if (layoutManager == null) return;
 

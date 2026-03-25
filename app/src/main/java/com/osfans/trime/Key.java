@@ -30,6 +30,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
 import com.android.cglib.dx.rop.cst.CstArray;
+import com.androlua.LuaApplication;
 import com.androlua.LuaBitmapDrawable;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.enums.KeyEventType;
@@ -37,6 +38,7 @@ import com.osfans.trime.keyboard.KeyboardView;
 import com.osfans.trime.keyboard.ModifierState;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
 
 import org.luaj.LuaValue;
 import org.luaj.Varargs;
@@ -156,6 +158,7 @@ public class Key {
     private String mStyle = "";
     private boolean mHasSwipeEvent;
     private Key mAsciiKey;
+    private boolean mSwipeRepeatable;
 
 
     /**
@@ -234,7 +237,7 @@ public class Key {
         label = mk.get("label").optjstring("");
         hint = mk.get("hint").optjstring("");
         description = mk.get("description").optjstring("");
-
+        mSwipeRepeatable=mk.get("swipe_repeatable").toboolean();
         // send_bindings 逻辑转换
         if (!mk.get("send_bindings").isnil()) {
             send_bindings = mk.get("send_bindings").optboolean(false);
@@ -648,15 +651,19 @@ public class Key {
             }
             if (Rime.isAsciiMode())
                 return event.getLabel();
-            if (!TextUtils.isEmpty(label))
-                return label;
             if (event.getCode() == KeyEvent.KEYCODE_SPACE) {
                  if (!Rime.isAsciiMode()) {
-                    String id = Rime.getRimeStatus().getSchemaName();
-                    if (!TextUtils.isEmpty(id))
-                        return id;
+                     if(TextUtils.isEmpty(event.getLabel()) || "space".equals(event.getLabel()) || "schema_name".equals(label)) {
+                         String id = Rime.getRimeStatus().getSchemaName();
+                         if (!TextUtils.isEmpty(id))
+                             return id;
+                         else if ("schema_name".equals(label))
+                             return event.getLabel();
+                     }
                 }
             }
+            if (!TextUtils.isEmpty(label))
+                return label;
         }
         return event.getLabel();
     }
@@ -756,5 +763,9 @@ public class Key {
 
     public Key getAsciiKey() {
         return mAsciiKey;
+    }
+
+    public boolean isSwipeRepeatable() {
+        return mSwipeRepeatable;
     }
 }

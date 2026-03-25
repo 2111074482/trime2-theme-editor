@@ -142,7 +142,7 @@ public final class RimeKeyMap {
     public static final int RimeKey_Kana_Lock = 0xff2d;
     public static final int RimeKey_Hiragana_Katakana = 0xff27;
     public static final int RimeKey_Zenkaku_Hankaku = 0xff2a;
-    public static final int RimeKey_VoidSymbol = 0;//xffffff;
+    public static final int RimeKey_VoidSymbol = 0xffffff;
 
     // 2. 方法定义
     public static int valToKeyCode(int val) {

@@ -9,6 +9,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -19,6 +20,7 @@ import com.osfans.trime.R;
 import com.osfans.trime.TrimeApplication;
 //import com.osfans.trime.core.isStorageAvailable;
 import com.osfans.trime.data.opencc.OpenCCDictManager;
+import com.osfans.trime.util.Function;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +65,11 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
 
     public static boolean isAsciiMode() {
         return isAsciiMode;
+    }
+
+    public static boolean isVoidKeycode(int keycode) {
+        int XK_VoidSymbol = 0xffffff;
+        return keycode <= 0 || keycode == XK_VoidSymbol;
     }
 
     public boolean onText(CharSequence text) {
@@ -157,7 +164,7 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
     private boolean getShowAsciiSwitchTips() {
         // Assume AppPrefs.defaultInstance().general.getAsciiSwitchTips() is implemented in Java
         //return AppPrefs.defaultInstance().general.getAsciiSwitchTips();
-        return true;
+        return false;
     }
 
     private String lastAsciiTipsText = "";
@@ -262,16 +269,34 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
 
     @Override
     public boolean simulateKeySequence(String sequence) {
+        boolean composing = isComposing();
+        if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:old1 "+composing);
         return Boolean.TRUE.equals(withRimeContext(() -> {
             Timber.d("simulateKeySequence: " + sequence);
+            String old = compositionCached.getCommitTextPreview();
+            if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:old2 "+old );
             boolean success = simulateRimeKeySequence(sequence);
             if (success) {
                 RimeProto.Commit commit = getRimeCommit();
                 String input = getRimeRawInput();
-                if (commit.getText() != null && !commit.getText().isEmpty() || !input.isEmpty()) {
+                if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:1 "+commit);
+                if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:2 "+input );
+                if (commit.getText() != null && !commit.getText().isEmpty()) {
+                    emitResponse(commit);
+                    if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:3 "+isComposing() );
+                    if(composing&&!isComposing()&&commit.getText().equals(old))
+                        emitResponse(new RimeProto.Commit(sequence));
+                    return true;
+                } else if(!input.isEmpty()){
+                   if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:4 "+input);
                     emitResponse(commit);
                     return true;
                 } else {
+                    //if(!TextUtils.isEmpty(old)) {
+                    //    emitResponse(new RimeProto.Commit(old));
+                    //    clearRimeComposition();
+                    //}
+                    if(BuildConfig.DEBUG)Log.w("rime", "simulateKeySequence:5 "+sequence);
                     emitResponse(new RimeProto.Commit(sequence));
                     return false;
                 }
@@ -432,7 +457,7 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
     }
 
     private boolean processKeyInner(int value, int modifiers, boolean isVirtual) {
-        lastAsciiTipsText = getAsciiTipsText();
+        //lastAsciiTipsText = getAsciiTipsText();
         boolean handled = processRimeKey(value, modifiers);
         emitResponse();
         if (!handled) {
@@ -468,9 +493,9 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
         RimeProto.Context context = getRimeContext();
         handleRimeMessage(5, new Object[]{context.getComposition()});
 
-        if (context.getComposition().getLength() <= 0 && !lastAsciiTipsText.equals(getAsciiTipsText())) {
-            showAsciiSwitchTips();
-        }
+        //if (context.getComposition().getLength() <= 0 && !lastAsciiTipsText.equals(getAsciiTipsText())) {
+        //    showAsciiSwitchTips();
+        //}
 
         if (getRimeOption("paging_mode")) {
             handleRimeMessage(6, new Object[]{context.getMenu()});
@@ -556,7 +581,6 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
                         .setTimeoutAfter(duration<5?1000:30000)
                         .build();
                 notificationManager.notify(notificationId, notification);
-
             } else if (msg.getData() == RimeMessage.DeployMessage.State.Failure) {
                 long duration = (SystemClock.elapsedRealtime() - startTime) / 1000;
 
@@ -594,20 +618,26 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
     }
 
     private void updateSchemaCached(RimeProto.Status status) {
-        String schemaId = status.getSchemaId();
-        String schemaName = status.getSchemaName();
-        // Engine response update won't send SchemaMessage, but usually update RimeStatus
-        if (schemaCached==null||!schemaId.equals(schemaCached.getSchemaId())) {
-            schemaCached = new RimeSchema(schemaId);
-            // notify downstream consumers that schema has changed
-            RimeMessage.SchemaMessage message = new RimeMessage.SchemaMessage(
-                    new SchemaItem(schemaId, schemaName)
-            );
-            messageFlow_.tryEmit(message);
+        try {
+            String schemaId = status.getSchemaId();
+            String schemaName = status.getSchemaName();
+            // Engine response update won't send SchemaMessage, but usually update RimeStatus
+            if (schemaCached==null||!schemaId.equals(schemaCached.getSchemaId())) {
+                schemaCached = new RimeSchema(schemaId);
+                // notify downstream consumers that schema has changed
+                RimeMessage.SchemaMessage message = new RimeMessage.SchemaMessage(
+                        new SchemaItem(schemaId, schemaName)
+                );
+                messageFlow_.tryEmit(message);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
+
     }
 
     private void showAsciiSwitchTips() {
+        //Function.printStackTrace("showAsciiSwitchTips");
         if (!getShowAsciiSwitchTips()) return;
         String tipsText = getAsciiTipsText();
         if (tipsText.isEmpty()) return;

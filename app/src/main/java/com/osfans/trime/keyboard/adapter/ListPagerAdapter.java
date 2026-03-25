@@ -58,7 +58,8 @@ public class ListPagerAdapter extends RecyclerView.Adapter<ListPagerAdapter.List
         // 4. 设置对齐方式
         // 1. 改为左对齐，配合 Adapter 里的 flexGrow 实现整齐填充
         flexManager.setJustifyContent(JustifyContent.FLEX_START);
-        flexManager.setAlignItems(AlignItems.CENTER);
+        //flexManager.setAlignItems(AlignItems.CENTER);
+        flexManager.setAlignItems(AlignItems.STRETCH);
         recyclerView.setLayoutManager(flexManager);
         return new ListViewHolder(recyclerView);
     }

@@ -27,6 +27,7 @@ import com.osfans.trime.BuildConfig;
 import com.osfans.trime.Config;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.DataManager;
+import com.osfans.trime.dialog.DeployDialog;
 
 import org.luaj.LuaTable;
 
@@ -478,8 +479,14 @@ public class Function {
                 }
                 startIntent(context, option); //啓動程序
                 break;
+            case "deploy":
+                new DeployDialog(context).show(context.getToken());
+                break;
             case "broadcast":
-                context.sendBroadcast(new Intent(option)); //廣播
+                if(option.equals("com.osfans.trime.action.DEPLOY"))
+                    new DeployDialog(context).show(context.getToken());
+                else
+                    context.sendBroadcast(new Intent(option)); //廣播
                 break;
             case "add_phrase":
                 //Trime.getService().addPhrase(); //新建短语

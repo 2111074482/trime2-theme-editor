@@ -5,8 +5,12 @@
 
 package com.osfans.trime;
 
+import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
 import android.os.Environment;
 import android.util.Log;
+import android.view.Gravity;
 
 import com.androlua.LuaApplication;
 import com.osfans.trime.core.Rime;
@@ -135,16 +139,33 @@ public class Config {
         return list;
     }
 
+    public static String getStyleKey(String s){
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
+            return  s+ "_style_night";
+        }else {
+            return  s+ "_style";
+        }
+    }
+
+    public static String getStyleKey(){
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
+            return  getTheme()+ "_style_night";
+        }else {
+            return  getTheme()+ "_style";
+        }
+    }
+
     public static void setStyle(String s) {
-        mStyle = s;
-        Function.saveString(LuaApplication.getInstance(), getTheme() + "_style", s);
+        Function.saveString(LuaApplication.getInstance(), getStyleKey(), s);
     }
 
     public static String getStyle() {
-        if (mStyle == null)
-            mStyle = Function.loadString(LuaApplication.getInstance(), getTheme() + "_style", "light");
-        return mStyle;
-    }
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
+            return  Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style_night", Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style", "light"));
+        }else {
+            return  Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style", "light");
+        }
+     }
 
     public static String getStyleDir() {
         File dir = new File(getThemeDir(getTheme()), "styles");
@@ -242,4 +263,27 @@ public class Config {
     public static String getKeyboardPath(String keyboardId) {
         return new File(getKeyboardDir(),keyboardId+".lua").getAbsolutePath();
     }
+
+    public static int getSmallModeGravity() {
+        return Function.getPref(LuaApplication.getInstance()).getInt("small_mode_gravity", Gravity.LEFT);
+    }
+    public static void setSmallModeGravity(int g) {
+        Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_gravity", g).commit();
+    }
+    public static boolean isSmallMode() {
+        return Function.getPref(LuaApplication.getInstance()).getBoolean("small_mode", false);
+    }
+    public static void setSmallMode(boolean b) {
+        Function.getPref(LuaApplication.getInstance()).edit().putBoolean("small_mode", b).commit();
+    }
+
+
+    public static int getSmallModeWidth() {
+        return Function.getPref(LuaApplication.getInstance()).getInt("small_mode_width", (int) (TrimeService.getInstance().getMaxWidth()*0.8));
+    }
+    public static void setSmallModeWidth(int w) {
+        Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_width", w).commit();
+    }
+
+
 }

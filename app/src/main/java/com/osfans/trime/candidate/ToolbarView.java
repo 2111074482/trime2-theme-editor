@@ -7,7 +7,6 @@ package com.osfans.trime.candidate;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,13 +71,19 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
         LinearLayout itemsLayout = new LinearLayout(getContext());
         itemsLayout.setGravity(Gravity.CENTER);
         mListView.addView(itemsLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        KeyView mHide = new KeyView(getContext(), mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
-        mHide.setText("▽");
+        LuaValue hide = mToolbarStyle.get("hide");
+        KeyView mHide = new KeyView(getContext(), hide.istable()?mToolbarStyle.getKeyStyle("hide", mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"))):mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
+         if (hide.istable()) {
+            mHide.setText(hide.get("text").optjstring("▽"));
+        } else {
+            mHide.setText(hide.optjstring("▽"));
+        }
         mHide.setContentDescription("收起键盘");
         mHide.setOnClickListener(this);
+        mHide.setMinimumWidth(height);
 
         root.addView(mListView, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height, 1));
-        root.addView(mHide, new LayoutParams(height, height));
+        root.addView(mHide, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, height));
         try {
             if(mToolbarStyle.get("schema_switches").optboolean(false)&&!Rime.getCurrentRimeSchema().equals(".default")) {
                 RimeSchema currentRimeSchema = new RimeSchema(Rime.getCurrentRimeSchema());
@@ -113,14 +118,19 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
         LuaValue keys = mToolbarStyle.get("keys").opttable(new LuaTable());
         int len = keys.length();
         for (int i = 0; i < len; i++) {
-            LuaValue s = keys.get(i + 1);
-            if (s.istable()) {
-                KeyView key = new KeyView(getContext(), s.get("click").isnil() ? new Key(new Event(s)) : new Key(s), mKeyStyle);
+            LuaValue o = keys.get(i + 1);
+            if (o.istable()) {
+                LuaValue s = o.get("style");
+                KeyStyle style=mKeyStyle;
+                if(s.isstring()){
+                    style=ThemeManager.getStyle().getKeyStyle(s.tojstring(),mKeyStyle);
+                }
+                KeyView key = new KeyView(getContext(), o.get("click").isnil() ? new Key(new Event(o)) : new Key(o), style);
                 itemsLayout.addView(key, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 key.setMinimumWidth(height);
                 mKeys.add(key);
-            } else if (s.isstring()) {
-                KeyView key = new KeyView(getContext(), new Key(s.tojstring()), mKeyStyle);
+            } else if (o.isstring()) {
+                KeyView key = new KeyView(getContext(), new Key(o.tojstring()), mKeyStyle);
                 itemsLayout.addView(key, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 key.setMinimumWidth(height);
                 mKeys.add(key);

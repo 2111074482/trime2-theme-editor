@@ -29,7 +29,7 @@ public final class RimeSchema {
 
         // Default constructor matching Kotlin's default arguments
         public Switch() {
-            this("", Collections.emptyList(), -1, Collections.emptyList());
+            this("", Collections.emptyList(), 0, Collections.emptyList());
         }
 
         public Switch(String name, List<String> options, int reset, List<String> states) {
@@ -98,7 +98,9 @@ public final class RimeSchema {
                 reset = (reset + 1) % options.size();
                 Rime.setRimeOption(options.get(reset), true);
             } else {
+                Log.w("TAG", "toggleOption:1 "+reset );
                 reset = 1 - reset;
+                Log.w("TAG", "toggleOption:2 "+reset );
                 Rime.setRimeOption(getName(), reset == 1);
             }
         }
@@ -134,7 +136,7 @@ public final class RimeSchema {
 
                 List<String> options = rc.getList(path + "/options", stringAction);
                 Integer resetInt = rc.getInt(path + "/reset");
-                int reset = (resetInt != null) ? resetInt : -1;
+                int reset = (resetInt != null) ? resetInt : 0;
                 List<String> states = rc.getList(path + "/states", stringAction);
 
                 return new Switch(switchName, options, reset, states);

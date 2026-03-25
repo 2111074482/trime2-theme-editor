@@ -43,7 +43,7 @@ public class AbsKeyboardView extends KeyboardView{
     private void loadRows() {
         TrimeService mTrime= TrimeService.getInstance();
         mHeight = ThemeManager.getKeyboardHeight();
-        mWidth = mTrime.getMaxWidth();
+        mWidth = mTrime.getWidth();
 
         mLayout = globals.get("layout").opttable(null);
         mKeys = globals.get("keys").checktable();

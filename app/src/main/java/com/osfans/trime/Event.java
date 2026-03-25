@@ -19,6 +19,7 @@
 package com.osfans.trime;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 
 import com.osfans.trime.core.RimeKeyMap;
@@ -166,10 +167,10 @@ public class Event {
         }
 
         // 2. 初始化 symbolAliases (假设它是一个已存在的 Map)
-        CLICK_CODE_CACHE.putAll(symbolAliases);
+        //CLICK_CODE_CACHE.putAll(symbolAliases);
 
         // 3. 初始化 Symbols
-        String symbols = Key.getSymbols();
+        /*String symbols = Key.getSymbols();
         int start = Key.getSymbolStart();
         for (int i = 0; i < symbols.length(); i++) {
             // 1. 获取单个字符
@@ -181,7 +182,7 @@ public class Event {
             // 建议：如果 androidKeys 优先级更高，可以用 putIfAbsent
             if (!CLICK_CODE_CACHE.containsKey(key))
                 CLICK_CODE_CACHE.put(key, start + i);
-        }
+        }*/
     }
 
     public Event(String s) {
@@ -214,7 +215,12 @@ public class Event {
             mask = sends[1];
             parseLabel();
             text = m.get("text").optjstring("");
-            if (code < 0 && TextUtils.isEmpty(text)) text = s;
+            if (code < 0 && TextUtils.isEmpty(text)){
+                if(TextUtils.isEmpty(send))
+                    text=s;
+                else
+                    text = send;
+            }
             LuaValue st = m.get("states");
             if (st.istable()) {
                 states = st.checktable().stringValues();
@@ -223,7 +229,7 @@ public class Event {
             repeatable = m.get("repeatable").optboolean(false);
             functional = m.get("functional").optboolean(true);
         } else if ((code = getClickCode(s)) >= 0) {
-            if (code >= Key.getSymbolStart() && code <= Key.getSymbolStart() + 26)
+            if (getRimeCode(code)==RimeKeyMap.RimeKey_VoidSymbol)
                 text = s;
             parseLabel();
         } else if (s.endsWith(".lua")) {

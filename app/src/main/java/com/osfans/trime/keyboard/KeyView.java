@@ -52,6 +52,7 @@ import com.osfans.trime.enums.KeyEventType;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
 
 public class KeyView extends FrameLayout implements View.OnClickListener {
 
@@ -84,8 +85,8 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     // --- 3. 构造函数 ---
     public KeyView(@NonNull Context context) {
         super(context);
-        mDefKey=null;
-        mAsciiKey=null;
+        mDefKey = null;
+        mAsciiKey = null;
         mTrime = TrimeService.getInstance();
         mKeyStyle = ThemeManager.getStyle().getKeyStyle("key");
         mPressedStyle = mKeyStyle.getKeyStyle("pressed", mKeyStyle);
@@ -96,8 +97,8 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         super(context);
         mTrime = TrimeService.getInstance();
         mKey = v;
-        mDefKey=v;
-        mAsciiKey=mKey.getAsciiKey();
+        mDefKey = v;
+        mAsciiKey = mKey.getAsciiKey();
         mKeyStyle = ThemeManager.getStyle().getKeyStyle(v.getStyle(), ThemeManager.getStyle().getKeyStyle("key"));
         mPressedStyle = mKeyStyle.getKeyStyle("pressed", mKeyStyle);
         initView();
@@ -106,8 +107,8 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
     public KeyView(@NonNull Context context, KeyStyle v) {
         super(context);
-        mDefKey=null;
-        mAsciiKey=null;
+        mDefKey = null;
+        mAsciiKey = null;
         mTrime = TrimeService.getInstance();
         mKeyStyle = v;
         mPressedStyle = mKeyStyle.getKeyStyle("pressed", mKeyStyle);
@@ -118,8 +119,8 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         super(context);
         mTrime = TrimeService.getInstance();
         mKey = v;
-        mDefKey=v;
-        mAsciiKey=mKey.getAsciiKey();
+        mDefKey = v;
+        mAsciiKey = mKey.getAsciiKey();
         mKeyStyle = ThemeManager.getStyle().getKeyStyle(v.getStyle(), s);
         mPressedStyle = mKeyStyle.getKeyStyle("pressed", mKeyStyle);
         initView();
@@ -146,12 +147,21 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
                     //    );
                     //}
                 } else {
-                    boolean shifted = !ModifierState.isShifted();
-                    if (mKey.isShiftLock())
-                        ModifierState.setShiftLock(shifted);
-                    mTrime.setShifted(shifted);
+                    if (mKey.getClick().getShiftLock().equals("double")) {
+                        if (ModifierState.isShifted()) {
+                            ModifierState.setShiftLock(true);
+                        } else {
+                            mTrime.setShifted(true);
+                        }
+                    } else {
+                        boolean shifted = !ModifierState.isShifted();
+                        if (mKey.isShiftLock())
+                            ModifierState.setShiftLock(shifted);
+                        mTrime.setShifted(shifted);
+                    }
                 }
                 setSelected(ModifierState.isShifted());
+                updateTextColor(mClick, ModifierState.isShiftLock(), mKeyStyle);
             } else {
                 mTrime.onEvent(mKey.getEvent());
                 if (ModifierState.isShifted() && !ModifierState.isShiftLock())
@@ -163,11 +173,11 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         mTrime.onEvent(new Event(mClickText));
     }
 
-    @Override
-    public void setBackgroundColor(int color) {
-        //super.setBackgroundColor(color);
-        keyRoot.setBackground(createButtonBackground(color, 24f));
-    }
+    //@Override
+    //public void setBackgroundColor(int color) {
+    //    //super.setBackgroundColor(color);
+    //    keyRoot.setBackground(createButtonBackground(color, 24f));
+    //}
 
     public void setBackgroundColor(int color, float radius) {
         //super.setBackgroundColor(color);
@@ -180,27 +190,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         boolean changed = mPressed != pressed;
         mPressed = pressed;
         super.setPressed(pressed);
-        if (changed && pressed) {
-            if (mKeyStyle.isVibrationEnabled()) {
-                VibrationEffect ve = mKeyStyle.getVibrationEffect();
-                if (ve != null) {
-                    ThemeManager.vibrate(ve);
-                } else {
-                    boolean ret = performHapticFeedback(
-                            HapticFeedbackConstants.KEYBOARD_TAP,
-                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-                    );
-                }
-            }
-            if (mKeyStyle.isSoundEnabled()) {
-                int sound = mKeyStyle.getSoundEffect();
-                if (sound > 0) {
-                    ThemeManager.play(sound);
-                } else {
-                    playSoundEffect(SoundEffectConstants.CLICK);
-                }
-            }
-        }
+
 
         if (changed) {
             if (direction == SWIPE_NONE)
@@ -352,11 +342,12 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             keyPreview.setTranslationZ(1);
             keyPreview.setVisibility(VISIBLE);
         }
+        KeyStyle previewStyle = mKeyStyle.getKeyStyle("preview", mKeyStyle);
         keyPreview.animate()
-                .scaleX(1.2f)
-                .scaleY(1.2f)
+                .scaleX(previewStyle.getScaleX())
+                .scaleY(previewStyle.getScaleY())
                 .translationZ(1)
-                .translationY(-getHeight())
+                .translationY(-getHeight() * previewStyle.getScaleY() * 1.01f)
                 .translationX(0)
                 .setDuration(100)
                 .alpha(1.f)
@@ -406,6 +397,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         // 2. 彻底移除所有 Callback，防止销毁后执行 Runnable 导致的内存泄漏
         removeCallbacks(mLongClickRunnable);
         removeCallbacks(mRepeatableRunnable);
+        removeCallbacks(mSwipRepeatableRunnable);
 
         // 3. 重置 Transition 状态，释放 Drawable 资源
         if (transition != null) {
@@ -581,7 +573,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
     public void invalidateKey() {
         if (mKey != null) {
-            if(mAsciiKey != null) {
+            if (mAsciiKey != null) {
                 mKey = Rime.isAsciiMode() ? mAsciiKey : mDefKey;
                 initKey();
             } else {
@@ -608,6 +600,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
     // --- 6. 私有初始化与辅助方法 ---
     private void initView() {
+        //setBackgroundColor(0);
         setClipChildren(false);
         setClipToPadding(false);
         setClickable(true);
@@ -714,28 +707,28 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         KeyStyle mHintKeyStyle = mKeyStyle.getHintKeyStyle();
         String ev = mKey.getHint(SWIPE_UP);
         if (ev != null && mHintKeyStyle.hasKey("up")) {
-            if(mHintUp!=null)
+            if (mHintUp != null)
                 mHintUp.setText(ev);
             else
                 mHintUp = addHint(ev, Gravity.TOP, mHintKeyStyle.getKeyStyle("up", mHintKeyStyle));
         }
         ev = mKey.getHint(SWIPE_DOWN);
         if (ev != null && mHintKeyStyle.hasKey("down")) {
-            if(mHintDown!=null)
+            if (mHintDown != null)
                 mHintDown.setText(ev);
             else
                 mHintDown = addHint(ev, Gravity.BOTTOM, mHintKeyStyle.getKeyStyle("down", mHintKeyStyle));
         }
         ev = mKey.getHint(SWIPE_LEFT);
         if (ev != null && mHintKeyStyle.hasKey("left")) {
-            if(mHintLeft!=null)
+            if (mHintLeft != null)
                 mHintLeft.setText(ev);
             else
                 mHintLeft = addHint(ev, Gravity.LEFT, mHintKeyStyle.getKeyStyle("left", mHintKeyStyle));
         }
         ev = mKey.getHint(SWIPE_RIGHT);
         if (ev != null && mHintKeyStyle.hasKey("right")) {
-            if(mHintRight!=null)
+            if (mHintRight != null)
                 mHintRight.setText(ev);
             else
                 mHintRight = addHint(ev, Gravity.RIGHT, mHintKeyStyle.getKeyStyle("right", mHintKeyStyle));
@@ -745,7 +738,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     private TextView addHint(String label, int g, KeyStyle mHintStyle) {
         if (!mHintStyle.isShow())
             return null;
-        TextView hint = (g == Gravity.TOP||g == Gravity.BOTTOM) ? new TightTextView(getContext()) : new TextView(getContext());
+        TextView hint = (g == Gravity.TOP || g == Gravity.BOTTOM) ? new TightTextView(getContext()) : new TextView(getContext());
         hint.setIncludeFontPadding(true);
         hint.setText(label);
         hint.setSingleLine(true);
@@ -783,6 +776,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         @Override
         public void run() {
             if (!isPressed()) return;
+            
             if (mKeyStyle.getLongClickKeyStyle().isVibrationEnabled()) {
                 VibrationEffect ve = mKeyStyle.getLongClickKeyStyle().getVibrationEffect();
                 if (ve != null) {
@@ -851,6 +845,38 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         }
     };
 
+    private final Runnable mSwipRepeatableRunnable = new Runnable() {
+        @Override
+        public void run() {
+            removeCallbacks(this);
+            if (mKeyStyle.getLongClickKeyStyle().isVibrationEnabled()) {
+                VibrationEffect ve = mKeyStyle.getLongClickKeyStyle().getVibrationEffect();
+                if (ve != null) {
+                    ThemeManager.vibrate(ve);
+                } else {
+                    boolean ret = performHapticFeedback(
+                            HapticFeedbackConstants.LONG_PRESS,
+                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    );
+                }
+            }
+            if (mKeyStyle.getLongClickKeyStyle().isSoundEnabled()) {
+                int sound = mKeyStyle.getLongClickKeyStyle().getSoundEffect();
+                if (sound > 0) {
+                    ThemeManager.play(sound);
+                } else {
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                }
+            }
+            //performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+            if (direction != SWIPE_NONE) {
+                Event ev = mKey.getEvent(direction);
+                if (ev != null) mTrime.onEvent(ev);
+            }
+            postDelayed(this, mKeyStyle.getRepeatClickTime());
+        }
+    };
+
     public void setClickPadding(int left, int top, int right, int bottom) {
         mClick.setPadding(left, top, right, bottom);
     }
@@ -876,11 +902,41 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
 
     @Override
+    public void setMinimumWidth(int minWidth) {
+        super.setMinimumWidth(minWidth);
+        keyRoot.setMinimumWidth(minWidth);
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
+
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (mKeyStyle.isVibrationEnabled()) {
+                VibrationEffect ve = mKeyStyle.getVibrationEffect();
+                if (ve != null) {
+                    ThemeManager.vibrate(ve);
+                } else {
+                    boolean ret = performHapticFeedback(
+                            HapticFeedbackConstants.KEYBOARD_TAP,
+                            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                    );
+                }
+            }
+            if (mKeyStyle.isSoundEnabled()) {
+                int sound = mKeyStyle.getSoundEffect();
+                if (sound > 0) {
+                    ThemeManager.play(sound);
+                } else {
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                }
+            }
+        }
+
         // A. 异形按键检测 (ACTION_DOWN)
         if (isShapeDetectionEnabled && event.getAction() == MotionEvent.ACTION_DOWN) {
             if (isPixelTransparent(event)) return false;
         }
+
         if (mKey == null || !mKey.hasSwipeEvent())
             return super.onTouchEvent(event);
 
@@ -897,8 +953,12 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
             // C. 处理滑动后的上屏逻辑
             if (direction != SWIPE_NONE) {
-                Event ev = mKey.getEvent(direction);
-                if (ev != null) mTrime.onEvent(ev);
+                if (mKey.isSwipeRepeatable()) {
+                    removeCallbacks(mSwipRepeatableRunnable);
+                } else {
+                    Event ev = mKey.getEvent(direction);
+                    if (ev != null) mTrime.onEvent(ev);
+                }
                 // 重要：重置状态
                 showPreview(false, null);
                 direction = SWIPE_NONE;
@@ -949,12 +1009,16 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
                 Event ev = mKey.getEvent(direction);
                 if (ev != null) {
                     showPreview(true, ev.getLabel());
+                    if (mKey.isSwipeRepeatable())
+                        postDelayed(mSwipRepeatableRunnable, mKeyStyle.getRepeatClickTime());
                 } else {
                     showPreview(false, null);
+                    removeCallbacks(mSwipRepeatableRunnable);
                 }
             } else {
                 // 回到按键中心，恢复普通预览
                 showPreview(true, mKey.getLabel());
+                removeCallbacks(mSwipRepeatableRunnable);
             }
             lastDirection = direction;
         }

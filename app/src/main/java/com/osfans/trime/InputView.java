@@ -16,6 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.androlua.LuaUtil;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.AbsKeyboardView;
 import com.osfans.trime.keyboard.FlexboxKeyboardView;
@@ -24,6 +25,7 @@ import com.osfans.trime.keyboard.ModifierState;
 import com.osfans.trime.keyboard.RowKeyboardView;
 import com.osfans.trime.keyboard.SymbolsKeyboardView;
 import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
 
 import androidx.annotation.NonNull;
 
@@ -47,7 +49,10 @@ public class InputView extends FrameLayout implements ResourceFinder {
         super(context);
         setClipChildren(false);
         setClipToPadding(false);
-        setKeyboard(Rime.getRimeStatus().getSchemaId());
+        String id = Rime.getRimeStatus().getSchemaId();
+        if(TextUtils.isEmpty(id))
+            id = Function.getPref(context).getString("select_schema_id","");
+        setKeyboard(id);
     }
 
     private void setKeyboardView(KeyboardView keyboardView) {
@@ -61,6 +66,8 @@ public class InputView extends FrameLayout implements ResourceFinder {
         }
         Rime.setRimeOption("ascii_mode", keyboardView.isAsciiMode());
         setShifted(false);
+        ModifierState.setShifted(false);
+        ModifierState.setShiftLock(false);
         addView(keyboardView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         if (oldView != null) {
             // 旧键盘淡出
@@ -104,38 +111,14 @@ public class InputView extends FrameLayout implements ResourceFinder {
     private final Map<String, KeyboardView> mViewCache = new HashMap<>();
 
     public void setKeyboard(String id) {
-        Log.w("TAG", "setKeyboard: " + id);
+        Log.w("TAG", "setKeyboard:s " + id);
         if (id == null || id.equals(mCurrentSchemaId)) return;
         mCurrentSchemaId = id;
-        if (id.isEmpty()) {
-            String k = Config.getKeyboard(".default");
-            if (TextUtils.isEmpty(k)) {
-                id = ThemeManager.getKeyboard(".default");
-                if (TextUtils.isEmpty(id))
-                    id = "qwerty36";
-            } else {
-                id = k;
-            }
-        }
-
+        id=getKeyboardId(id);
+        Log.w("TAG", "setKeyboard:e " + id);
         // 获取或创建 KeyboardView
         KeyboardView targetView = mViewCache.get(id);
         if (targetView == null) {
-            if (!new File(findFile(id + ".lua")).exists()) {
-                if (id.equals(".default") || id.equals("default")) {
-                    id = Config.getKeyboard(".default");
-                    if(TextUtils.isEmpty(id)) {
-                        id = Rime.getRimeStatus().getSchemaId();
-                        id = ThemeManager.getKeyboard(id);
-                    }
-                } else {
-                    id = ThemeManager.getKeyboard(id);
-                }
-                if (id.isEmpty()) {
-                    id = "qwerty36";
-                }
-            }
-            Log.w("TAG", "setKeyboard:4 " + id);
             // 初始化 Lua 环境
             Globals globals = JsePlatform.standardGlobals();
             globals.finder = this;
@@ -176,6 +159,51 @@ public class InputView extends FrameLayout implements ResourceFinder {
             }
         }
         setKeyboardView(targetView);
+    }
+
+    private String getKeyboardId(String id) {
+        if (id.isEmpty()) {
+            String k = Config.getKeyboard(".default");
+            if (!TextUtils.isEmpty(k)) {
+                if(mViewCache.containsKey(id))
+                    return id;
+                if (new File(findFile(id + ".lua")).exists())
+                    return id;
+            }
+            id = Rime.getRimeStatus().getSchemaId();
+            if(TextUtils.isEmpty(id))
+                id = Function.getPref(getContext()).getString("select_schema_id","");
+        }
+        Log.w("TAG", "setKeyboard:2 " + id);
+        if(mViewCache.containsKey(id))
+            return id;
+        if (new File(findFile(id + ".lua")).exists())
+            return id;
+
+        id = ThemeManager.getKeyboard(id);
+        Log.w("TAG", "setKeyboard:4 " + id);
+        if(mViewCache.containsKey(id))
+            return id;
+        if (new File(findFile(id + ".lua")).exists())
+            return id;
+
+        id = Rime.getRimeStatus().getSchemaId();
+        if(TextUtils.isEmpty(id))
+            id = Function.getPref(getContext()).getString("select_schema_id","");
+        Log.w("TAG", "setKeyboard:5 " + id);
+        if(mViewCache.containsKey(id))
+            return id;
+        if (new File(findFile(id + ".lua")).exists())
+            return id;
+
+        id = ThemeManager.getKeyboard(id);
+        Log.w("TAG", "setKeyboard:6 " + id);
+        if(mViewCache.containsKey(id))
+            return id;
+        if (new File(findFile(id + ".lua")).exists())
+            return id;
+
+        return "qwerty36";
     }
 
     @Override

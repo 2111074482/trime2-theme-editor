@@ -42,14 +42,14 @@ preset_keys = {
     VOLUME_UP = { label = "音量 +", send = "VOLUME_UP" },
     VOLUME_MUTE = { label = "靜音", send = "VOLUME_MUTE" },
     -- 編輯
-    Shift_L = { label = "Shift", send = "Shift_L", shift_lock = "ascii_long" },
+    Shift_L = { label = "Shift", send = "Shift_L", shift_lock = "double" },--shift_lock click,double,long
     Return = { label = "action_labels", send = "Return" },
     Return1 = { label = "Enter", send = "Return" },
     Return2 = { label = "回车", send = "Return" },
     Hide = { label = "隱藏", send = "BACK" },
     BackSpace = { label = " ⌫", description = "退格", repeatable = true, send = "BackSpace" },
     space = { repeatable = false, send = "space" },
-    space1 = { label = "空格", repeatable = false, send = "space" },
+    space1 = { label="␣", repeatable = false, send = "space" },
     Escape = { label = "Esc", send = "Escape" },
     Home = { label = "行首", send = "Home" },
     Insert = { label = "插入", send = "Insert" },
@@ -88,11 +88,13 @@ preset_keys = {
     Punct_switch = { toggle = "ascii_punct", send = "Mode_switch", states = { "。，", "．，" } },
     --切换键盘
     Keyboard_symbols = { label = "符号", send = "Eisu_toggle", select = "symbols" },
+    Keyboard_symbols_ext = { label = "更多", send = "Eisu_toggle", select = "symbols_ext" },
     Keyboard_number = { label = "数字", send = "Eisu_toggle", select = "number" },
     Keyboard_letter = { label = "字母", send = "Eisu_toggle", select = "default" },
     Keyboard_default = { label = "返回", send = "Eisu_toggle", select = ".default" },
     Keyboard_switch = { label = "鍵盤", send = "Eisu_toggle", select = ".next" },
     Keyboard_clipboard = { label = "剪贴板", send = "Eisu_toggle", select = "clipboard" },
+    Keyboard_phrase = { label = "短语", send = "Eisu_toggle", select = "phrase" },
     Keyboard_editor = {label = "编辑", send = "Eisu_toggle", select = "editor" },
     -- trime設定
     IME_switch = { label = "🌐", send = "LANGUAGE_SWITCH" }, --彈出對話框選擇輸入法
@@ -102,12 +104,23 @@ preset_keys = {
     Color_switch = { label = "配色", send = "PROG_RED" },
     Menu = { label = "方案", send = "Menu" },
     Settings = { label = "設定", send = "SETTINGS" },
-    Color_settings = { label = "配色", send = "SETTINGS", option = "color" },
-    Theme_settings = { label = "主題", send = "SETTINGS", option = "theme" },
-    Schema_settings = { label = "方案", send = "SETTINGS", option = "schema" },
+    Color_settings = { label = "配色", send = "SETTINGS", option = "color" },--添加select参数可以直接设置指定配色
+    Theme_settings = { label = "主題", send = "SETTINGS", option = "theme" },--添加select参数可以直接设置指定主题
+    Schema_settings = { label = "方案", send = "SETTINGS", option = "schema" },--添加select参数可以直接设置指定方案
     Candidate_switch = { toggle = "_hide_candidate", send = "Mode_switch", states = { "有候选", "无候选" } },
     Comment_switch = { toggle = "_hide_comment", send = "Mode_switch", states = { "有注释", "无注释" } },
     Hint_switch = { toggle = "_hide_key_hint", send = "Mode_switch", states = { "有助記", "無助記" } },
+
+    --候选过滤
+    Filter_h = { label = "一", command = "filter", option = "h" },
+    Filter_s = { label = "丨", command = "filter", option = "s" },
+    Filter_p = { label = "丿", command = "filter", option = "p" },
+    Filter_n = { label = "丶", command = "filter", option = "n" },
+    Filter_z = { label = "乙", command = "filter", option = "z" },
+    Filter_x = { label = "X", command = "filter", option = "" },
+    Filter_char = { label = "字/词", command = "filter", option = "char" },
+    Mode_small= {toggle= "small_mode", send= "Mode_switch", states= {"单手关", "单手开"}},
+
     -- trime命令
     LunarDate = {label= "农历", command= "nongli.lua"},
     Date = { label = "日期", command = "date", option = "yyyy-MM-dd" },
@@ -126,7 +139,7 @@ preset_keys = {
     WebSearch = { label = "搜索网页", command = "web_search", option = "%4$s" }, --搜索，其他view、dial、edit、search等intent，參考安卓的intent文檔：https=//developer.android.com/reference/android/content/Intent.html
     Search = { label = "搜索", command = "search", option = "%1$s" }, --搜索短信、字典等
     Share = { label = "分享", command = "send", option = "%s" }, --分享指定文本= %s或者%1$s爲當前字符
-    Deploy = { label = "部署", command = "broadcast", option = "com.osfans.trime.action.DEPLOY" },
+    Deploy = { label = "部署", command = "deploy"},
     Sync = { label = "同步", command = "broadcast", option = "com.osfans.trime.action.SYNC_USER_DATA" },
     RepeatCommit = { label = "重复", command = "commit", option = "%1$s" }, --重复输入刚上屏的内容
 }

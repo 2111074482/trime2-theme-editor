@@ -119,6 +119,10 @@ key.pressed = {
 }
 --按键预览
 key.preview = {
+    --宽度缩放
+    scale_x = 1.2,
+    --高度缩放
+    scale_y = 1.2,
     text_color = 0xff000000,
     text_size = 22,
     background = 0xffffffff,
@@ -152,7 +156,7 @@ functional = table.clone(key)
 functional.text_size = 18
 functional.background = 0xffaaaaaa
 functional.pressed.background = 0xff888888
-functional.pressed.text_color = 0xff000000
+functional.pressed.text_color = 0xffffffff
 functional.preview = nil
 
 --符号面板
@@ -208,6 +212,7 @@ candidate.comment.pressed = {
 }
 
 candidate.key = {
+    text="▽",
     text_color = 0xff000000,
     text_size = 18,
     background = 0xffdddddd,
@@ -272,8 +277,10 @@ clipboard.item.padding = {
 toolbar = table.clone(candidate)
 --显示方案定义的开关
 toolbar.schema_switches=false
+toolbar.hide=table.clone(candidate.key)
 --支持添加preset_keys按键，也可以直接写事件的表，
-toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" }
+--可以指定按键的style
+toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" ,"Mode_small"}
 toolbar.key.text_size = 22
 toolbar.key.padding = {
     left = 8,

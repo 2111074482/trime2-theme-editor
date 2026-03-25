@@ -45,7 +45,7 @@ public class RowKeyboardView extends KeyboardView implements View.OnClickListene
     private void loadRows() {
         TrimeService mTrime= TrimeService.getInstance();
         mHeight = ThemeManager.getKeyboardHeight();
-        mWidth = mTrime.getMaxWidth();
+        mWidth = mTrime.getWidth();
 
         mLayout = globals.get("layout").opttable(null);
         mRows = globals.get("rows").checktable();

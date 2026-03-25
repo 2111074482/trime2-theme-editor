@@ -23,6 +23,8 @@ package org.luaj;
 
 import android.view.KeyEvent;
 
+import com.osfans.trime.util.Function;
+
 import org.luaj.Varargs;
 import org.luaj.lib.jse.CoerceJavaToLua;
 import org.luaj.lib.jse.CoerceLuaToJava;
@@ -3354,8 +3356,10 @@ public class LuaValue extends Varargs {
 				LuaValue res = t.rawget(key);
 				if ((!res.isnil()) || (tm = t.metatag(INDEX)).isnil())
 					return res;
-			} else if ((tm = t.metatag(INDEX)).isnil())
-				t.indexerror();
+			} else if ((tm = t.metatag(INDEX)).isnil()) {
+                Function.printStackTrace("gettable "+key);
+                t.indexerror();
+            }
 			if (tm.isfunction())
 				return tm.call(t, key);
 			t = tm;

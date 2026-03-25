@@ -56,6 +56,7 @@ public class LuaApplication extends TrimeApplication implements LuaContext {
 
             NotificationChannel channel = new NotificationChannel(channelId, name, importance);
             channel.setDescription(description);
+            channel.setSound(null, null); // 强制设为无声
             // 如果需要，可以配置呼吸灯或振动
             // channel.enableLights(true);
             // channel.setLightColor(Color.BLUE);

@@ -6,6 +6,7 @@
 package com.osfans.trime.keyboard;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 import android.view.ViewGroup;
 
@@ -17,6 +18,8 @@ import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.flexbox.JustifyContent;
 import com.osfans.trime.Key;
+import com.osfans.trime.theme.KeyStyle;
+import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
 
 import org.luaj.Globals;
@@ -99,6 +102,19 @@ public class FlexboxKeyboardView extends KeyboardView {
         FlexboxLayout layout = new FlexboxLayout(getContext());
         layout.setClipChildren(false);
         layout.setClipToPadding(false);
+        LuaValue s = config.get("style");
+        if(s.isstring()) {
+            KeyStyle style = ThemeManager.getStyle().getKeyStyle(s.tojstring());
+            layout.setBackground(style.getBackground(0));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                int dShadowColor = style.getShadowColor();
+                if (dShadowColor != 0) {
+                    layout.setOutlineAmbientShadowColor(dShadowColor);
+                    layout.setOutlineSpotShadowColor(dShadowColor);
+                }
+            }
+            layout.setElevation(style.getElevation());
+        }
 
         // 解析方向
         String dir = config.get("direction").optjstring("row");

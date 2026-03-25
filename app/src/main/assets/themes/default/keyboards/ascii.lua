@@ -72,7 +72,7 @@ rows = {
             { click="Keyboard_symbols", style = "functional", width = 15 },
             { click="Keyboard_number", style = "functional" },
             { click = "," },
-            { click = "space", width = 30 ,swipe_left="Left",swipe_right="Right",swipe_up="Up",swipe_down="Down"},
+            { click = "space", width = 30, swipe_repeatable=true, swipe_left="Left",swipe_right="Right",swipe_up="Up",swipe_down="Down"},
             { click = "." },
             { click="@", style = "functional" },
             { click = "Return", style = "enter", label = "Enter", width = 15 },

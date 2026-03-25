@@ -5,6 +5,8 @@
 
 package com.osfans.trime;
 
+import static com.osfans.trime.core.RimeKeyMap.RimeKey_VoidSymbol;
+
 import android.app.AlertDialog;
 import android.content.ClipboardManager;
 import android.content.res.Configuration;
@@ -30,6 +32,11 @@ import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityViewCommand;
 
 import com.androlua.LuaActivity;
 import com.androlua.LuaDialog;
@@ -127,6 +134,46 @@ public class TrimeService extends InputMethodService {
         mRime.startup();
         Rime.registerRimeMessageHandler(mMessageHandler);
         registerClipEvents();
+        //String id = Function.getPref(this).getString("select_schema_id", "");
+        //if(!TextUtils.isEmpty(id))
+        //    mRootInputView.setSchema(id);
+
+        ViewCompat.addAccessibilityAction(mRootInputView, "nextCandidate", new AccessibilityViewCommand() {
+            @Override
+            public boolean perform(@NonNull View view, @Nullable CommandArguments arguments) {
+                if (!isComposing())
+                    return false;
+                mRootInputView.nextCandidate();
+                return true;
+            }
+        });
+        ViewCompat.addAccessibilityAction(mRootInputView, "prevCandidate", new AccessibilityViewCommand() {
+            @Override
+            public boolean perform(@NonNull View view, @Nullable CommandArguments arguments) {
+                if (!isComposing())
+                    return false;
+                mRootInputView.prevCandidate();
+                return true;
+            }
+        });
+        ViewCompat.addAccessibilityAction(mRootInputView, "selectCandidate", new AccessibilityViewCommand() {
+            @Override
+            public boolean perform(@NonNull View view, @Nullable CommandArguments arguments) {
+                if (!isComposing())
+                    return false;
+                selectCandidate(Rime.getHighlightRimeCandidate());
+                return true;
+            }
+        });
+        ViewCompat.addAccessibilityAction(mRootInputView, "delete", new AccessibilityViewCommand() {
+            @Override
+            public boolean perform(@NonNull View view, @Nullable CommandArguments arguments) {
+                if (!isComposing())
+                    return false;
+                onKey(KeyEvent.KEYCODE_DEL, 0);
+                return true;
+            }
+        });
     }
 
     @Override
@@ -153,7 +200,7 @@ public class TrimeService extends InputMethodService {
 
     @Override
     public void onFinishInput() {
-        Log.w(TAG, "onFinishInput: "+Rime.isComposing() );
+        Log.w(TAG, "onFinishInput: " + Rime.isComposing());
         if (Rime.isComposing()) {
             onKey(KeyEvent.KEYCODE_ESCAPE, 0);
             mRime.clearComposition();
@@ -163,7 +210,7 @@ public class TrimeService extends InputMethodService {
 
     @Override
     public void onWindowHidden() {
-        Log.w(TAG, "onWindowHidden: "+Rime.isComposing() );
+        Log.w(TAG, "onWindowHidden: " + Rime.isComposing());
         if (Rime.isComposing()) {
             onKey(KeyEvent.KEYCODE_ESCAPE, 0);
             mRime.clearComposition();
@@ -199,6 +246,7 @@ public class TrimeService extends InputMethodService {
         }
         if (uiMode != newConfig.uiMode) {
             uiMode = newConfig.uiMode;
+            ThemeManager.setTheme(Config.getTheme());
             mRootInputView.setTheme(Config.getTheme());
         }
     }
@@ -334,14 +382,14 @@ public class TrimeService extends InputMethodService {
                     inputClass = 0;
                 } else {
                     canCompose = true;
-                    keyboard = "default";
+                    keyboard = Rime.getCurrentRimeSchema();//"default";
                 }
                 break;
             default: //0
                 canCompose = (inputType > 0); //0x80000 FX重命名文本框
                 //if (canCompose) break;
                 //if (restarting)
-                keyboard = "default";
+                keyboard = Rime.getCurrentRimeSchema();
                 break;
         }
         //Rime.get();
@@ -384,60 +432,86 @@ public class TrimeService extends InputMethodService {
             onText(s);
         } else if (event.getCode() > 0) {
             int code = event.getCode();
-            if (code == KeyEvent.KEYCODE_SWITCH_CHARSET) {
-                commitText();
-                mRime.toggleRuntimeOption(event.getToggle());
-            } else if (code == KeyEvent.KEYCODE_EISU) {
-                setKeyboard(event.getSelect());
-            } else if (code == KeyEvent.KEYCODE_LANGUAGE_SWITCH) {
-                IBinder imeToken = getToken();
-                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                if (event.getSelect().contentEquals(".next")) {
-                    imm.switchToNextInputMethod(imeToken, false);
-                } else if (!TextUtils.isEmpty(event.getSelect())) {
-                    imm.switchToLastInputMethod(imeToken);
-                } else {
-                    ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker();
-                }
-            } else if (code == KeyEvent.KEYCODE_FUNCTION) {
-                String cmd = event.getCommand();
-                String opt = event.getOption();
-                if (cmd.endsWith(".lua") && TextUtils.isEmpty(opt)) {
-                    s = Function.handle(this, cmd, getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
-                } else {
-                    String arg = String.format(event.getOption(), getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
-                    if ((cmd.equals("gpt") || cmd.equals("gpt2")) && (TextUtils.isEmpty(arg) || (event.getOption().contains("%") && event.getOption().equals(arg)))) {
-                        Toast.makeText(this, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
-                        return;
+            switch (code) {
+                case KeyEvent.KEYCODE_SWITCH_CHARSET:
+                    commitText();
+                    mRime.toggleRuntimeOption(event.getToggle());
+                    break;
+                case KeyEvent.KEYCODE_EISU:
+                    setKeyboard(event.getSelect());
+                    break;
+                case KeyEvent.KEYCODE_LANGUAGE_SWITCH:
+                    IBinder imeToken = getToken();
+                    InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                    if (event.getSelect().contentEquals(".next")) {
+                        imm.switchToNextInputMethod(imeToken, false);
+                    } else if (!TextUtils.isEmpty(event.getSelect())) {
+                        imm.switchToLastInputMethod(imeToken);
+                    } else {
+                        ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).showInputMethodPicker();
                     }
-                    s = Function.handle(this, event.getCommand(), arg);
-                }
-                if (s != null) commitText(s);
-            } else if (code == KeyEvent.KEYCODE_SETTINGS) {
-                switch (event.getOption()) {
-                    case "theme":
-                        showThemeDialog();
-                        break;
-                    case "color":
-                        showColorDialog();
-                        break;
-                    case "schema":
-                        showSchemaDialog();
-                        break;
-                    default:
-                        Function.showPrefDialog(this);
-                        break;
-                }
-            } else if (code == KeyEvent.KEYCODE_PROG_RED) {
-                showColorDialog();
-            } else {
-                onKey(event.getCode(), event.getMask());
+                    break;
+                case KeyEvent.KEYCODE_FUNCTION:
+                    String cmd = event.getCommand();
+                    String opt = event.getOption();
+                    if (cmd.equals("filter")) {
+                        if (opt.equals("char"))
+                            CandidatesManager.toggleFilterChar();
+                        else
+                            CandidatesManager.filterStroke(opt, event.getLabel());
+                        filterCandidate();
+                    } else if (cmd.endsWith(".lua") && TextUtils.isEmpty(opt)) {
+                        s = Function.handle(this, cmd, getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
+                    } else {
+                        String arg = String.format(event.getOption(), getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
+                        if ((cmd.equals("gpt") || cmd.equals("gpt2")) && (TextUtils.isEmpty(arg) || (event.getOption().contains("%") && event.getOption().equals(arg)))) {
+                            Toast.makeText(this, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        s = Function.handle(this, event.getCommand(), arg);
+                    }
+                    if (s != null) commitText(s);
+                    break;
+                case KeyEvent.KEYCODE_SETTINGS:
+                    switch (event.getOption()) {
+                        case "theme":
+                            if (!TextUtils.isEmpty(event.getSelect()))
+                                setTheme(event.getSelect());
+                            else
+                                showThemeDialog();
+                            break;
+                        case "color":
+                            if (!TextUtils.isEmpty(event.getSelect()))
+                                setStyle(event.getSelect());
+                            else
+                                showColorDialog();
+                            break;
+                        case "schema":
+                            if (!TextUtils.isEmpty(event.getSelect()))
+                                mRime.selectSchema(event.getSelect());
+                            else
+                                showSchemaDialog();
+                            break;
+                        default:
+                            Function.showPrefDialog(this);
+                            break;
+                    }
+                    break;
+                case KeyEvent.KEYCODE_PROG_RED:
+                    showColorDialog();
+                    break;
+                case KeyEvent.KEYCODE_MENU:
+                    new OptionsDialog(this).show(getToken());
+                    break;
+                default:
+                    onKey(event.getCode(), event.getMask());
+                    break;
             }
         }
     }
 
     public void onKey(int keyCode, int mask) {
-        if (BuildConfig.DEBUG) android.util.Log.i(TAG, "onKey: " + keyCode);
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onKey: " + keyCode);
         if (handleKey(keyCode, mask)) return;
         if (keyCode >= Key.getSymbolStart()) {
             keyUpNeeded = false;
@@ -469,8 +543,14 @@ public class TrimeService extends InputMethodService {
 
     public void onText(CharSequence text) {
         String s = text.toString();
-        if (!isAsciiPrintable(s.charAt(0)))
+        if (!isAsciiPrintable(s.charAt(0))) {
             commitText();
+        }
+        if (s.length() == 1) {
+            mRime.simulateKeySequence(s);
+            return;
+        }
+
         String t;
         Pattern p = Pattern.compile("^(\\{[^{}]+\\}).*$");
         Pattern pText = Pattern.compile("^((\\{Escape\\})?[^{}]+).*$");
@@ -479,10 +559,11 @@ public class TrimeService extends InputMethodService {
             m = pText.matcher(s);
             if (m.matches()) {
                 t = m.group(1);
-                if (!isAsciiPrintable(t.charAt(0)))
+                if (!isAsciiPrintable(t.charAt(0))) {
                     commitText(t);
-                else
+                } else {
                     mRime.simulateKeySequence(t);
+                }
             } else {
                 m = p.matcher(s);
                 t = m.matches() ? m.group(1) : s.substring(0, 1);
@@ -526,13 +607,124 @@ public class TrimeService extends InputMethodService {
     }
 
     private boolean onRimeKey(int[] event) {
+        if (event[0] == RimeKey_VoidSymbol)
+            return false;
         boolean ret = mRime.processKey(event[0], event[1]);
         Log.w(TAG, "onRimeKey: " + ret);
         //commitText();
         return ret;
     }
 
-    private int idx=0;
+
+    private boolean composeEvent(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        if (keyCode == KeyEvent.KEYCODE_MENU) return false; //不處理Menu鍵
+        if (keyCode >= Key.getSymbolStart()) return false; //只處理安卓標準按鍵
+        if (event.getRepeatCount() == 0 && KeyEvent.isModifierKey(keyCode)) {
+            boolean ret =
+                    onRimeKey(
+                            Event.getRimeEvent(
+                                    keyCode, event.getAction() == KeyEvent.ACTION_DOWN ? 0 : Rime.META_RELEASE_ON));
+            if (isComposing()) setCandidatesViewShown(canCompose); //藍牙鍵盤打字時顯示候選欄
+            return ret;
+        }
+        if (!canCompose || Rime.isVoidKeycode(keyCode)) return false;
+        android.util.Log.w(TAG, "onKeyDown:4 " + keyCode);
+        return true;
+    }
+
+    public void onRelease(int keyCode) {
+        if (BuildConfig.DEBUG) android.util.Log.i(TAG, "onRelease: " + keyCode);
+        if (keyUpNeeded) {
+            onRimeKey(Event.getRimeEvent(keyCode, Rime.META_RELEASE_ON));
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        //Log.info("onKeyDown=" + event);
+        android.util.Log.w(TAG, "onKeyDown: " + keyCode);
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+            try {
+                if (Rime.isComposing()) {
+                    selectCandidate(Rime.getHighlightRimeCandidate());
+                    return true;
+                } else {
+                    onKey(KeyEvent.KEYCODE_ENTER, 0);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (composeEvent(event) && onKeyEvent(event)) {
+            android.util.Log.w(TAG, "onKeyDown:2 " + keyCode);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        //Log.info("onKeyUp=" + event);
+        if (composeEvent(event) && keyUpNeeded) {
+            onRelease(keyCode);
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
+    }
+
+    /**
+     * 處理實體鍵盤事件
+     *
+     * @param event {@link KeyEvent 按鍵事件}
+     * @return 是否成功處理
+     */
+    private boolean onKeyEvent(KeyEvent event) {
+        //Log.info("onKeyEvent=" + event);
+        int keyCode = event.getKeyCode();
+
+        boolean ret = true;
+        keyUpNeeded = isComposing();
+
+        if (!isComposing()) {
+            if (keyCode == KeyEvent.KEYCODE_DEL
+                    || keyCode == KeyEvent.KEYCODE_ENTER
+                    || keyCode == KeyEvent.KEYCODE_ESCAPE
+                    || keyCode == KeyEvent.KEYCODE_BACK) {
+                return false;
+            }
+        }/* else if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (mCandidatesViewShown || mInputViewShown)
+                keyCode = KeyEvent.KEYCODE_ESCAPE; //返回鍵清屏
+            else
+                return false;
+        }*/
+
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && event.isCtrlPressed()
+                && event.getRepeatCount() == 0
+                && !KeyEvent.isModifierKey(keyCode)) {
+            if (handleAction(keyCode, event.getMetaState())) return true;
+        }
+
+        int c = event.getUnicodeChar();
+        String s = String.valueOf((char) c);
+        int mask = 0;
+        int i = Event.getClickCode(s);
+        if (i > 0) {
+            keyCode = i;
+        } else { //空格、回車等
+            mask = event.getMetaState();
+        }
+        ret = handleKey(keyCode, mask);
+        android.util.Log.w(TAG, "onKeyDown:3 " + keyCode + ret);
+        if (isComposing()) setCandidatesViewShown(canCompose); //藍牙鍵盤打字時顯示候選欄
+        return ret;
+    }
+
+
+    private int idx = 0;
+
     private void handleRimeMessage(RimeMessage<?> message) {
         Log.w("rime", "handleRimeMessage:1 " + message.getClass() + ":" + message.getData());
         if (message instanceof RimeMessage.CommitTextMessage) {
@@ -542,13 +734,13 @@ public class TrimeService extends InputMethodService {
         } else if (message instanceof RimeMessage.DeployMessage) {
             RimeMessage.DeployMessage msg = (RimeMessage.DeployMessage) message;
             if (msg.getData() == RimeMessage.DeployMessage.State.Success) {
-                idx=0;
+                idx = 0;
                 //setKeyboard(Rime.getCurrentRimeSchema());
                 //Log.w(TAG, "handleRimeMessage:getCurrentRimeSchema " + Rime.getCurrentRimeSchema());
                 mHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if(idx++>20)
+                        if (idx++ > 20)
                             return;
                         //Log.w(TAG, "handleRimeMessage:getCurrentRimeSchema " + Rime.getCurrentRimeSchema());
                         if (TextUtils.isEmpty(Rime.getCurrentRimeSchema())) {
@@ -568,6 +760,8 @@ public class TrimeService extends InputMethodService {
             RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
             if ("ascii_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setAsciiMode(msg.getData().isValue());
+            } else if ("small_mode".equals(msg.getData().getOption())) {
+                mRootInputView.setSmallMode(msg.getData().isValue());
             }
         } else if (message instanceof RimeMessage.StatusMessage) {
             RimeProto.Status status = ((RimeMessage.StatusMessage) message).getData();
@@ -676,6 +870,10 @@ public class TrimeService extends InputMethodService {
         mRootInputView.updateCandidate();
     }
 
+    private void filterCandidate() {
+        mRootInputView.filterCandidate();
+    }
+
     public void setComposingText(String s) {
         mRootInputView.setComposingText(s);
     }
@@ -691,6 +889,7 @@ public class TrimeService extends InputMethodService {
     public void setKeyboard(View id) {
         mRootInputView.showCustomView(id);
     }
+
     // 8. 输入法操作辅助 (Input Helpers)
     public void selectCandidate(int index) {
         mRime.selectCandidate(index);
@@ -900,7 +1099,7 @@ public class TrimeService extends InputMethodService {
     }
 
     private void showSchemaDialog() {
-        new SchemaDialog(this).show(getToken());
+        new OptionsDialog(this).show(getToken());
     }
 
     private void showColorDialog() {
@@ -920,6 +1119,9 @@ public class TrimeService extends InputMethodService {
     }
 
     public int getWidth() {
+        //if(Config.isSmallMode())
+        if (Rime.getRimeOption("small_mode"))
+            return Config.getSmallModeWidth();
         return getMaxWidth();
     }
 
@@ -979,7 +1181,7 @@ public class TrimeService extends InputMethodService {
     }
 
     public Object doFile(String path, String option) {
-        if(globals==null) {
+        if (globals == null) {
             globals = JsePlatform.standardGlobals();
             globals.finder = new ResourceFinder() {
                 @Override
@@ -1026,17 +1228,17 @@ public class TrimeService extends InputMethodService {
             };
         }
         LuaTable env = new LuaTable();
-        env.setmetamethod("__index",globals);
+        env.setmetamethod("__index", globals);
         try {
             return globals.loadfile(path).jcall(option);
-        }catch (Exception e){
+        } catch (Exception e) {
             sendMsg(e.toString());
         }
         return null;
     }
 
     public Object doFile(String path, Object... option) {
-        if(globals==null) {
+        if (globals == null) {
             globals = JsePlatform.standardGlobals();
             globals.finder = new ResourceFinder() {
                 @Override
@@ -1075,10 +1277,10 @@ public class TrimeService extends InputMethodService {
             };
         }
         LuaTable env = new LuaTable();
-        env.setmetamethod("__index",globals);
+        env.setmetamethod("__index", globals);
         try {
             return globals.loadfile(path).jcall(option);
-        }catch (Exception e){
+        } catch (Exception e) {
             sendMsg(e.toString());
         }
         return null;
@@ -1179,10 +1381,10 @@ public class TrimeService extends InputMethodService {
     private AlertDialog mDlg;
 
     public void sendMsg(final String text) {
-        Function.printStackTrace("sendMsg " + text);
+        //Function.printStackTrace("sendMsg " + text);
         LuaActivity.logs.add(text);
         Log.w(TAG, "sendMsg: " + text);
-        sendMsgAux(text);
+        //sendMsgAux(text);
         mHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -1228,14 +1430,14 @@ public class TrimeService extends InputMethodService {
     }
 
     public void setCandidates(ArrayList<String> list) {
-        if(list==null){
-           list=new ArrayList<>();
+        if (list == null) {
+            list = new ArrayList<>();
         }
         ArrayList<CandidateItem> items = new ArrayList<CandidateItem>(list.size());
         for (String s : list) {
             items.add(new CandidateItem(s));
         }
         mRootInputView.setCandidates(items);
-        mComposing=!items.isEmpty();
+        mComposing = !items.isEmpty();
     }
 }

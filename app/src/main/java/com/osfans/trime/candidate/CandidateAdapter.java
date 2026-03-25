@@ -7,6 +7,7 @@ package com.osfans.trime.candidate;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -38,6 +39,7 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
     private int mIdx;
     private int oldIdx;
     private final Drawable mCandidatePressedBackground;
+    private final Handler mHandler=new Handler();
 
     public CandidateAdapter(ArrayList<CandidateItem> data) {
         this.mData = data;
@@ -78,6 +80,7 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
         layout.setLayoutParams(lp);
 
         TextView tvComment = new TextView(context);
+        tvComment.setSingleLine(true);
         tvComment.setPadding(0, 0, 0, 0);
         tvComment.setLineSpacing(0, 0);
         tvComment.setGravity(Gravity.CENTER);
@@ -87,6 +90,8 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
         tvComment.setTypeface(mCommentStyle.getFont());
 
         TextView tvText = new TextView(context);
+        tvText.setSingleLine(true);
+        tvText.setMarqueeRepeatLimit(-1);
         tvText.setPadding(0, 0, 0, 0);
         tvText.setLineSpacing(0, 0.1f);
         tvText.setGravity(Gravity.CENTER);
@@ -115,7 +120,7 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                     mIdx = holder.getBindingAdapterPosition();
-                    Rime.highlightRimeCandidate(mIdx);
+                    //Rime.highlightRimeCandidate(mIdx);
                     scrollToIdx();
                 }
                 return false;
@@ -149,8 +154,15 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
             holder.tvComment.setText(data.getComment());
         }
         holder.tvText.setText(data.getText());
+        if(data.getText().length()>32){
+            holder.tvText.setMaxWidth(TrimeService.getInstance().getWidth());
+            holder.tvText.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        } else {
+            holder.tvText.setMaxWidth(Integer.MAX_VALUE);
+            holder.tvText.setEllipsize(null);
+        }
         holder.itemView.setContentDescription(data.getText());
-        //holder.itemView.setSelected(mIdx == position);
+        holder.itemView.setSelected(mIdx == position);
         holder.itemView.setBackground(mIdx == position ? mCandidatePressedBackground : null);
         holder.tvText.setTextColor(mIdx == position ? mCandidatePressedStyle.getTextColor() : mCandidateStyle.getTextColor());
         holder.tvComment.setTextColor(mIdx == position ? mCommentPressedStyle.getTextColor() : mCommentStyle.getTextColor());
@@ -237,10 +249,18 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
         notifyItemChanged(oldIdx);
         oldIdx = mIdx;
         notifyItemChanged(mIdx);
-        //Rime.highlightRimeCandidate(mIdx);
+        /*mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                notifyItemChanged(mIdx);
+            }
+        },50);*/
+        Rime.highlightRimeCandidate(mData.get(mIdx).getIndex());
     }
 
     public void setIdx(int idx) {
+        if(idx<0||idx>=getItemCount()-1)
+            return;
         mIdx = idx;
         scrollToIdx();
     }

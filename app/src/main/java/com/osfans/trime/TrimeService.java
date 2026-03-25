@@ -47,7 +47,6 @@ import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
 import com.osfans.trime.dialog.OptionsDialog;
-import com.osfans.trime.dialog.SchemaDialog;
 import com.osfans.trime.dialog.StyleDialog;
 import com.osfans.trime.dialog.ThemeDialog;
 import com.osfans.trime.enums.InlineModeType;
@@ -282,10 +281,10 @@ public class TrimeService extends InputMethodService {
         if (mRoot == null) return;
         int[] lc = getLocationInWindow(mRoot);
         outInsets.touchableRegion.setEmpty();
-        if (Config.isKeyboardFloat()) {
+        if (Config.isFloatMode()) {
             outInsets.contentTopInsets = getHeight();
             outInsets.visibleTopInsets = getHeight();
-            outInsets.touchableRegion.set(lc[0], lc[1], lc[0] + getWidth(), lc[1] + mRoot.getHeight());
+            outInsets.touchableRegion.set(lc[0], lc[1], lc[0] + mRoot.getWidth(), lc[1] + mRoot.getHeight());
         } else {
             outInsets.contentTopInsets = lc[1];
             outInsets.visibleTopInsets = lc[1];
@@ -762,6 +761,8 @@ public class TrimeService extends InputMethodService {
                 mRootInputView.setAsciiMode(msg.getData().isValue());
             } else if ("small_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setSmallMode(msg.getData().isValue());
+            } else if ("float_mode".equals(msg.getData().getOption())) {
+                mRootInputView.setFloatMode(msg.getData().isValue());
             }
         } else if (message instanceof RimeMessage.StatusMessage) {
             RimeProto.Status status = ((RimeMessage.StatusMessage) message).getData();
@@ -1119,8 +1120,8 @@ public class TrimeService extends InputMethodService {
     }
 
     public int getWidth() {
-        //if(Config.isSmallMode())
-        if (Rime.getRimeOption("small_mode"))
+        if(Config.isSmallMode())
+        //if (Rime.getRimeOption("small_mode"))
             return Config.getSmallModeWidth();
         return getMaxWidth();
     }

@@ -237,4 +237,8 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
             layoutManager.scrollToPositionWithOffset(idx, 0);
         }
     }
+
+    public ToolbarView getToolbar() {
+        return mToolbarView;
+    }
 }

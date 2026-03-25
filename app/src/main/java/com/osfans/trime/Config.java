@@ -31,9 +31,7 @@ public class Config {
         return false;
     }
 
-    public static boolean isKeyboardFloat() {
-        return false;
-    }
+
 
     public static String getDataDir() {
         File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "rime");
@@ -271,7 +269,8 @@ public class Config {
         Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_gravity", g).commit();
     }
     public static boolean isSmallMode() {
-        return Function.getPref(LuaApplication.getInstance()).getBoolean("small_mode", false);
+        return Rime.getRimeOption("small_mode") || isFloatMode();
+        //return Function.getPref(LuaApplication.getInstance()).getBoolean("small_mode", false)|| isFloatMode();
     }
     public static void setSmallMode(boolean b) {
         Function.getPref(LuaApplication.getInstance()).edit().putBoolean("small_mode", b).commit();
@@ -285,5 +284,26 @@ public class Config {
         Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_width", w).commit();
     }
 
+    public static void setFloatMode(boolean b) {
+        Function.getPref(LuaApplication.getInstance()).edit().putBoolean("float_mode", b).commit();
+    }
+
+    public static boolean isFloatMode() {
+        return Rime.getRimeOption("float_mode");
+        //return Function.getPref(LuaApplication.getInstance()).getBoolean("float_mode", false);
+    }
+
+    public static void setFloatModeX(float x) {
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat("float_mode_x", x).commit();
+    }
+    public static void setFloatModeY(float y) {
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat("float_mode_y", y).commit();
+    }
+    public static float getFloatModeX() {
+        return Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_x", 0);
+    }
+    public static float getFloatModeY() {
+        return Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_y", 0);
+    }
 
 }

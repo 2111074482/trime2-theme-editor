@@ -34,6 +34,7 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
     private final Style mToolbarStyle;
     private final KeyStyle mKeyStyle;
     private ArrayList<KeyView> mKeys = new ArrayList<>();
+    private KeyView mHide;
     ;
 
     public ToolbarView(Context context) {
@@ -72,7 +73,7 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
         itemsLayout.setGravity(Gravity.CENTER);
         mListView.addView(itemsLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         LuaValue hide = mToolbarStyle.get("hide");
-        KeyView mHide = new KeyView(getContext(), hide.istable()?mToolbarStyle.getKeyStyle("hide", mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"))):mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
+         mHide = new KeyView(getContext(), hide.istable()?mToolbarStyle.getKeyStyle("hide", mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"))):mToolbarStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
          if (hide.istable()) {
             mHide.setText(hide.get("text").optjstring("▽"));
         } else {
@@ -152,5 +153,9 @@ public class ToolbarView extends LinearLayout implements View.OnClickListener {
     public void setSchema(String id) {
         removeAllViews();
         initView();
+    }
+
+    public KeyView getHide() {
+        return mHide;
     }
 }

@@ -280,7 +280,7 @@ toolbar.schema_switches=false
 toolbar.hide=table.clone(candidate.key)
 --支持添加preset_keys按键，也可以直接写事件的表，
 --可以指定按键的style
-toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" ,"Mode_small"}
+toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" ,"Mode_small","Mode_float"}
 toolbar.key.text_size = 22
 toolbar.key.padding = {
     left = 8,

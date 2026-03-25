@@ -16,9 +16,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 49,
-      "versionName": "0.4.9",
-      "outputFile": "com.nirenr.trime-v3.3.8-25-gc370c273-armeabi-v7a-release.apk"
+      "versionCode": 50,
+      "versionName": "0.5.0",
+      "outputFile": "中文输入法2-0.5.0-armeabi-v7a-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -29,22 +29,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 49,
-      "versionName": "0.4.9",
-      "outputFile": "com.nirenr.trime-v3.3.8-25-gc370c273-x86-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
-          "value": "x86_64"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 49,
-      "versionName": "0.4.9",
-      "outputFile": "com.nirenr.trime-v3.3.8-25-gc370c273-x86_64-release.apk"
+      "versionCode": 50,
+      "versionName": "0.5.0",
+      "outputFile": "中文输入法2-0.5.0-x86-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -55,9 +42,22 @@
         }
       ],
       "attributes": [],
-      "versionCode": 49,
-      "versionName": "0.4.9",
-      "outputFile": "com.nirenr.trime-v3.3.8-25-gc370c273-arm64-v8a-release.apk"
+      "versionCode": 50,
+      "versionName": "0.5.0",
+      "outputFile": "中文输入法2-0.5.0-arm64-v8a-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "x86_64"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 50,
+      "versionName": "0.5.0",
+      "outputFile": "中文输入法2-0.5.0-x86_64-release.apk"
     }
   ],
   "elementType": "File",

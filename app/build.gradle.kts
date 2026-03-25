@@ -41,8 +41,8 @@ android {
         applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 49
-        versionName = "0.4.9"
+        versionCode = 50
+        versionName = "0.5.0"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")
@@ -54,7 +54,7 @@ android {
 
     base {
         // https://www.norio.be/blog/archivesBaseName-removed-from-gradle9.html
-        archivesName = "${android.defaultConfig.applicationId}-$buildVersionName"
+        archivesName = "中文输入法2-${defaultConfig.versionName}"
     }
 
     buildTypes {

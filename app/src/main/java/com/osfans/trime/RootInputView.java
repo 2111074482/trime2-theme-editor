@@ -18,7 +18,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -81,127 +80,131 @@ public class RootInputView extends FrameLayout {
         mRoot.setClipChildren(false);
         mRoot.setClipToPadding(false);
         mRoot.setOrientation(LinearLayout.HORIZONTAL);
-        mLeftLayout = new FrameLayout(context);
-        mLeftLayout.setVisibility(View.GONE);
-        mRightLayout = new FrameLayout(context);
-        mRightLayout.setVisibility(View.GONE);
+        if(Config.isSmallMode()){
+            mLeftLayout = new FrameLayout(context);
+            mLeftLayout.setVisibility(View.GONE);
+            mRightLayout = new FrameLayout(context);
+            mRightLayout.setVisibility(View.GONE);
 
-        mLeftButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
-        mLeftButton.setText("◀");
-        mLeftButton.setContentDescription("显示在左侧");
-        mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.RIGHT));
-        mLeftButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mLeftLayout.setVisibility(GONE);
-                mRightLayout.setVisibility(VISIBLE);
-                Config.setSmallModeGravity(Gravity.LEFT);
-            }
-        });
-        mLeftButton.setOnLongClickListener(new OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                setSelected(true);
-                return true;
-            }
-        });
-        mLeftButton.setOnTouchListener(new OnTouchListener() {
-            private float mWidth;
-            private int mLastW;
-            private float mLastX;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                Log.w("TAG", "onTouch: "+event);
-                switch (event.getActionMasked()) {
-                    case MotionEvent.ACTION_DOWN:
-                        mLastX = event.getX();
-                        mLastW = mCenterLayout.getWidth();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        if (isSelected()) {
-                            float x = event.getX();
-                            mWidth=(mLastW - (x - mLastX));
-                            mCenterLayout.setScaleX(mWidth/mLastW);
-                            mCenterLayout.setTranslationX(-(mWidth-mLastW)/2);
-                            mLeftButton.setTranslationX(-(mWidth-mLastW));
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
-                        if(isSelected()){
-                            Config.setSmallModeWidth((int) mWidth);
-                            setSelected(false);
-                            setTheme(Config.getTheme());
-                        }
-                        break;
+            mLeftButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
+            mLeftButton.setText("◀");
+            mLeftButton.setContentDescription("显示在左侧");
+            mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.RIGHT));
+            mLeftButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mLeftLayout.setVisibility(GONE);
+                    mRightLayout.setVisibility(VISIBLE);
+                    Config.setSmallModeGravity(Gravity.LEFT);
                 }
-                return false;
-            }
-        });
-
-        mRightButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
-        mRightButton.setText("▶");
-        mRightButton.setContentDescription("显示在右侧");
-        mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.LEFT));
-        mRightButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mRightLayout.setVisibility(GONE);
-                mLeftLayout.setVisibility(VISIBLE);
-                Config.setSmallModeGravity(Gravity.RIGHT);
-            }
-        });
-
-        mRightButton.setOnLongClickListener(new OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                setSelected(true);
-                return true;
-            }
-        });
-        mRightButton.setOnTouchListener(new OnTouchListener() {
-            private float mWidth;
-            private int mLastW;
-            private float mLastX;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                Log.w("TAG", "onTouch: "+event);
-                switch (event.getActionMasked()) {
-                    case MotionEvent.ACTION_DOWN:
-                        mLastX = event.getX();
-                        mLastW = mCenterLayout.getWidth();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        if (isSelected()) {
-                            float x = event.getX();
-                            mWidth=(mLastW + (x - mLastX));
-                            mCenterLayout.setScaleX(mWidth/mLastW);
-                            mCenterLayout.setTranslationX((mWidth-mLastW)/2);
-                            mRightButton.setTranslationX((mWidth-mLastW));
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
-                        if(isSelected()){
-                            Config.setSmallModeWidth((int) mWidth);
-                            setSelected(false);
-                            setTheme(Config.getTheme());
-                        }
-                        break;
+            });
+            mLeftButton.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    setSelected(true);
+                    return true;
                 }
-                return false;
-            }
-        });
+            });
+            mLeftButton.setOnTouchListener(new OnTouchListener() {
+                private float mWidth;
+                private int mLastW;
+                private float mLastX;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    Log.w("TAG", "onTouch: "+event);
+                    switch (event.getActionMasked()) {
+                        case MotionEvent.ACTION_DOWN:
+                            mLastX = event.getX();
+                            mLastW = mCenterLayout.getWidth();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            if (isSelected()) {
+                                float x = event.getX();
+                                mWidth=(mLastW - (x - mLastX));
+                                mCenterLayout.setScaleX(mWidth/mLastW);
+                                mCenterLayout.setTranslationX(-(mWidth-mLastW)/2);
+                                mLeftButton.setTranslationX(-(mWidth-mLastW));
+                            }
+                            break;
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            if(isSelected()){
+                                Config.setSmallModeWidth((int) mWidth);
+                                setSelected(false);
+                                setTheme(Config.getTheme());
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
+
+            mRightButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
+            mRightButton.setText("▶");
+            mRightButton.setContentDescription("显示在右侧");
+            mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.LEFT));
+            mRightButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mRightLayout.setVisibility(GONE);
+                    mLeftLayout.setVisibility(VISIBLE);
+                    Config.setSmallModeGravity(Gravity.RIGHT);
+                }
+            });
+
+            mRightButton.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    setSelected(true);
+                    return true;
+                }
+            });
+            mRightButton.setOnTouchListener(new OnTouchListener() {
+                private float mWidth;
+                private int mLastW;
+                private float mLastX;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    Log.w("TAG", "onTouch: "+event);
+                    switch (event.getActionMasked()) {
+                        case MotionEvent.ACTION_DOWN:
+                            mLastX = event.getX();
+                            mLastW = mCenterLayout.getWidth();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            if (isSelected()) {
+                                float x = event.getX();
+                                mWidth=(mLastW + (x - mLastX));
+                                mCenterLayout.setScaleX(mWidth/mLastW);
+                                mCenterLayout.setTranslationX((mWidth-mLastW)/2);
+                                mRightButton.setTranslationX((mWidth-mLastW));
+                            }
+                            break;
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            if(isSelected()){
+                                Config.setSmallModeWidth((int) mWidth);
+                                setSelected(false);
+                                setTheme(Config.getTheme());
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
+        }
 
 
         mCenterLayout = new FrameLayout(context);
         mCenterLayout.setClipChildren(false);
         mCenterLayout.setClipToPadding(false);
-        mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
+        if(Config.isSmallMode())
+            mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
         mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(TrimeService.getInstance().getWidth(), ThemeManager.getContentHeight()));
-        mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
+        if(Config.isSmallMode())
+            mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
 
         mInputViewRoot = new LinearLayout(context);
         mInputViewRoot.setClipChildren(false);
@@ -212,7 +215,6 @@ public class RootInputView extends FrameLayout {
         mInputView = new InputView(context);
         mInputViewRoot.addView(mCandidateView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
         mInputViewRoot.addView(mInputView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getKeyboardHeight()));
-
         Style color = ThemeManager.getStyle();
         mRoot.setBackground(color.getBackground(0xffdddddd));
 
@@ -235,7 +237,7 @@ public class RootInputView extends FrameLayout {
         mCloud.setText(" ");
         addView(mPreedit, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
         addView(mCloud, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT));
-        addView(mRoot, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getHeight(), Gravity.BOTTOM));
+        addView(mRoot, new FrameLayout.LayoutParams(Config.isFloatMode()?ViewGroup.LayoutParams.WRAP_CONTENT:ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getHeight(), Gravity.BOTTOM));
         showToolbarView(true);
 
         mRoot.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
@@ -289,8 +291,78 @@ public class RootInputView extends FrameLayout {
                 mRightLayout.setVisibility(GONE);
             }
         } else {
-            mLeftLayout.setVisibility(GONE);
-            mRightLayout.setVisibility(GONE);
+            if(mLeftLayout!=null)
+                mLeftLayout.setVisibility(GONE);
+            if(mRightLayout!=null)
+                mRightLayout.setVisibility(GONE);
+        }
+        if(Config.isFloatMode()){
+            KeyView hide=mCandidateView.getToolbar().getHide();
+            hide.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    setSelected(true);
+                    return true;
+                }
+            });
+            hide.setOnTouchListener(new OnTouchListener() {
+                private float mY;
+                private float mX;
+                private float mLastX;
+                private float mLastY;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    float x = event.getX();
+                    float y = event.getY();
+                    switch (event.getActionMasked()) {
+                        case MotionEvent.ACTION_DOWN:
+                            mLastX = event.getX();
+                            mLastY = event.getY();
+                            mX=mRoot.getX();
+                            mY=mRoot.getY();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            if (isSelected()) {
+                                mRoot.setTranslationX(x-mLastX);
+                                mRoot.setTranslationY(y-mLastY);
+                                Log.w("TAG", "onTouch:x "+x+":"+mLastX );
+                                Log.w("TAG", "onTouch:y "+y+":"+mLastY );
+                            }
+                            break;
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            if(isSelected()){
+                                Log.w("TAG", "onTouch:x1 "+x+":"+mLastX );
+                                Log.w("TAG", "onTouch:y1 "+y+":"+mLastY );
+                                Config.setFloatModeX((int) x-mLastX);
+                                Config.setFloatModeY((int) y-mLastY);
+                                setSelected(false);
+                                setTheme(Config.getTheme());
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
+            mRoot.setX(Config.getFloatModeX());
+            if(mRoot.getX()<0){
+                mRoot.setX(0);
+            }
+            if(mRoot.getX()+mRoot.getWidth()>TrimeService.getInstance().getMaxWidth()){
+                mRoot.setX(TrimeService.getInstance().getMaxWidth()-mRoot.getWidth());
+            }
+
+            mRoot.setY(Config.getFloatModeY());
+            if(mRoot.getY()<mRoot.getHeight()-TrimeService.getInstance().getHeight()){
+                mRoot.setY(mRoot.getHeight()-TrimeService.getInstance().getHeight());
+            }
+            if(mRoot.getY()>0){
+                mRoot.setY(0);
+            }
+            Log.w("TAG", "onTouch:x "+mRoot.getX() );
+            Log.w("TAG", "onTouch:y "+mRoot.getY() );
+
         }
     }
 
@@ -409,8 +481,14 @@ public class RootInputView extends FrameLayout {
 
                 // 核心优化：使用 setTranslationY 代替 LayoutParams
                 // 这只会触发重绘（Repaint），不会触发重布局（Relayout），性能提升巨大
-                float targetY = mRoot.getTop() - mPreedit.getHeight();
-                mPreedit.setTranslationY(targetY);
+                 if(Config.isFloatMode()) {
+                    float targetY = mRoot.getTop() - mRoot.getY() - mPreedit.getHeight();
+                    mPreedit.setTranslationY(targetY);
+                    mPreedit.setTranslationX(mRoot.getX());
+                } else {
+                     float targetY = mRoot.getTop() - mPreedit.getHeight();
+                     mPreedit.setTranslationY(targetY);
+                 }
             }
         }
     };
@@ -444,9 +522,15 @@ public class RootInputView extends FrameLayout {
 
                 // 2. 性能核心：使用 TranslationY 避开 RequestLayout
                 // 这样只会触发重绘（Invalidate），不会导致主线程计算整棵布局树
-                float targetY = mRoot.getTop() - mCloud.getHeight();
-                mCloud.setTranslationY(targetY);
-            }
+                if(Config.isFloatMode()){
+                    float targetY = mRoot.getTop() - mRoot.getY() - mCloud.getHeight();
+                    mCloud.setTranslationY(targetY);
+                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth()-mRoot.getX()-mRoot.getWidth()));
+                }else {
+                    float targetY = mRoot.getTop() - mCloud.getHeight();
+                    mCloud.setTranslationY(targetY);
+                }
+             }
         }
     };
 
@@ -562,6 +646,16 @@ public class RootInputView extends FrameLayout {
 
     public void setSmallMode(boolean value) {
         Config.setSmallMode(value);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                setTheme(Config.getTheme());
+            }
+        });
+    }
+
+    public void setFloatMode(boolean value) {
+        Config.setFloatMode(value);
         mHandler.post(new Runnable() {
             @Override
             public void run() {

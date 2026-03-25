@@ -120,6 +120,7 @@ preset_keys = {
     Filter_x = { label = "X", command = "filter", option = "" },
     Filter_char = { label = "字/词", command = "filter", option = "char" },
     Mode_small= {toggle= "small_mode", send= "Mode_switch", states= {"单手关", "单手开"}},
+    Mode_float= {toggle= "float_mode", send= "Mode_switch", states= {"悬浮关", "悬浮开"}},
 
     -- trime命令
     LunarDate = {label= "农历", command= "nongli.lua"},

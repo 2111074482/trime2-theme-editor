@@ -1118,11 +1118,19 @@ public class TrimeService extends InputMethodService {
     public int getHeight() {
         return getResources().getDisplayMetrics().heightPixels;
     }
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
 
     public int getWidth() {
         if(Config.isSmallMode()||Config.isFloatMode())
         //if (Rime.getRimeOption("small_mode"))
-            return Config.getSmallModeWidth();
+            return Math.max(Math.min(Config.getSmallModeWidth(),(int)(getMaxWidth()*0.9)),(int)(getMaxWidth()*0.2));
         return getMaxWidth();
     }
 

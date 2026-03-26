@@ -74,6 +74,7 @@ public class RootInputView extends FrameLayout {
         mClipboardKeyboardView = null;
         mCustomView = null;
         mSymbolsKeyboardView = null;
+        TrimeService trime = TrimeService.getInstance();
 
         mRoot = new LinearLayout(context);
 
@@ -89,7 +90,7 @@ public class RootInputView extends FrameLayout {
             mLeftButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
             mLeftButton.setText("◀");
             mLeftButton.setContentDescription("显示在左侧");
-            mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.RIGHT));
+            mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER|Gravity.RIGHT));
             mLeftButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -142,7 +143,7 @@ public class RootInputView extends FrameLayout {
             mRightButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
             mRightButton.setText("▶");
             mRightButton.setContentDescription("显示在右侧");
-            mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER|Gravity.LEFT));
+            mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER|Gravity.LEFT));
             mRightButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -200,7 +201,7 @@ public class RootInputView extends FrameLayout {
         mCenterLayout.setClipToPadding(false);
         if(Config.isSmallMode())
             mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
-        mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(TrimeService.getInstance().getWidth(), ThemeManager.getContentHeight()));
+        mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(trime.getWidth(), ThemeManager.getContentHeight()));
         if(Config.isSmallMode())
             mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
 
@@ -255,7 +256,7 @@ public class RootInputView extends FrameLayout {
                     mRoot.setLayoutParams(lp);
                 }
                 if (insets.getSystemWindowInsetBottom() > 1) {
-                    Window win = TrimeService.getInstance().getWindow().getWindow();
+                    Window win = trime.getWindow().getWindow();
                     if (win != null) {
                         //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
                         //win.setDecorFitsSystemWindows(false);
@@ -263,7 +264,7 @@ public class RootInputView extends FrameLayout {
                         win.setNavigationBarColor(ThemeManager.getStyle().getBackgroundColor(0));
                     }
                 } else {
-                    Window win = TrimeService.getInstance().getWindow().getWindow();
+                    Window win = trime.getWindow().getWindow();
                     if (win != null) {
                         //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
                         //win.setDecorFitsSystemWindows(false);
@@ -274,7 +275,7 @@ public class RootInputView extends FrameLayout {
             }
         });
         mRoot.requestApplyInsets();
-        Window win = TrimeService.getInstance().getWindow().getWindow();
+        Window win = trime.getWindow().getWindow();
         if (win != null) {
             //win.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
             //win.setDecorFitsSystemWindows(false);
@@ -336,17 +337,18 @@ public class RootInputView extends FrameLayout {
                     }
                     return false;
                 }
-            });    mRoot.setX(Config.getFloatModeX());
+            });
+            mRoot.setX(Config.getFloatModeX());
             if(mRoot.getX()<0){
                 mRoot.setX(0);
             }
-            if(mRoot.getX()+mRoot.getWidth()>TrimeService.getInstance().getMaxWidth()){
-                mRoot.setX(TrimeService.getInstance().getMaxWidth()-mRoot.getWidth());
+            if(mRoot.getX()+trime.getWidth()>trime.getMaxWidth()){
+                mRoot.setX(trime.getMaxWidth()-trime.getWidth());
             }
 
             mRoot.setY(Config.getFloatModeY());
-            if(mRoot.getY()<mRoot.getHeight()-TrimeService.getInstance().getHeight()){
-                mRoot.setY(mRoot.getHeight()-TrimeService.getInstance().getHeight());
+            if(mRoot.getY()<ThemeManager.getHeight()-trime.getHeight()+trime.getStatusBarHeight()){
+                mRoot.setY(ThemeManager.getHeight()-trime.getHeight()+trime.getStatusBarHeight());
             }
             if(mRoot.getY()>0){
                 mRoot.setY(0);

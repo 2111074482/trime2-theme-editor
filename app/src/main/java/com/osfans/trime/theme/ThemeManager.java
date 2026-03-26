@@ -193,7 +193,7 @@ public class ThemeManager {
     }
 
     public static int getHeight() {
-        return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight);
+        return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight)-getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight)+getKeyboardHeight();
     }
 
     public static int getContentHeight() {
@@ -205,7 +205,7 @@ public class ThemeManager {
     }
 
     public static int getKeyboardHeight() {
-        return getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight);
+        return (int) (getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight)*Config.getKeyboardHeightScale());
     }
 
     private static final DisplayMetrics mDisplayMetrics = Resources.getSystem().getDisplayMetrics();

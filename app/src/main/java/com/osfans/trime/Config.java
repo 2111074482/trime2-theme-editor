@@ -269,7 +269,7 @@ public class Config {
         Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_gravity", g).commit();
     }
     public static boolean isSmallMode() {
-        return Rime.getRimeOption("small_mode") || isFloatMode();
+        return Rime.getRimeOption("small_mode");
         //return Function.getPref(LuaApplication.getInstance()).getBoolean("small_mode", false)|| isFloatMode();
     }
     public static void setSmallMode(boolean b) {
@@ -304,6 +304,19 @@ public class Config {
     }
     public static float getFloatModeY() {
         return Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_y", 0);
+    }
+
+    public static void setKeyboardHeightScale(float height) {
+        height=getKeyboardHeightScale()*height;
+        if(height<0.2)
+            height=0.2f;
+        else if (height>2) {
+            height=2f;
+        }
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat("keyboard_height", height).commit();
+    }
+    public static float getKeyboardHeightScale() {
+       return Function.getPref(LuaApplication.getInstance()).getFloat("keyboard_height", 1f);
     }
 
 }

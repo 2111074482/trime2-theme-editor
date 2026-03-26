@@ -112,15 +112,14 @@ public class RootInputView extends FrameLayout {
 
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    Log.w("TAG", "onTouch: "+event);
-                    switch (event.getActionMasked()) {
+                     switch (event.getActionMasked()) {
                         case MotionEvent.ACTION_DOWN:
-                            mLastX = event.getX();
+                            mLastX = event.getRawX();
                             mLastW = mCenterLayout.getWidth();
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
-                                float x = event.getX();
+                                float x = event.getRawX();
                                 mWidth=(mLastW - (x - mLastX));
                                 mCenterLayout.setScaleX(mWidth/mLastW);
                                 mCenterLayout.setTranslationX(-(mWidth-mLastW)/2);
@@ -167,15 +166,14 @@ public class RootInputView extends FrameLayout {
 
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    Log.w("TAG", "onTouch: "+event);
                     switch (event.getActionMasked()) {
                         case MotionEvent.ACTION_DOWN:
-                            mLastX = event.getX();
+                            mLastX = event.getRawX();
                             mLastW = mCenterLayout.getWidth();
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
-                                float x = event.getX();
+                                float x = event.getRawX();
                                 mWidth=(mLastW + (x - mLastX));
                                 mCenterLayout.setScaleX(mWidth/mLastW);
                                 mCenterLayout.setTranslationX((mWidth-mLastW)/2);
@@ -306,37 +304,31 @@ public class RootInputView extends FrameLayout {
                 }
             });
             hide.setOnTouchListener(new OnTouchListener() {
-                private float mY;
                 private float mX;
+                private float mY;
                 private float mLastX;
                 private float mLastY;
 
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    float x = event.getX();
-                    float y = event.getY();
                     switch (event.getActionMasked()) {
                         case MotionEvent.ACTION_DOWN:
-                            mLastX = event.getX();
-                            mLastY = event.getY();
-                            mX=mRoot.getX();
-                            mY=mRoot.getY();
+                            mLastX = event.getRawX();
+                            mLastY = event.getRawY();
+                            mX = mRoot.getTranslationX();
+                            mY = mRoot.getTranslationY();
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
-                                mRoot.setTranslationX(x-mLastX);
-                                mRoot.setTranslationY(y-mLastY);
-                                Log.w("TAG", "onTouch:x "+x+":"+mLastX );
-                                Log.w("TAG", "onTouch:y "+y+":"+mLastY );
+                                mRoot.setTranslationX(mX + event.getRawX() - mLastX);
+                                mRoot.setTranslationY(mY + event.getRawY() - mLastY);
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
-                            if(isSelected()){
-                                Log.w("TAG", "onTouch:x1 "+x+":"+mLastX );
-                                Log.w("TAG", "onTouch:y1 "+y+":"+mLastY );
-                                Config.setFloatModeX((int) x-mLastX);
-                                Config.setFloatModeY((int) y-mLastY);
+                            if (isSelected()) {
+                                Config.setFloatModeX((int) mRoot.getTranslationX());
+                                Config.setFloatModeY((int) mRoot.getTranslationY());
                                 setSelected(false);
                                 setTheme(Config.getTheme());
                             }
@@ -344,8 +336,7 @@ public class RootInputView extends FrameLayout {
                     }
                     return false;
                 }
-            });
-            mRoot.setX(Config.getFloatModeX());
+            });    mRoot.setX(Config.getFloatModeX());
             if(mRoot.getX()<0){
                 mRoot.setX(0);
             }
@@ -360,9 +351,48 @@ public class RootInputView extends FrameLayout {
             if(mRoot.getY()>0){
                 mRoot.setY(0);
             }
-            Log.w("TAG", "onTouch:x "+mRoot.getX() );
-            Log.w("TAG", "onTouch:y "+mRoot.getY() );
+        }else {
+            KeyView hide=mCandidateView.getToolbar().getHide();
+            hide.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    setSelected(true);
+                    return true;
+                }
+            });
+            hide.setOnTouchListener(new OnTouchListener() {
+                private float mHeight;
+                private int mLastH;
+                private float mLastY;
 
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getActionMasked()) {
+                        case MotionEvent.ACTION_DOWN:
+                            mLastY = event.getRawY();
+                            mLastH = mInputView.getHeight();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            if (isSelected()) {
+                                float y = event.getRawY();
+                                mHeight = (mLastH + (mLastY - y));
+                                mInputView.setScaleY(mHeight / mLastH);
+                                mInputView.setTranslationY((mLastH - mHeight)/2);
+                                mCandidateView.setTranslationY((mLastH - mHeight));
+                            }
+                            break;
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            if(isSelected()){
+                                Config.setKeyboardHeightScale(mInputView.getScaleY());
+                                setSelected(false);
+                                setTheme(Config.getTheme());
+                            }
+                            break;
+                    }
+                    return false;
+                }
+            });
         }
     }
 

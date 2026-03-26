@@ -70,6 +70,7 @@ public class RootInputView extends FrameLayout {
     private void initView(@NonNull Context context) {
         setClipChildren(false);
         setClipToPadding(false);
+        mShowExtractedCandidatesView=false;
         mExpandedCandidateView = null;
         mClipboardKeyboardView = null;
         mCustomView = null;

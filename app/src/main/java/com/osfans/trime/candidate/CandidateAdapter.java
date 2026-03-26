@@ -208,6 +208,8 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
         oldIdx = 0;
         mData.clear();
         mData.addAll(next);
+        if(!next.isEmpty())
+            Rime.highlightRimeCandidate(next.get(0).getIndex());
         notifyDataSetChanged();
     }
 

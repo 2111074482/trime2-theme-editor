@@ -306,6 +306,9 @@ public class RootInputView extends FrameLayout {
                 }
             });
             hide.setOnTouchListener(new OnTouchListener() {
+                private float mWidth;
+                private int mLastW;
+                private int mLastH;
                 private float mX;
                 private float mY;
                 private float mLastX;
@@ -317,21 +320,41 @@ public class RootInputView extends FrameLayout {
                         case MotionEvent.ACTION_DOWN:
                             mLastX = event.getRawX();
                             mLastY = event.getRawY();
+                            mLastH = mInputView.getHeight();
+                            mLastW = mCenterLayout.getWidth();
                             mX = mRoot.getTranslationX();
                             mY = mRoot.getTranslationY();
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
-                                mRoot.setTranslationX(mX + event.getRawX() - mLastX);
-                                mRoot.setTranslationY(mY + event.getRawY() - mLastY);
+                                if(Config.isSmallMode()){
+                                    float y = event.getRawY();
+                                    float mHeight = (mLastH + (mLastY - y));
+                                    mInputView.setScaleY(mHeight / mLastH);
+                                    mInputView.setTranslationY((mLastH - mHeight)/2);
+                                    mCandidateView.setTranslationY((mLastH - mHeight));
+                                    float x = event.getRawX();
+                                    mWidth = (mLastW + (x - mLastX));
+                                    mCenterLayout.setScaleX(mWidth/mLastW);
+                                    mCenterLayout.setTranslationX((mWidth-mLastW)/2);
+                                    mRightButton.setTranslationX((mWidth-mLastW));
+                                } else {
+                                    mRoot.setTranslationX(mX + event.getRawX() - mLastX);
+                                    mRoot.setTranslationY(mY + event.getRawY() - mLastY);
+                                }
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             if (isSelected()) {
-                                Config.setFloatModeX((int) mRoot.getTranslationX());
-                                Config.setFloatModeY((int) mRoot.getTranslationY());
-                                setSelected(false);
+                                if(Config.isSmallMode()){
+                                    Config.setKeyboardHeightScale(mInputView.getScaleY());
+                                    Config.setSmallModeWidth((int) mWidth);
+                                } else {
+                                    Config.setFloatModeX((int) mRoot.getTranslationX());
+                                    Config.setFloatModeY((int) mRoot.getTranslationY());
+                                }
+                                 setSelected(false);
                                 setTheme(Config.getTheme());
                             }
                             break;
@@ -348,8 +371,8 @@ public class RootInputView extends FrameLayout {
             }
 
             mRoot.setY(Config.getFloatModeY());
-            if(mRoot.getY()<ThemeManager.getHeight()-trime.getHeight()+trime.getStatusBarHeight()){
-                mRoot.setY(ThemeManager.getHeight()-trime.getHeight()+trime.getStatusBarHeight());
+            if(mRoot.getY()<ThemeManager.getHeight()-trime.getHeight()+ThemeManager.getCandidateHeight()){
+                mRoot.setY(ThemeManager.getHeight()-trime.getHeight()+ThemeManager.getCandidateHeight());
             }
             if(mRoot.getY()>0){
                 mRoot.setY(0);
@@ -364,7 +387,9 @@ public class RootInputView extends FrameLayout {
                 }
             });
             hide.setOnTouchListener(new OnTouchListener() {
-                private float mHeight;
+                private float mLastX;
+                private float mWidth;
+                private int mLastW;
                 private int mLastH;
                 private float mLastY;
 
@@ -372,21 +397,33 @@ public class RootInputView extends FrameLayout {
                 public boolean onTouch(View v, MotionEvent event) {
                     switch (event.getActionMasked()) {
                         case MotionEvent.ACTION_DOWN:
+                            mLastX = event.getRawX();
                             mLastY = event.getRawY();
                             mLastH = mInputView.getHeight();
+                            mLastW = mCenterLayout.getWidth();
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
                                 float y = event.getRawY();
-                                mHeight = (mLastH + (mLastY - y));
+                                float mHeight = (mLastH + (mLastY - y));
                                 mInputView.setScaleY(mHeight / mLastH);
                                 mInputView.setTranslationY((mLastH - mHeight)/2);
                                 mCandidateView.setTranslationY((mLastH - mHeight));
+                                if(Config.isSmallMode()){
+                                    float x = event.getRawX();
+                                    mWidth = (mLastW + (x - mLastX));
+                                    mCenterLayout.setScaleX(mWidth/mLastW);
+                                    mCenterLayout.setTranslationX((mWidth-mLastW)/2);
+                                    mRightButton.setTranslationX((mWidth-mLastW));
+                                }
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             if(isSelected()){
+                                if(Config.isSmallMode()){
+                                    Config.setSmallModeWidth((int) mWidth);
+                                }
                                 Config.setKeyboardHeightScale(mInputView.getScaleY());
                                 setSelected(false);
                                 setTheme(Config.getTheme());

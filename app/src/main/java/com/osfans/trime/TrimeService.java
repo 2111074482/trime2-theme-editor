@@ -1130,7 +1130,7 @@ public class TrimeService extends InputMethodService {
     public int getWidth() {
         if(Config.isSmallMode()||Config.isFloatMode())
         //if (Rime.getRimeOption("small_mode"))
-            return Math.max(Math.min(Config.getSmallModeWidth(),(int)(getMaxWidth()*0.9)),(int)(getMaxWidth()*0.2));
+            return Math.max(Math.min(Config.getSmallModeWidth(),(getMaxWidth())),(int)(getMaxWidth()*0.2));
         return getMaxWidth();
     }
 

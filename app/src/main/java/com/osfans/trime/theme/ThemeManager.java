@@ -10,18 +10,24 @@ import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 
 import com.androlua.LuaApplication;
+import com.androlua.LuaBitmap;
 import com.androlua.LuaUtil;
 import com.osfans.trime.BuildConfig;
 import com.osfans.trime.Config;
@@ -38,7 +44,9 @@ import org.luaj.lib.jse.JsePlatform;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -193,19 +201,23 @@ public class ThemeManager {
     }
 
     public static int getHeight() {
-        return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight)-getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight)+getKeyboardHeight();
+        return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight) - getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) - getStyle().getStyle("candidate").getSize("height", mCandidateHeight) + getKeyboardHeight() + getCandidateHeight();
     }
 
     public static int getContentHeight() {
         return getCandidateHeight() + getKeyboardHeight();
     }
 
+    public static int getRawContentHeight() {
+        return getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) + getStyle().getStyle("candidate").getSize("height", mCandidateHeight);
+    }
+
     public static int getCandidateHeight() {
-        return getStyle().getStyle("candidate").getSize("height", mCandidateHeight);
+        return (int) (getStyle().getStyle("candidate").getSize("height", mCandidateHeight) * Math.min(1, Config.getKeyboardHeightScale()));
     }
 
     public static int getKeyboardHeight() {
-        return (int) (getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight)*Config.getKeyboardHeightScale());
+        return (int) (getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) * Config.getKeyboardHeightScale());
     }
 
     private static final DisplayMetrics mDisplayMetrics = Resources.getSystem().getDisplayMetrics();
@@ -283,8 +295,8 @@ public class ThemeManager {
                 if (ret.isstring())
                     id = ret.tojstring();
             } catch (Exception e) {
-                if(BuildConfig.DEBUG)
-                  e.printStackTrace();
+                if (BuildConfig.DEBUG)
+                    e.printStackTrace();
             }
         }
         return id;
@@ -333,4 +345,5 @@ public class ThemeManager {
             mSoundPool = null;
         }
     }
+
 }

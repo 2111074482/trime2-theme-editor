@@ -55,6 +55,15 @@ public class InputView extends FrameLayout implements ResourceFinder {
         setKeyboard(id);
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        try {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     private void setKeyboardView(KeyboardView keyboardView) {
         if (keyboardView.equals(mKeyboardView))
             return;

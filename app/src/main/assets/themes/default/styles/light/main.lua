@@ -8,7 +8,9 @@ keyboard = {
     --键盘高度
     height = 240,
     --键盘背景颜色或图片
-    background = 0xffdddddd
+    background = 0xffdddddd,
+    --指定样式全局字体或字体集
+    --font="b.ttf"
 }
 
 --默认按键样式

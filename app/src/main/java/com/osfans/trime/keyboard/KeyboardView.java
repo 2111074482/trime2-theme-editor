@@ -53,7 +53,14 @@ public class KeyboardView extends FrameLayout {
         setAsciiModeLock(globals.get("ascii_mode").toboolean());
         setLock(globals.get("lock").toboolean());
     }
-
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        try {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     public boolean isAsciiMode() {
         return mAsciiMode || mAsciiModeLock;
     }

@@ -21,7 +21,12 @@ import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannedString;
 import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -40,7 +45,9 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
+import com.androlua.LuaBitmap;
 import com.androlua.LuaBitmapDrawable;
+import com.osfans.trime.Config;
 import com.osfans.trime.Event;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
@@ -49,6 +56,9 @@ import com.osfans.trime.enums.KeyEventType;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.BackUtil;
+
+import java.io.IOException;
 
 public class KeyView extends FrameLayout implements View.OnClickListener {
 
@@ -466,7 +476,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     // --- 5. 公开 API 方法 (Setters & Getters) ---
     public void setText(String text) {
         setVisibility(text != null ? VISIBLE : INVISIBLE);
-        mClick.setText(text);
+        mClick.setText(mKeyStyle.getSpan(text));
         mClick.setSingleLine(false);
         mClick.setMaxLines(4);
         mClick.setEllipsize(TextUtils.TruncateAt.END);
@@ -476,7 +486,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     public void setLabel(String text) {
         if (TextUtils.isEmpty(text)) return;
         setVisibility(VISIBLE);
-        mClick.setText(text);
+        mClick.setText(mKeyStyle.getSpan(text));
         mClick.setSingleLine(false);
         setContentDescription(text);
     }
@@ -484,7 +494,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     public void setClickText(String text) {
         mClickText = text;
         setVisibility(text != null ? VISIBLE : INVISIBLE);
-        mClick.setText(text);
+        mClick.setText(mKeyStyle.getSpan(text));
         if (text != null)
             mClick.setSingleLine(!text.contains("/n"));
         setOnClickListener(this);

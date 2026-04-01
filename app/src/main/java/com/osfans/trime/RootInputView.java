@@ -65,7 +65,14 @@ public class RootInputView extends FrameLayout {
         initView(context);
         //setFitsSystemWindows(false);
     }
-
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        try {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     @SuppressLint("ClickableViewAccessibility")
     private void initView(@NonNull Context context) {
         setClipChildren(false);

@@ -52,7 +52,14 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         setClipToPadding(false);
         initView();
     }
-
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        try {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     private void initView() {
         root = new LinearLayout(getContext()) {
             @Override

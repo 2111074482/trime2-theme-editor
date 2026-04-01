@@ -15,6 +15,7 @@ import android.view.Gravity;
 
 import com.androlua.LuaApplication;
 import com.osfans.trime.core.Rime;
+import com.osfans.trime.theme.ThemeManager;
 import com.osfans.trime.util.Function;
 
 import java.io.File;
@@ -211,6 +212,19 @@ public class Config {
         return new File(getThemeDir(getTheme()), "images/" + s).getAbsolutePath();
     }
 
+    public static String findImagePath(String s) {
+        File f = new File(getStylePath(s));
+        if (f.exists())
+            return f.getAbsolutePath();
+        f = new File(getThemePath("images/" + s));
+        if (f.exists())
+            return f.getAbsolutePath();
+        f = new File(getDataDir(), "images/" + s);
+        if (f.exists())
+            return f.getAbsolutePath();
+        return "";
+    }
+
     public static String getSoundPath(String s) {
         return new File(getThemeDir(getTheme()), "sounds/" + s).getAbsolutePath();
     }
@@ -316,8 +330,8 @@ public class Config {
 
     public static void setKeyboardHeightScale(float height) {
         height = getKeyboardHeightScale() * height;
-        if (height < 0.2)
-            height = 0.2f;
+        if (height < 0.5)
+            height = 0.5f;
         else if (height > 2) {
             height = 2f;
         }
@@ -325,7 +339,13 @@ public class Config {
     }
 
     public static float getKeyboardHeightScale() {
-        return Function.getPref(LuaApplication.getInstance()).getFloat(getKey("keyboard_height"), Function.getPref(LuaApplication.getInstance()).getFloat("keyboard_height", 1f));
+        int height = LuaApplication.getInstance().getResources().getDisplayMetrics().heightPixels;
+        float scale = Function.getPref(LuaApplication.getInstance()).getFloat(getKey("keyboard_height"), Function.getPref(LuaApplication.getInstance()).getFloat("keyboard_height", 1f));
+        int raw=ThemeManager.getRawContentHeight();
+        if(raw*scale>height*0.95){
+            return height*0.95f/raw;
+        }
+        return scale;
     }
 
     private static String getKey(String s) {

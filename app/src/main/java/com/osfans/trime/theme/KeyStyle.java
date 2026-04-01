@@ -5,17 +5,28 @@
 
 package com.osfans.trime.theme;
 
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.VibrationEffect;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.view.Gravity;
 
+import com.androlua.LuaApplication;
+import com.androlua.LuaBitmap;
+import com.androlua.LuaBitmapDrawable;
 import com.osfans.trime.Config;
 
 import org.luaj.LuaValue;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * 缓存优化的 KeyStyle
@@ -62,6 +73,7 @@ public class KeyStyle extends Style {
     private Typeface mTypeface;
     private boolean mShow;
     private boolean mHasCachedShow;
+    private final HashMap<String, CharSequence> mSpanCache = new HashMap<>();
 
     public KeyStyle(LuaValue t) {
         super(t);
@@ -281,4 +293,27 @@ public class KeyStyle extends Style {
         return mShow;
     }
 
+    public CharSequence getSpan(String text) {
+        if (TextUtils.isEmpty(text))
+            return text;
+        CharSequence s = mSpanCache.get(text);
+        if (s != null)
+            return s;
+        String path = Config.findImagePath(text + ".png");
+        if (!TextUtils.isEmpty(path)) {
+            SpannableString span = new SpannableString(text);
+            try {
+                LuaBitmapDrawable bmp = new LuaBitmapDrawable(path);
+                bmp.setBounds(0,0, ThemeManager.dp2px(getTextSize()), ThemeManager.dp2px(getTextSize()));
+                ImageSpan image = new ImageSpan(bmp, DynamicDrawableSpan.ALIGN_CENTER);
+                span.setSpan(image, 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                mSpanCache.put(text, span);
+                return span;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        mSpanCache.put(text, text);
+        return text;
+    }
 }

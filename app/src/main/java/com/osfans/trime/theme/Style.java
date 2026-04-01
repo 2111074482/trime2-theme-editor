@@ -7,15 +7,22 @@ package com.osfans.trime.theme;
 
 import static com.osfans.trime.theme.ThemeManager.dp2px;
 
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.fonts.Font;
 import android.graphics.fonts.FontFamily;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextUtils;
+import android.text.style.DynamicDrawableSpan;
+import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.Gravity;
 
+import com.androlua.LuaApplication;
+import com.androlua.LuaBitmap;
 import com.androlua.LuaBitmapDrawable;
 import com.osfans.trime.Config;
 
@@ -23,6 +30,7 @@ import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -259,7 +267,9 @@ public class Style {
     public Typeface getFont(String key) {
         LuaValue n = get(key);
         if (n.isnil()) {
-            return Typeface.DEFAULT;
+            n=ThemeManager.getStyle().getStyle("keyboard").get(key);
+            if(n.isnil())
+                return Typeface.DEFAULT;
         }
         if (n.istable()) {
             try {

@@ -11,7 +11,6 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -23,8 +22,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.text.TextUtils;
-import android.text.style.ReplacementSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -52,7 +49,6 @@ import com.osfans.trime.enums.KeyEventType;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
-import com.osfans.trime.util.Function;
 
 public class KeyView extends FrameLayout implements View.OnClickListener {
 
@@ -577,11 +573,14 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
                 mKey = Rime.isAsciiMode() ? mAsciiKey : mDefKey;
                 initKey();
             } else {
-                String click = mKey.getLabel();
-                if (!TextUtils.isEmpty(click)) {
-                    setClickText(click);
-                    setContentDescription(mKey.getDescription());
-                }
+                initKey();
+                //String click = mKey.getLabel();
+                //if (!TextUtils.isEmpty(click)) {
+                //    setClickText(click);
+                //    setContentDescription(mKey.getDescription());
+                //}
+                //String longClick = mKey.getSymbolLabel();
+                //if (!TextUtils.isEmpty(longClick)) setLongClickText(longClick);
             }
 
             if (mKey.isShift()) {
@@ -698,7 +697,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         String click = mKey.getLabel();
         if (!TextUtils.isEmpty(click)) setClickText(click);
 
-        String longClick = mKey.getSymbolLabel();
+        String longClick = mKey.getLongClickLabel();
         if (!TextUtils.isEmpty(longClick)) setLongClickText(longClick);
 
         String hint = mKey.getHint();

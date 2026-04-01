@@ -2,7 +2,7 @@ name = "26键"
 author = "nirenr"
 key_width = 10
 key_height = 25
-lock=true
+lock = true
 --rows行键盘，宽度和高度为键盘总宽度的百分比
 rows = {
     --第一行
@@ -38,7 +38,7 @@ rows = {
     --第一行
     {
         keys = {
-            { click = "Shift_L", style = "functional", width = 15},
+            { click = "Shift_L", style = "functional", width = 15 },
             { click = "z" },
             { click = "x" },
             { click = "c" },
@@ -52,12 +52,16 @@ rows = {
     --第四行
     {
         keys = {
-            { click="Keyboard_symbols", long_click = "F4", style = "functional", width = 15 },
-            { click="Keyboard_number", style = "functional" },
+            { click = "Keyboard_symbols", long_click = "F4", style = "functional", width = 15,
+              ascii = {
+                  click = "Keyboard_symbols", label = "Sys", long_click = "F4", hint_long = "menu"
+              }
+            },
+            { click = "Keyboard_number", style = "functional" },
             { click = "，", ascii = "," },
-            { click = "space", width = 30, swipe_repeatable=true, swipe_left="Left",swipe_right="Right",swipe_up="Up",swipe_down="Down"},
+            { click = "space", width = 30, swipe_repeatable = true, swipe_left = "Left", swipe_right = "Right", swipe_up = "Up", swipe_down = "Down" },
             { click = "。", ascii = "." },
-            { click="Mode_switch", style = "functional" },
+            { click = "Mode_switch", style = "functional" },
             { click = "Return", style = "enter", label = "Enter", width = 15 },
         }
     },

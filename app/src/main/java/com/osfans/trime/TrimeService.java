@@ -755,14 +755,16 @@ public class TrimeService extends InputMethodService {
         } else if (message instanceof RimeMessage.CandidateMenuMessage || message instanceof RimeMessage.CandidateListMessage) {
             updateCandidate();
         } else if (message instanceof RimeMessage.OptionMessage) {
-            updateRimeOption();
-            RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
+             RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
             if ("ascii_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setAsciiMode(msg.getData().isValue());
+                updateRimeOption();
             } else if ("small_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setSmallMode(msg.getData().isValue());
             } else if ("float_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setFloatMode(msg.getData().isValue());
+            }else {
+                updateRimeOption();
             }
         } else if (message instanceof RimeMessage.StatusMessage) {
             RimeProto.Status status = ((RimeMessage.StatusMessage) message).getData();

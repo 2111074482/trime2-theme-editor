@@ -17,38 +17,23 @@
  */
 package com.osfans.trime;
 
-import static com.osfans.trime.keyboard.KeyView.SWIPE_UP;
-
-import android.app.backup.BackupAgent;
-import android.graphics.Bitmap;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
-import com.android.cglib.dx.rop.cst.CstArray;
-import com.androlua.LuaApplication;
-import com.androlua.LuaBitmapDrawable;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.enums.KeyEventType;
 import com.osfans.trime.keyboard.KeyboardView;
 import com.osfans.trime.keyboard.ModifierState;
-import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
-import com.osfans.trime.util.Function;
 
 import org.luaj.LuaValue;
 import org.luaj.Varargs;
-import org.luaj.lib.jse.CoerceLuaToJava;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * {@link KeyboardView 鍵盤}中的各個按鍵，包含單擊、長按、滑動等多種{@link Event 事件}
@@ -159,6 +144,7 @@ public class Key {
     private boolean mHasSwipeEvent;
     private Key mAsciiKey;
     private boolean mSwipeRepeatable;
+    private boolean mAsciiMode;
 
 
     /**
@@ -180,7 +166,7 @@ public class Key {
                 };
         String[] hintTypes =
                 new String[]{
-                        "hint", "hint_long_click", "hint_left", "hint_right", "hint_up", "hint_down", "combo"
+                        "hint", "hint_long", "hint_left", "hint_right", "hint_up", "hint_down", "combo"
                 };
         for (int i = 0; i < EVENT_NUM; i++) {
             String hintType = hintTypes[i];
@@ -229,6 +215,7 @@ public class Key {
         } else if(a.istable()){
             if(!a.get("click").isnil()){
                 mAsciiKey=new Key(a);
+                mAsciiKey.setAsciiMode(true);
             } else {
                 ascii=new Event(a);
             }
@@ -296,6 +283,10 @@ public class Key {
             }
         }
 
+    }
+
+    private void setAsciiMode(boolean b) {
+        mAsciiMode=b;
     }
 
     public Key(String s) {
@@ -649,7 +640,7 @@ public class Key {
                         return action;
                 }
             }
-            if (Rime.isAsciiMode())
+            if (Rime.isAsciiMode()&&!mAsciiMode)
                 return event.getLabel();
             if (event.getCode() == KeyEvent.KEYCODE_SPACE) {
                  if (!Rime.isAsciiMode()) {
@@ -692,10 +683,12 @@ public class Key {
         return getEvent(type).getPreviewText();
     }
 
-    public String getSymbolLabel() {
+    public String getLongClickLabel() {
         Event event = getLongClick();
         if (event == null)
             return null;
+        if(hints[1]!=null)
+            return hints[1];
         return event.getLabel();
     }
 

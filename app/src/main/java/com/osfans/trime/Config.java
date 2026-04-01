@@ -5,6 +5,7 @@
 
 package com.osfans.trime;
 
+import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
 import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
@@ -30,7 +31,6 @@ public class Config {
     public static boolean isSpeakKeyLabel() {
         return false;
     }
-
 
 
     public static String getDataDir() {
@@ -65,7 +65,7 @@ public class Config {
 
     public static String getScriptsPath(String name) {
         File f = new File(getThemeDir(getTheme()), "scripts/" + name);
-        if(f.exists())
+        if (f.exists())
             return f.getAbsolutePath();
         return new File(getScriptsDir(), name).getAbsolutePath();
     }
@@ -73,8 +73,8 @@ public class Config {
     public static String[] getGroups() {
         File dir = new File(getDataDir(), "schemas");
         String[] list = dir.list();
-        if(list==null)
-            list=new String[0];
+        if (list == null)
+            list = new String[0];
         return list;
     }
 
@@ -106,11 +106,13 @@ public class Config {
         File dir = new File(getThemeDir(), s);
         return dir.getAbsolutePath();
     }
+
     public static String getThemePath(String s) {
         File dir = new File(getThemeDir(getTheme()), s);
         return dir.getAbsolutePath();
     }
-    public static String getThemePath(String d,String s) {
+
+    public static String getThemePath(String d, String s) {
         File dir = new File(getThemeDir(d), s);
         return dir.getAbsolutePath();
     }
@@ -128,28 +130,28 @@ public class Config {
         String[] list = dir.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                return new File(dir,name+"/main.lua").exists();
+                return new File(dir, name + "/main.lua").exists();
             }
         });
-        if(list==null)
-            list=new String[0];
+        if (list == null)
+            list = new String[0];
 
         return list;
     }
 
-    public static String getStyleKey(String s){
-        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
-            return  s+ "_style_night";
-        }else {
-            return  s+ "_style";
+    public static String getStyleKey(String s) {
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
+            return s + "_style_night";
+        } else {
+            return s + "_style";
         }
     }
 
-    public static String getStyleKey(){
-        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
-            return  getTheme()+ "_style_night";
-        }else {
-            return  getTheme()+ "_style";
+    public static String getStyleKey() {
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
+            return getTheme() + "_style_night";
+        } else {
+            return getTheme() + "_style";
         }
     }
 
@@ -158,12 +160,12 @@ public class Config {
     }
 
     public static String getStyle() {
-        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES){
-            return  Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style_night", Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style", "light"));
-        }else {
-            return  Function.loadString(LuaApplication.getInstance(),getTheme()+ "_style", "light");
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
+            return Function.loadString(LuaApplication.getInstance(), getTheme() + "_style_night", Function.loadString(LuaApplication.getInstance(), getTheme() + "_style", "light"));
+        } else {
+            return Function.loadString(LuaApplication.getInstance(), getTheme() + "_style", "light");
         }
-     }
+    }
 
     public static String getStyleDir() {
         File dir = new File(getThemeDir(getTheme()), "styles");
@@ -178,7 +180,7 @@ public class Config {
         return dir.getAbsolutePath();
     }
 
-    public static String getStylePath(String d,String s) {
+    public static String getStylePath(String d, String s) {
         File dir = new File(getStyleDir(d), s);
         return dir.getAbsolutePath();
     }
@@ -197,54 +199,54 @@ public class Config {
         String[] list = dir.list(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                return new File(dir,name+"/main.lua").exists();
+                return new File(dir, name + "/main.lua").exists();
             }
         });
-        if(list==null)
-            list=new String[0];
+        if (list == null)
+            list = new String[0];
         return list;
     }
 
     public static String getImagePath(String s) {
-        return new File(getThemeDir(getTheme()),"images/"+s).getAbsolutePath();
+        return new File(getThemeDir(getTheme()), "images/" + s).getAbsolutePath();
     }
 
     public static String getSoundPath(String s) {
-        return new File(getThemeDir(getTheme()),"sounds/"+s).getAbsolutePath();
+        return new File(getThemeDir(getTheme()), "sounds/" + s).getAbsolutePath();
     }
 
     public static String getFontPath(String s) {
         File f = new File(getStylePath(s));
-        if(f.exists())
+        if (f.exists())
             return f.getAbsolutePath();
-        f = new File(getThemePath("fonts/"+s));
-        if(f.exists())
+        f = new File(getThemePath("fonts/" + s));
+        if (f.exists())
             return f.getAbsolutePath();
-        f = new File(getDataDir(),"fonts/"+s);
-        if(f.exists())
+        f = new File(getDataDir(), "fonts/" + s);
+        if (f.exists())
             return f.getAbsolutePath();
         return "null";
     }
 
     public static String getKeyboard() {
-        mKeyboard = Function.loadString(LuaApplication.getInstance(), getTheme()+"_"+Rime.getCurrentRimeSchema()+"_keyboard", "");
-        Log.w("config", "getKeyboard: "+Rime.getCurrentRimeSchema()+";"+ mKeyboard);
-        setKeyboard(".default",mKeyboard);
+        mKeyboard = Function.loadString(LuaApplication.getInstance(), getTheme() + "_" + Rime.getCurrentRimeSchema() + "_keyboard", "");
+        Log.w("config", "getKeyboard: " + Rime.getCurrentRimeSchema() + ";" + mKeyboard);
+        setKeyboard(".default", mKeyboard);
         return mKeyboard;
     }
 
     public static String getKeyboard(String id) {
         //if (mKeyboard == null)
-        return Function.loadString(LuaApplication.getInstance(), getTheme()+"_"+id+"_keyboard", "");
+        return Function.loadString(LuaApplication.getInstance(), getTheme() + "_" + id + "_keyboard", "");
     }
 
     public static void setKeyboard(String s) {
         mKeyboard = s;
-         Function.saveString(LuaApplication.getInstance(), getTheme()+"_"+Rime.getCurrentRimeSchema()+"_keyboard", s);
+        Function.saveString(LuaApplication.getInstance(), getTheme() + "_" + Rime.getCurrentRimeSchema() + "_keyboard", s);
     }
 
     public static void setKeyboard(String id, String s) {
-        Function.saveString(LuaApplication.getInstance(), getTheme()+"_"+id+"_keyboard", s);
+        Function.saveString(LuaApplication.getInstance(), getTheme() + "_" + id + "_keyboard", s);
     }
 
     public static String[] getKeyboards() {
@@ -257,31 +259,34 @@ public class Config {
     }
 
 
-
     public static String getKeyboardPath(String keyboardId) {
-        return new File(getKeyboardDir(),keyboardId+".lua").getAbsolutePath();
+        return new File(getKeyboardDir(), keyboardId + ".lua").getAbsolutePath();
     }
 
     public static int getSmallModeGravity() {
         return Function.getPref(LuaApplication.getInstance()).getInt("small_mode_gravity", Gravity.LEFT);
     }
+
     public static void setSmallModeGravity(int g) {
         Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_gravity", g).commit();
     }
+
     public static boolean isSmallMode() {
         return Rime.getRimeOption("small_mode");
         //return Function.getPref(LuaApplication.getInstance()).getBoolean("small_mode", false)|| isFloatMode();
     }
+
     public static void setSmallMode(boolean b) {
         Function.getPref(LuaApplication.getInstance()).edit().putBoolean("small_mode", b).commit();
     }
 
 
     public static int getSmallModeWidth() {
-        return Function.getPref(LuaApplication.getInstance()).getInt("small_mode_width", (int) (TrimeService.getInstance().getMaxWidth()*0.8));
+        return Function.getPref(LuaApplication.getInstance()).getInt(getKey("small_mode_width"), Function.getPref(LuaApplication.getInstance()).getInt("small_mode_width", (int) (TrimeService.getInstance().getMaxWidth() * 0.8)));
     }
+
     public static void setSmallModeWidth(int w) {
-        Function.getPref(LuaApplication.getInstance()).edit().putInt("small_mode_width", w).commit();
+        Function.getPref(LuaApplication.getInstance()).edit().putInt(getKey("small_mode_width"), w).commit();
     }
 
     public static void setFloatMode(boolean b) {
@@ -294,29 +299,44 @@ public class Config {
     }
 
     public static void setFloatModeX(float x) {
-        Function.getPref(LuaApplication.getInstance()).edit().putFloat("float_mode_x", x).commit();
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat(getKey("float_mode_x"), x).commit();
     }
+
     public static void setFloatModeY(float y) {
-        Function.getPref(LuaApplication.getInstance()).edit().putFloat("float_mode_y", y).commit();
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat(getKey("float_mode_y"), y).commit();
     }
+
     public static float getFloatModeX() {
-        return Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_x", 0);
+        return Function.getPref(LuaApplication.getInstance()).getFloat(getKey("float_mode_x"),  Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_x", 0));
     }
+
     public static float getFloatModeY() {
-        return Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_y", 0);
+        return Function.getPref(LuaApplication.getInstance()).getFloat(getKey("float_mode_y"), Function.getPref(LuaApplication.getInstance()).getFloat("float_mode_y", 0));
     }
 
     public static void setKeyboardHeightScale(float height) {
-        height=getKeyboardHeightScale()*height;
-        if(height<0.2)
-            height=0.2f;
-        else if (height>2) {
-            height=2f;
+        height = getKeyboardHeightScale() * height;
+        if (height < 0.2)
+            height = 0.2f;
+        else if (height > 2) {
+            height = 2f;
         }
-        Function.getPref(LuaApplication.getInstance()).edit().putFloat("keyboard_height", height).commit();
+        Function.getPref(LuaApplication.getInstance()).edit().putFloat(getKey("keyboard_height"), height).commit();
     }
+
     public static float getKeyboardHeightScale() {
-       return Function.getPref(LuaApplication.getInstance()).getFloat("keyboard_height", 1f);
+        return Function.getPref(LuaApplication.getInstance()).getFloat(getKey("keyboard_height"), Function.getPref(LuaApplication.getInstance()).getFloat("keyboard_height", 1f));
+    }
+
+    private static String getKey(String s) {
+        StringBuilder buf = new StringBuilder(s);
+        if (LuaApplication.getInstance().getResources().getConfiguration().orientation == ORIENTATION_LANDSCAPE)
+            buf.append("_landscape");
+        if (isFloatMode())
+            buf.append("_float");
+        else if (isSmallMode())
+            buf.append("_small");
+        return buf.toString();
     }
 
 }

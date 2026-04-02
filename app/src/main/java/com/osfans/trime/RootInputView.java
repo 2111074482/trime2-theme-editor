@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 
 import com.osfans.trime.candidate.CandidateView;
 import com.osfans.trime.candidate.ExpandedCandidateView;
+import com.osfans.trime.candidate.FloatCandidateView;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.ClipboardKeyboardView;
@@ -225,7 +226,21 @@ public class RootInputView extends FrameLayout {
         Style color = ThemeManager.getStyle();
         mRoot.setBackground(color.getBackground(0xffdddddd));
 
-        mPreedit = new TextView(context);
+        mPreedit = new TextView(context){
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+                if(Config.isFloatMode()) {
+                    float targetY = mRoot.getY() - mPreedit.getHeight();
+                    mPreedit.setTranslationY(targetY);
+                    mPreedit.setTranslationX(mRoot.getX());
+                } else {
+                    float targetY = mRoot.getTop() - mPreedit.getHeight();
+                    mPreedit.setTranslationY(targetY);
+                    mPreedit.setTranslationX(mCenterLayout.getX());
+                }
+            }
+        };
         Style preeditColor = ThemeManager.getStyle().getStyle("preedit");
         mPreedit.setTextColor(preeditColor.getTextColor(0xffaaaaaa));
         mPreedit.setBackground(preeditColor.getBackground(0xff888888));
@@ -233,7 +248,7 @@ public class RootInputView extends FrameLayout {
         int pd = ThemeManager.dp2px(4);
         mPreedit.setPadding(pd, pd, pd, pd);
         mPreedit.setVisibility(View.INVISIBLE);
-        mPreedit.setText(" ");
+        //mPreedit.setText(" ");
 
         mCloud = new TextView(context);
         mCloud.setTextColor(preeditColor.getTextColor(0xffaaaaaa));
@@ -447,7 +462,7 @@ public class RootInputView extends FrameLayout {
         return mRoot;
     }
 
-    public TextView getPreedit() {
+    public View getPreedit() {
         return mPreedit;
     }
 
@@ -558,14 +573,15 @@ public class RootInputView extends FrameLayout {
 
                 // 核心优化：使用 setTranslationY 代替 LayoutParams
                 // 这只会触发重绘（Repaint），不会触发重布局（Relayout），性能提升巨大
-                 if(Config.isFloatMode()) {
-                    float targetY = mRoot.getTop() - mRoot.getY() - mPreedit.getHeight();
+                 /*if(Config.isFloatMode()) {
+                    float targetY = mRoot.getY() - mPreedit.getHeight();
                     mPreedit.setTranslationY(targetY);
                     mPreedit.setTranslationX(mRoot.getX());
                 } else {
                      float targetY = mRoot.getTop() - mPreedit.getHeight();
                      mPreedit.setTranslationY(targetY);
-                 }
+                     mPreedit.setTranslationX(mCenterLayout.getX());
+                 }*/
             }
         }
     };
@@ -606,6 +622,7 @@ public class RootInputView extends FrameLayout {
                 }else {
                     float targetY = mRoot.getTop() - mCloud.getHeight();
                     mCloud.setTranslationY(targetY);
+                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth()-mCenterLayout.getX()-mCenterLayout.getWidth()));
                 }
              }
         }

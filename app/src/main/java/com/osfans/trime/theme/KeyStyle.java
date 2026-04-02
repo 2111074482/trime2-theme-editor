@@ -6,6 +6,12 @@
 package com.osfans.trime.theme;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -304,6 +310,30 @@ public class KeyStyle extends Style {
             SpannableString span = new SpannableString(text);
             try {
                 LuaBitmapDrawable bmp = new LuaBitmapDrawable(path);
+                //PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(getTextColor(), PorterDuff.Mode.OVERLAY);
+                int targetColor = getTextColor(); // 你的目标颜色（例如 Trime 主题色）
+                if(targetColor!=0){
+                    float r = Color.red(targetColor) / 255f;
+                    float g = Color.green(targetColor) / 255f;
+                    float b = Color.blue(targetColor) / 255f;
+                    float a = Color.alpha(targetColor) / 255f;
+
+                    // 灰度转换系数（标准生理亮度公式）
+                    float lr = 0.213f;
+                    float lg = 0.715f;
+                    float lb = 0.072f;
+
+                    ColorMatrix cm = new ColorMatrix(new float[] {
+                            lr * r, lg * r, lb * r, 0, 0,  // 新的 R = (原R*lr + 原G*lg + 原B*lb) * 目标R
+                            lr * g, lg * g, lb * g, 0, 0,  // 新s G = (原R*lr + 原G*lg + 原B*lb) * 目标G
+                            lr * b, lg * b, lb * b, 0, 0,  // 新的 B = (原R*lr + 原G*lg + 原B*lb) * 目标B
+                            0,      0,      0,      a, 0   // 保持原图透明度并乘以目标Alpha
+                    });
+
+                    ColorFilter filter = new ColorMatrixColorFilter(cm);
+                    bmp.setColorFilter(filter);
+                }
+
                 bmp.setBounds(0,0, ThemeManager.dp2px(getTextSize()), ThemeManager.dp2px(getTextSize()));
                 ImageSpan image = new ImageSpan(bmp, DynamicDrawableSpan.ALIGN_CENTER);
                 span.setSpan(image, 0, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

@@ -882,7 +882,8 @@ public class TrimeService extends InputMethodService {
     }
 
     public void setCloudText(String s) {
-        mRootInputView.setCloudText(s);
+        if(mRootInputView!=null)
+            mRootInputView.setCloudText(s);
     }
 
     public void setKeyboard(String id) {

@@ -11,6 +11,9 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -644,7 +647,26 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         layers[1] = mPressedStyle.getBackground();
         if (layers[0] instanceof LuaBitmapDrawable) {
             if (layers[1] instanceof GradientDrawable) {
-                PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(mPressedStyle.getBackgroundColor(), PorterDuff.Mode.SRC_IN);
+                /*int targetColor = mPressedStyle.getBackgroundColor(); // 你的目标颜色（例如 Trime 主题色）
+                float r = Color.red(targetColor) / 255f;
+                float g = Color.green(targetColor) / 255f;
+                float b = Color.blue(targetColor) / 255f;
+                float a = Color.alpha(targetColor) / 255f;
+
+                // 灰度转换系数（标准生理亮度公式）
+                float lr = 0.213f;
+                float lg = 0.715f;
+                float lb = 0.072f;
+
+                ColorMatrix cm = new ColorMatrix(new float[] {
+                        lr * r, lg * r, lb * r, 0, 0,  // 新的 R = (原R*lr + 原G*lg + 原B*lb) * 目标R
+                        lr * g, lg * g, lb * g, 0, 0,  // 新s G = (原R*lr + 原G*lg + 原B*lb) * 目标G
+                        lr * b, lg * b, lb * b, 0, 0,  // 新的 B = (原R*lr + 原G*lg + 原B*lb) * 目标B
+                        0,      0,      0,      a, 0   // 保持原图透明度并乘以目标Alpha
+                });
+
+                ColorFilter filter = new ColorMatrixColorFilter(cm);*/
+                PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(mPressedStyle.getBackgroundColor(), PorterDuff.Mode.MULTIPLY);
                 LuaBitmapDrawable bg = ((LuaBitmapDrawable) mKeyStyle.getBackground());
                 bg.setColorFilter(colorFilter);
                 layers[1] = bg;

@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
@@ -53,32 +54,40 @@ public class RootInputView extends FrameLayout {
     private InputView mInputView;
     private ExpandedCandidateView mExpandedCandidateView;
     private SymbolsKeyboardView mSymbolsKeyboardView;
-    private TextView mPreedit;
+    private Composition mPreedit;
     private TextView mCloud;
     private FrameLayout mCenterLayout;
     private View mCustomView;
     private boolean mShowExtractedCandidatesView;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private ClipboardKeyboardView mClipboardKeyboardView;
+    private int mStartIdx = 0;
+    private int mCompositionMinLength;
 
     public RootInputView(@NonNull Context context) {
         super(context);
         initView(context);
         //setFitsSystemWindows(false);
     }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         try {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
+            //setMeasuredDimension(TrimeService.getInstance().getWidth(),TrimeService.getInstance().getHeight());
         }
     }
-    @SuppressLint("ClickableViewAccessibility")
+
+    @SuppressLint({"ClickableViewAccessibility", "AppCompatCustomView"})
     private void initView(@NonNull Context context) {
         setClipChildren(false);
         setClipToPadding(false);
-        mShowExtractedCandidatesView=false;
+        mHasComposition = ThemeManager.getStyle().hasKey("composition");
+        mCompositionMinLength = ThemeManager.getStyle().getStyle("composition").getInt("min_length");
+
+        mShowExtractedCandidatesView = false;
         mExpandedCandidateView = null;
         mClipboardKeyboardView = null;
         mCustomView = null;
@@ -90,16 +99,16 @@ public class RootInputView extends FrameLayout {
         mRoot.setClipChildren(false);
         mRoot.setClipToPadding(false);
         mRoot.setOrientation(LinearLayout.HORIZONTAL);
-        if(Config.isSmallMode()){
+        if (Config.isSmallMode()) {
             mLeftLayout = new FrameLayout(context);
             mLeftLayout.setVisibility(View.GONE);
             mRightLayout = new FrameLayout(context);
             mRightLayout.setVisibility(View.GONE);
 
-            mLeftButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
+            mLeftButton = new KeyView(context, ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
             mLeftButton.setText("◀");
             mLeftButton.setContentDescription("显示在左侧");
-            mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER|Gravity.RIGHT));
+            mLeftLayout.addView(mLeftButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER | Gravity.RIGHT));
             mLeftButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -122,7 +131,7 @@ public class RootInputView extends FrameLayout {
 
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                     switch (event.getActionMasked()) {
+                    switch (event.getActionMasked()) {
                         case MotionEvent.ACTION_DOWN:
                             mLastX = event.getRawX();
                             mLastW = mCenterLayout.getWidth();
@@ -130,15 +139,15 @@ public class RootInputView extends FrameLayout {
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
                                 float x = event.getRawX();
-                                mWidth=(mLastW - (x - mLastX));
-                                mCenterLayout.setScaleX(mWidth/mLastW);
-                                mCenterLayout.setTranslationX(-(mWidth-mLastW)/2);
-                                mLeftButton.setTranslationX(-(mWidth-mLastW));
+                                mWidth = (mLastW - (x - mLastX));
+                                mCenterLayout.setScaleX(mWidth / mLastW);
+                                mCenterLayout.setTranslationX(-(mWidth - mLastW) / 2);
+                                mLeftButton.setTranslationX(-(mWidth - mLastW));
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
-                            if(isSelected()){
+                            if (isSelected()) {
                                 Config.setSmallModeWidth((int) mWidth);
                                 setSelected(false);
                                 setTheme(Config.getTheme());
@@ -149,10 +158,10 @@ public class RootInputView extends FrameLayout {
                 }
             });
 
-            mRightButton = new KeyView(context,ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
+            mRightButton = new KeyView(context, ThemeManager.getStyle().getStyle("toolbar").getKeyStyle());
             mRightButton.setText("▶");
             mRightButton.setContentDescription("显示在右侧");
-            mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER|Gravity.LEFT));
+            mRightLayout.addView(mRightButton, new FrameLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight(), Gravity.CENTER | Gravity.LEFT));
             mRightButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -184,15 +193,15 @@ public class RootInputView extends FrameLayout {
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
                                 float x = event.getRawX();
-                                mWidth=(mLastW + (x - mLastX));
-                                mCenterLayout.setScaleX(mWidth/mLastW);
-                                mCenterLayout.setTranslationX((mWidth-mLastW)/2);
-                                mRightButton.setTranslationX((mWidth-mLastW));
+                                mWidth = (mLastW + (x - mLastX));
+                                mCenterLayout.setScaleX(mWidth / mLastW);
+                                mCenterLayout.setTranslationX((mWidth - mLastW) / 2);
+                                mRightButton.setTranslationX((mWidth - mLastW));
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
-                            if(isSelected()){
+                            if (isSelected()) {
                                 Config.setSmallModeWidth((int) mWidth);
                                 setSelected(false);
                                 setTheme(Config.getTheme());
@@ -208,11 +217,11 @@ public class RootInputView extends FrameLayout {
         mCenterLayout = new FrameLayout(context);
         mCenterLayout.setClipChildren(false);
         mCenterLayout.setClipToPadding(false);
-        if(Config.isSmallMode())
-            mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
+        if (Config.isSmallMode())
+            mRoot.addView(mLeftLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(), 1));
         mRoot.addView(mCenterLayout, new LinearLayout.LayoutParams(trime.getWidth(), ThemeManager.getContentHeight()));
-        if(Config.isSmallMode())
-            mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(),1));
+        if (Config.isSmallMode())
+            mRoot.addView(mRightLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(), 1));
 
         mInputViewRoot = new LinearLayout(context);
         mInputViewRoot.setClipChildren(false);
@@ -226,11 +235,13 @@ public class RootInputView extends FrameLayout {
         Style color = ThemeManager.getStyle();
         mRoot.setBackground(color.getBackground(0xffdddddd));
 
-        mPreedit = new TextView(context){
+        mPreedit = new Composition(context) {
             @Override
             protected void onSizeChanged(int w, int h, int oldw, int oldh) {
                 super.onSizeChanged(w, h, oldw, oldh);
-                if(Config.isFloatMode()) {
+                if (isSelected())
+                    return;
+                if (Config.isFloatMode()) {
                     float targetY = mRoot.getY() - mPreedit.getHeight();
                     mPreedit.setTranslationY(targetY);
                     mPreedit.setTranslationX(mRoot.getX());
@@ -257,9 +268,9 @@ public class RootInputView extends FrameLayout {
         mCloud.setPadding(pd, pd, pd, pd);
         mCloud.setVisibility(View.INVISIBLE);
         mCloud.setText(" ");
+        addView(mRoot, new FrameLayout.LayoutParams(Config.isFloatMode() ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getHeight(), Gravity.BOTTOM));
         addView(mPreedit, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
         addView(mCloud, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT));
-        addView(mRoot, new FrameLayout.LayoutParams(Config.isFloatMode()?ViewGroup.LayoutParams.WRAP_CONTENT:ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getHeight(), Gravity.BOTTOM));
         showToolbarView(true);
 
         mRoot.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
@@ -273,7 +284,7 @@ public class RootInputView extends FrameLayout {
                         insets.getSystemWindowInsetRight(),
                         insets.getSystemWindowInsetBottom()
                 );*/
-                if (mRoot != null) {
+                if (!Config.isFloatMode() && mRoot != null) {
                     ViewGroup.LayoutParams lp = mRoot.getLayoutParams();
                     lp.height = ThemeManager.getHeight() + insets.getSystemWindowInsetBottom();
                     mRoot.setLayoutParams(lp);
@@ -313,17 +324,22 @@ public class RootInputView extends FrameLayout {
                 mRightLayout.setVisibility(GONE);
             }
         } else {
-            if(mLeftLayout!=null)
+            if (mLeftLayout != null)
                 mLeftLayout.setVisibility(GONE);
-            if(mRightLayout!=null)
+            if (mRightLayout != null)
                 mRightLayout.setVisibility(GONE);
         }
-        if(Config.isFloatMode()){
-            KeyView hide=mCandidateView.getToolbar().getHide();
+        if (Config.isFloatMode()) {
+            KeyView hide = mCandidateView.getToolbar().getHide();
             hide.setOnLongClickListener(new OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
                     setSelected(true);
+                    if (!Config.isFloatMode()) {
+                        mPreedit.setVisibility(View.VISIBLE);
+                        mPreedit.setText("默认高度");
+                        mPreedit.setY(getHeight() - ThemeManager.getRawContentHeight() - mPreedit.getHeight());
+                    }
                     return true;
                 }
             });
@@ -349,17 +365,17 @@ public class RootInputView extends FrameLayout {
                             break;
                         case MotionEvent.ACTION_MOVE:
                             if (isSelected()) {
-                                if(Config.isSmallMode()){
+                                if (Config.isSmallMode()) {
                                     float y = event.getRawY();
                                     float mHeight = (mLastH + (mLastY - y));
                                     mInputView.setScaleY(mHeight / mLastH);
-                                    mInputView.setTranslationY((mLastH - mHeight)/2);
+                                    mInputView.setTranslationY((mLastH - mHeight) / 2);
                                     mCandidateView.setTranslationY((mLastH - mHeight));
                                     float x = event.getRawX();
                                     mWidth = (mLastW + (x - mLastX));
-                                    mCenterLayout.setScaleX(mWidth/mLastW);
-                                    mCenterLayout.setTranslationX((mWidth-mLastW)/2);
-                                    mRightButton.setTranslationX((mWidth-mLastW));
+                                    mCenterLayout.setScaleX(mWidth / mLastW);
+                                    mCenterLayout.setTranslationX((mWidth - mLastW) / 2);
+                                    mRightButton.setTranslationX((mWidth - mLastW));
                                 } else {
                                     mRoot.setTranslationX(mX + event.getRawX() - mLastX);
                                     mRoot.setTranslationY(mY + event.getRawY() - mLastY);
@@ -369,14 +385,14 @@ public class RootInputView extends FrameLayout {
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
                             if (isSelected()) {
-                                if(Config.isSmallMode()){
+                                if (Config.isSmallMode()) {
                                     Config.setKeyboardHeightScale(mInputView.getScaleY());
                                     Config.setSmallModeWidth((int) mWidth);
                                 } else {
                                     Config.setFloatModeX((int) mRoot.getTranslationX());
                                     Config.setFloatModeY((int) mRoot.getTranslationY());
                                 }
-                                 setSelected(false);
+                                setSelected(false);
                                 setTheme(Config.getTheme());
                             }
                             break;
@@ -385,26 +401,31 @@ public class RootInputView extends FrameLayout {
                 }
             });
             mRoot.setX(Config.getFloatModeX());
-            if(mRoot.getX()<0){
+            if (mRoot.getX() < 0) {
                 mRoot.setX(0);
             }
-            if(mRoot.getX()+trime.getWidth()>trime.getMaxWidth()){
-                mRoot.setX(trime.getMaxWidth()-trime.getWidth());
+            if (mRoot.getX() + trime.getWidth() > trime.getMaxWidth()) {
+                mRoot.setX(trime.getMaxWidth() - trime.getWidth());
             }
 
             mRoot.setY(Config.getFloatModeY());
-            if(mRoot.getY()<ThemeManager.getHeight()-trime.getHeight()+ThemeManager.getCandidateHeight()){
-                mRoot.setY(ThemeManager.getHeight()-trime.getHeight()+ThemeManager.getCandidateHeight());
+            if (mRoot.getY() < ThemeManager.getHeight() - trime.getHeight() + ThemeManager.getCandidateHeight()) {
+                mRoot.setY(ThemeManager.getHeight() - trime.getHeight() + ThemeManager.getCandidateHeight());
             }
-            if(mRoot.getY()>0){
+            if (mRoot.getY() > 0) {
                 mRoot.setY(0);
             }
-        }else {
-            KeyView hide=mCandidateView.getToolbar().getHide();
+        } else {
+            KeyView hide = mCandidateView.getToolbar().getHide();
             hide.setOnLongClickListener(new OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
                     setSelected(true);
+                    if (!Config.isFloatMode()) {
+                        mPreedit.setVisibility(View.VISIBLE);
+                        mPreedit.setText("默认高度");
+                        mPreedit.setY(getHeight() - ThemeManager.getRawContentHeight() - mPreedit.getHeight());
+                    }
                     return true;
                 }
             });
@@ -429,21 +450,21 @@ public class RootInputView extends FrameLayout {
                                 float y = event.getRawY();
                                 float mHeight = (mLastH + (mLastY - y));
                                 mInputView.setScaleY(mHeight / mLastH);
-                                mInputView.setTranslationY((mLastH - mHeight)/2);
+                                mInputView.setTranslationY((mLastH - mHeight) / 2);
                                 mCandidateView.setTranslationY((mLastH - mHeight));
-                                if(Config.isSmallMode()){
+                                if (Config.isSmallMode()) {
                                     float x = event.getRawX();
                                     mWidth = (mLastW + (x - mLastX));
-                                    mCenterLayout.setScaleX(mWidth/mLastW);
-                                    mCenterLayout.setTranslationX((mWidth-mLastW)/2);
-                                    mRightButton.setTranslationX((mWidth-mLastW));
+                                    mCenterLayout.setScaleX(mWidth / mLastW);
+                                    mCenterLayout.setTranslationX((mWidth - mLastW) / 2);
+                                    mRightButton.setTranslationX((mWidth - mLastW));
                                 }
                             }
                             break;
                         case MotionEvent.ACTION_UP:
                         case MotionEvent.ACTION_CANCEL:
-                            if(isSelected()){
-                                if(Config.isSmallMode()){
+                            if (isSelected()) {
+                                if (Config.isSmallMode()) {
                                     Config.setSmallModeWidth((int) mWidth);
                                 }
                                 Config.setKeyboardHeightScale(mInputView.getScaleY());
@@ -536,7 +557,7 @@ public class RootInputView extends FrameLayout {
 
     private final Runnable mUpdateCandidateRunnable = () -> {
         if (mShowExtractedCandidatesView) mExpandedCandidateView.show();
-        else mCandidateView.show();
+        else mCandidateView.show(mStartIdx);
     };
 
     public void updateCandidate() {
@@ -559,12 +580,12 @@ public class RootInputView extends FrameLayout {
     // 1. 定义一个成员变量保存上一次的内容，用于比对去重
     private String mLastComposingText = "";
 
+    private boolean mHasComposition;
     // 2. 复用 Runnable，避免频繁 GC 产生内存抖动
     private final Runnable mComposingRunnable = new Runnable() {
         @Override
         public void run() {
             String s = mLastComposingText;
-            mPreedit.setText(s);
 
             if (TextUtils.isEmpty(s)) {
                 mPreedit.setVisibility(View.INVISIBLE);
@@ -583,13 +604,18 @@ public class RootInputView extends FrameLayout {
                      mPreedit.setTranslationX(mCenterLayout.getX());
                  }*/
             }
+            mStartIdx = 0;
+            if (mHasComposition)
+                mStartIdx = mPreedit.setWindow(mCompositionMinLength);
+            else
+                mPreedit.setText(s);
         }
     };
 
     public void setComposingText(String s) {
         // 3. 在非 UI 线程预判：如果内容没变，直接拦截，不向主线程发消息
         if (s == null) s = "";
-        if (s.equals(mLastComposingText)) return;
+        //if (s.equals(mLastComposingText)) return;
 
         mLastComposingText = s;
 
@@ -615,16 +641,16 @@ public class RootInputView extends FrameLayout {
 
                 // 2. 性能核心：使用 TranslationY 避开 RequestLayout
                 // 这样只会触发重绘（Invalidate），不会导致主线程计算整棵布局树
-                if(Config.isFloatMode()){
+                if (Config.isFloatMode()) {
                     float targetY = mRoot.getTop() - mRoot.getY() - mCloud.getHeight();
                     mCloud.setTranslationY(targetY);
-                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth()-mRoot.getX()-mRoot.getWidth()));
-                }else {
+                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth() - mRoot.getX() - mRoot.getWidth()));
+                } else {
                     float targetY = mRoot.getTop() - mCloud.getHeight();
                     mCloud.setTranslationY(targetY);
-                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth()-mCenterLayout.getX()-mCenterLayout.getWidth()));
+                    mCloud.setTranslationX(-(TrimeService.getInstance().getMaxWidth() - mCenterLayout.getX() - mCenterLayout.getWidth()));
                 }
-             }
+            }
         }
     };
 
@@ -754,6 +780,24 @@ public class RootInputView extends FrameLayout {
             @Override
             public void run() {
                 setTheme(Config.getTheme());
+            }
+        });
+    }
+
+    public void setComposition(CharSequence c) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mPreedit.setText(c);
+            }
+        });
+    }
+
+    public void addCompositions(ArrayList<String> list) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mPreedit.addCompositions(list);
             }
         });
     }

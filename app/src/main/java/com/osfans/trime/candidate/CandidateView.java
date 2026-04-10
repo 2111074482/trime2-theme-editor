@@ -101,6 +101,9 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         mHide = new KeyView(getContext(), mCandidateStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key")));
         if (hide.istable()) {
             mHide.setText(hide.get("text").optjstring("▽"));
+        }else {
+            mHide.setText("▽");
+
         }
 
         mHide.setContentDescription("更多候选");
@@ -155,6 +158,29 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         }
         CandidatesManager.reset();
         CandidatesManager.resetFilter();
+        mAdapter.setData(CandidatesManager.next());
+        // 第一种方式：直接调用 RecyclerView 的方法
+        mListView.scrollToPosition(0);
+        //mListView.invalidateItemDecorations();
+        mListView.requestLayout();
+        announceCandidate(0);
+    }
+
+    public void show(int idx) {
+        int mIdx = Rime.getHighlightRimeCandidate();
+        if (mIdx > 0) {
+            mAdapter.setIdx(mIdx);
+            announceCandidate(mIdx);
+            return;
+        }
+
+        if (mListView.isComputingLayout()) {
+            mListView.post(this::show);
+            return;
+        }
+        CandidatesManager.reset();
+        CandidatesManager.resetFilter();
+        CandidatesManager.setStart(idx);
         mAdapter.setData(CandidatesManager.next());
         // 第一种方式：直接调用 RecyclerView 的方法
         mListView.scrollToPosition(0);

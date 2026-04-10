@@ -16,6 +16,7 @@ import android.inputmethodservice.InputMethodService;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.text.Html;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
@@ -44,6 +45,7 @@ import com.androlua.LuaUtil;
 import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
+import com.osfans.trime.core.RimeApi;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
 import com.osfans.trime.dialog.OptionsDialog;
@@ -126,6 +128,9 @@ public class TrimeService extends InputMethodService {
                         // String soft_cursor_key = "soft_cursor";
                         // Rime.setRimeOption(soft_cursor_key, true); //軟光標
                         // mRootInputView.setSchema(Rime.getCurrentRimeSchema());
+                        String id = Function.getPref(getInstance()).getString("select_schema_id", "");
+                        if(!TextUtils.isEmpty(id))
+                            Rime.selectRimeSchema(id);
                     }
                 });
             }
@@ -285,6 +290,16 @@ public class TrimeService extends InputMethodService {
             outInsets.contentTopInsets = getHeight();
             outInsets.visibleTopInsets = getHeight();
             outInsets.touchableRegion.set(lc[0], lc[1], lc[0] + mRoot.getWidth(), lc[1] + mRoot.getHeight());
+            View mPreedit = mRootInputView.getPreedit();
+            if (mPreedit.getVisibility() == View.VISIBLE) {
+                int[] plc = getLocationInWindow(mPreedit);
+                outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
+            }
+            View mCloud = mRootInputView.getCloud();
+            if (mCloud.getVisibility() == View.VISIBLE) {
+                int[] plc = getLocationInWindow(mCloud);
+                outInsets.touchableRegion.union(new Rect(plc[0], plc[1], plc[0] + mPreedit.getWidth(), plc[1] + mPreedit.getHeight()));
+            }
         } else {
             outInsets.contentTopInsets = lc[1];
             outInsets.visibleTopInsets = lc[1];
@@ -628,7 +643,7 @@ public class TrimeService extends InputMethodService {
             return ret;
         }
         if (!canCompose || Rime.isVoidKeycode(keyCode)) return false;
-        android.util.Log.w(TAG, "onKeyDown:4 " + keyCode);
+        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:4 " + keyCode);
         return true;
     }
 
@@ -642,7 +657,7 @@ public class TrimeService extends InputMethodService {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         //Log.info("onKeyDown=" + event);
-        android.util.Log.w(TAG, "onKeyDown: " + keyCode);
+        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown: " + keyCode);
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
             try {
                 if (Rime.isComposing()) {
@@ -656,7 +671,7 @@ public class TrimeService extends InputMethodService {
             }
         }
         if (composeEvent(event) && onKeyEvent(event)) {
-            android.util.Log.w(TAG, "onKeyDown:2 " + keyCode);
+            if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:2 " + keyCode);
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -716,7 +731,7 @@ public class TrimeService extends InputMethodService {
             mask = event.getMetaState();
         }
         ret = handleKey(keyCode, mask);
-        android.util.Log.w(TAG, "onKeyDown:3 " + keyCode + ret);
+        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:3 " + keyCode + ret);
         if (isComposing()) setCandidatesViewShown(canCompose); //藍牙鍵盤打字時顯示候選欄
         return ret;
     }
@@ -897,6 +912,10 @@ public class TrimeService extends InputMethodService {
     // 8. 输入法操作辅助 (Input Helpers)
     public void selectCandidate(int index) {
         mRime.selectCandidate(index);
+    }
+
+    public void selectPagedCandidate(int index) {
+        mRime.selectPagedCandidate(index);
     }
 
     public void selectRimeSchema(String id) {
@@ -1137,7 +1156,7 @@ public class TrimeService extends InputMethodService {
         return getMaxWidth();
     }
 
-    private int[] getLocationInWindow(View view) {
+    public int[] getLocationInWindow(View view) {
         int[] ret = new int[2];
         view.getLocationInWindow(ret);
         return ret;
@@ -1451,5 +1470,28 @@ public class TrimeService extends InputMethodService {
         }
         mRootInputView.setCandidates(items);
         mComposing = !items.isEmpty();
+    }
+    public void addCompositions(ArrayList<String> list) {
+        mRootInputView.addCompositions(list);
+    }
+
+    public void setComposition(String list) {
+        mRootInputView.setComposition(list);
+    }
+
+    public void setCompositionFromHtml(String list) {
+        mRootInputView.setComposition(Html.fromHtml(list));
+    }
+
+    public void addCloud(String s) {
+
+    }
+
+    public void addCloud(String index, String comment) {
+
+    }
+
+    public Rime getRime() {
+        return mRime;
     }
 }

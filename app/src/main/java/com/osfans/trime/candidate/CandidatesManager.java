@@ -198,4 +198,8 @@ public class CandidatesManager {
         mFilterStrokeTip = null;
         TrimeService.getInstance().setCloudText(null);
     }
+
+    public static void setStart(int idx) {
+        mStart=idx;
+    }
 }

@@ -45,35 +45,35 @@ key.margins = {
 --按键助记
 --在按键使用hint默认hint,或者使用hint_up,hint_down,hint_left,hint_right定义四个方向hint
 key.hint = {
-    show=true,
+    show = true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
     text_size = 12
 }
 key.hint.up = {
-    show=true,
+    show = true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
     text_size = 12
 }
 key.hint.down = {
-    show=true,
+    show = true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
     text_size = 12
 }
 key.hint.left = {
-    show=true,
+    show = true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
     text_size = 12
 }
 key.hint.right = {
-    show=true,
+    show = true,
     --助记文字颜色
     text_color = 0xff444444,
     --助记文字大小
@@ -81,12 +81,12 @@ key.hint.right = {
 }
 --按键长按
 key.long_click = {
-    show=true,
+    show = true,
     --长按文字颜色
     text_color = 0xff444444,
     --长按文字大小
     text_size = 12,
-    vibration_enabled = true,--震动开关
+    vibration_enabled = true, --震动开关
     --定义位置
     --gravity="top|left",
     --定义偏移
@@ -168,7 +168,7 @@ symbol = {
     text_color = 0xff000000,
     indicator_color = 0xFF0055FF
 }
-symbol.text=table.clone(key)
+symbol.text = table.clone(key)
 symbol.key = {
     text_color = 0xff000000,
     text_size = 18,
@@ -214,7 +214,7 @@ candidate.comment.pressed = {
 }
 
 candidate.key = {
-    text="▽",
+    text = "▽",
     text_color = 0xff000000,
     text_size = 18,
     background = 0xffdddddd,
@@ -278,11 +278,11 @@ clipboard.item.padding = {
 --工具栏样式
 toolbar = table.clone(candidate)
 --显示方案定义的开关
-toolbar.schema_switches=false
-toolbar.hide=table.clone(candidate.key)
+toolbar.schema_switches = false
+toolbar.hide = table.clone(candidate.key)
 --支持添加preset_keys按键，也可以直接写事件的表，
 --可以指定按键的style
-toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard" ,"Mode_small","Mode_float"}
+toolbar.keys = { { label = "菜单", send = "Control+grave" }, "Mode_switch", "Keyboard_clipboard", "Mode_small", "Mode_float" }
 toolbar.key.text_size = 22
 toolbar.key.padding = {
     left = 8,
@@ -295,7 +295,62 @@ toolbar.key.padding = {
 preedit = {
     text_size = 18,
     text_color = 0xff222222,
-    background = 0xaaaaaaaa
+    background = 0xaaffffff
+}
+composition = {
+    text_color = 0xff222222,
+    background = 0xaaffffff,
+    position = "fixed", -- 位置：left|right|left_up|right_up|fixed|bottom_left|bottom_right|top_left|top_right(left、right需要>=Android5.0)
+    min_length = 8, -- 最小词长,超过字数的显示在悬浮窗
+    max_length = 10, -- 超过字数则换行
+    sticky_lines = 0, -- 固顶行数
+    max_entries = -1, -- 最大词条数,-1表示显示全部
+    all_phrases = false, -- 所有满足条件的词语都显示在窗口
+    border = 2, -- 边框宽度
+    max_width = 230, -- 最大宽度，超过则自动换行
+    max_height = 400, -- 最大高度
+    min_width = 40, -- 最小宽度
+    min_height = 0, -- 最小高度
+    padding = {
+        left = 5,
+        top = 5,
+        right = 5,
+        bottom = 5
+    },
+    line_spacing = 0, -- 候选词的行间距(px)
+    line_spacing_multiplier = 1.2, -- 候选词的行间距(倍数)
+    spacing = 1, -- 与预编辑或边缘的距离
+    round_corner = 8, -- 窗口圆角
+    elevation = 5, -- 阴影
+    background = 0xaaaaaaaa, -- 颜色或者图片文件名
+    movable = "false", -- 是否可移动窗口，或仅移动一次 true|false|once
+
+    pressed={
+        text_color = 0xff222222,
+        background = 0xcccccccc
+    },
+    window = {
+        -- 悬浮窗口组件
+        {
+            start = "",
+            move = "✎ ",
+            ["end"] = ""
+        },
+        {
+            start = "",
+            composition = "%s",
+            ["end"] = "",
+            letter_spacing = 0
+        },
+        {
+            start = "\n",
+            label = "%s.",
+            candidate = "%s",
+            comment = " %s",
+            ["end"] = "",
+            sep = " "
+        }
+    }
 }
 
 --总高度

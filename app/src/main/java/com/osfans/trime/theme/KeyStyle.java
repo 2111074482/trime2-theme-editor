@@ -13,6 +13,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.VibrationEffect;
@@ -309,29 +310,34 @@ public class KeyStyle extends Style {
         if (!TextUtils.isEmpty(path)) {
             SpannableString span = new SpannableString(text);
             try {
-                LuaBitmapDrawable bmp = new LuaBitmapDrawable(path);
-                //PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(getTextColor(), PorterDuff.Mode.OVERLAY);
+                Bitmap bitmap = LuaBitmap.getLocalBitmap(path);
                 int targetColor = getTextColor(); // 你的目标颜色（例如 Trime 主题色）
-                if(targetColor!=0){
-                    float r = Color.red(targetColor) / 255f;
-                    float g = Color.green(targetColor) / 255f;
-                    float b = Color.blue(targetColor) / 255f;
-                    float a = Color.alpha(targetColor) / 255f;
+                BitmapDrawable bmp = new BitmapDrawable(bitmap);
+                if(getSingleColorIfPure(bitmap)==null){
+                    if(targetColor!=0){
+                        float r = Color.red(targetColor) / 255f;
+                        float g = Color.green(targetColor) / 255f;
+                        float b = Color.blue(targetColor) / 255f;
+                        float a = Color.alpha(targetColor) / 255f;
 
-                    // 灰度转换系数（标准生理亮度公式）
-                    float lr = 0.213f;
-                    float lg = 0.715f;
-                    float lb = 0.072f;
+                        // 灰度转换系数（标准生理亮度公式）
+                        float lr = 0.213f;
+                        float lg = 0.715f;
+                        float lb = 0.072f;
 
-                    ColorMatrix cm = new ColorMatrix(new float[] {
-                            lr * r, lg * r, lb * r, 0, 0,  // 新的 R = (原R*lr + 原G*lg + 原B*lb) * 目标R
-                            lr * g, lg * g, lb * g, 0, 0,  // 新s G = (原R*lr + 原G*lg + 原B*lb) * 目标G
-                            lr * b, lg * b, lb * b, 0, 0,  // 新的 B = (原R*lr + 原G*lg + 原B*lb) * 目标B
-                            0,      0,      0,      a, 0   // 保持原图透明度并乘以目标Alpha
-                    });
+                        ColorMatrix cm = new ColorMatrix(new float[] {
+                                lr * r, lg * r, lb * r, 0, 0,  // 新的 R = (原R*lr + 原G*lg + 原B*lb) * 目标R
+                                lr * g, lg * g, lb * g, 0, 0,  // 新s G = (原R*lr + 原G*lg + 原B*lb) * 目标G
+                                lr * b, lg * b, lb * b, 0, 0,  // 新的 B = (原R*lr + 原G*lg + 原B*lb) * 目标B
+                                0,      0,      0,      a, 0   // 保持原图透明度并乘以目标Alpha
+                        });
 
-                    ColorFilter filter = new ColorMatrixColorFilter(cm);
-                    bmp.setColorFilter(filter);
+                        ColorFilter filter = new ColorMatrixColorFilter(cm);
+                        bmp.setColorFilter(filter);
+                    }
+                } else {
+                    PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(getTextColor(), PorterDuff.Mode.SRC_IN);
+                    bmp.setColorFilter(colorFilter);
                 }
 
                 bmp.setBounds(0,0, ThemeManager.dp2px(getTextSize()), ThemeManager.dp2px(getTextSize()));
@@ -345,5 +351,49 @@ public class KeyStyle extends Style {
         }
         mSpanCache.put(text, text);
         return text;
+    }
+
+    /**
+     * 判断图片是否为单色图标（忽略透明区域）
+     * @param bitmap 待检测的位图
+     * @return 如果图片除透明外只有一种 RGB 颜色，返回该颜色值（包含原始Alpha）；否则返回 null
+     */
+    public static Integer getSingleColorIfPure(Bitmap bitmap) {
+        if (bitmap == null) return null;
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        Integer baseColor = null; // 用于存储第一个找到的非透明像素的 RGB
+
+        // 采样步长：如果图片很大，可以设置步长（如 2）来提高性能
+        int step = 1;
+
+        for (int x = 0; x < width; x += step) {
+            for (int y = 0; y < height; y += step) {
+                int pixel = bitmap.getPixel(x, y);
+
+                // 1. 去除全透明区域：如果 Alpha 为 0，跳过不计入判断
+                if (Color.alpha(pixel) == 0) {
+                    continue;
+                }
+
+                // 2. 提取 RGB 部分 (忽略透明度进行比较)
+                int currentColorRGB = pixel & 0x00FFFFFF;
+
+                if (baseColor == null) {
+                    // 记录第一个非透明像素的 RGB 作为基准
+                    baseColor = currentColorRGB;
+                } else {
+                    // 3. 与基准色对比
+                    if (currentColorRGB != baseColor) {
+                        return null; // 发现第二种颜色，不是单色图
+                    }
+                }
+            }
+        }
+
+        // 如果循环结束 baseColor 仍为 null，说明是全透明图片
+        return baseColor;
     }
 }

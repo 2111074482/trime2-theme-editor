@@ -11,9 +11,6 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -24,12 +21,7 @@ import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.SpannedString;
 import android.text.TextUtils;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -48,9 +40,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
-import com.androlua.LuaBitmap;
 import com.androlua.LuaBitmapDrawable;
-import com.osfans.trime.Config;
 import com.osfans.trime.Event;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
@@ -59,9 +49,6 @@ import com.osfans.trime.enums.KeyEventType;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
-import com.osfans.trime.util.BackUtil;
-
-import java.io.IOException;
 
 public class KeyView extends FrameLayout implements View.OnClickListener {
 
@@ -86,10 +73,11 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     private boolean mSelected;
     private TextView keyPreview;
     private Animator.AnimatorListener mAnimatorListener;
-    private TextView mHintUp;
-    private TextView mHintDown;
-    private TextView mHintLeft;
-    private TextView mHintRight;
+    //private TextView mHintUp;
+    //private TextView mHintDown;
+    //private TextView mHintLeft;
+    //private TextView mHintRight;
+    private TextView[] mHints=new TextView[8];
 
     // --- 3. 构造函数 ---
     public KeyView(@NonNull Context context) {
@@ -273,18 +261,26 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             }
         }
         updateTextColor(mClick, isPressed, mKeyStyle);
+        for (int i = 0; i < mHints.length; i++) {
+            TextView hint = mHints[i];
+            if(hint==null)
+                continue;
+            updateTextColor(hint, isPressed, mHintStyles[i]);
+        }
+
+        /*KeyStyle mHintKeyStyle = mKeyStyle.getHintKeyStyle();
         if (mHint != null)
-            updateTextColor(mHint, isPressed, mKeyStyle.getHintKeyStyle());
+            updateTextColor(mHint, isPressed, mHintKeyStyle);
         if (mLongClick != null)
             updateTextColor(mLongClick, isPressed, mKeyStyle.getLongClickKeyStyle());
         if (mHintUp != null)
-            updateTextColor(mHintUp, isPressed, mKeyStyle.getHintKeyStyle().getKeyStyle("up"));
+            updateTextColor(mHintUp, isPressed, mHintKeyStyle.getKeyStyle("up"));
         if (mHintDown != null)
-            updateTextColor(mHintDown, isPressed, mKeyStyle.getHintKeyStyle().getKeyStyle("down"));
+            updateTextColor(mHintDown, isPressed, mHintKeyStyle.getKeyStyle("down"));
         if (mHintLeft != null)
-            updateTextColor(mHintLeft, isPressed, mKeyStyle.getHintKeyStyle().getKeyStyle("left"));
+            updateTextColor(mHintLeft, isPressed, mHintKeyStyle.getKeyStyle("left"));
         if (mHintRight != null)
-            updateTextColor(mHintRight, isPressed, mKeyStyle.getHintKeyStyle().getKeyStyle("right"));
+            updateTextColor(mHintRight, isPressed, mHintKeyStyle.getKeyStyle("right"));*/
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             int dShadowColor = mKeyStyle.getShadowColor();
             if (dShadowColor != 0) {
@@ -511,10 +507,12 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             if (!mKeyStyle.hasKey("long_click"))
                 return;
             KeyStyle mLongClickStyle = mKeyStyle.getLongClickKeyStyle();
+            mHintStyles[HINT_LONG]=mLongClickStyle;
             if (!mLongClickStyle.isShow())
                 return;
             mLongClick = new TightTextView(getContext());
             //mLongClick.setBackgroundColor(0xff0000ff);
+            mHints[HINT_LONG]=mLongClick;
 
             mLongClick.setIncludeFontPadding(true);
             mLongClick.setSingleLine(true);
@@ -548,11 +546,13 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             if (!mKeyStyle.hasKey("hint"))
                 return;
             KeyStyle mHintStyle = mKeyStyle.getHintKeyStyle();
+            mHintStyles[HINT]=mHintStyle;
             if (!mHintStyle.isShow())
                 return;
             if (!mHintStyle.isShow())
                 return;
             mHint = new TightTextView(getContext());
+            mHints[HINT]=mHint;
             mHint.setIncludeFontPadding(true);
             mHint.setSingleLine(true);
             mHint.setVisibility(View.VISIBLE);
@@ -736,33 +736,58 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         if (!TextUtils.isEmpty(hint)) setHintText(hint);
         setContentDescription(mKey.getDescription());
         KeyStyle mHintKeyStyle = mKeyStyle.getHintKeyStyle();
+
         String ev = mKey.getHint(SWIPE_UP);
-        if (ev != null && mHintKeyStyle.hasKey("up")) {
-            if (mHintUp != null)
-                mHintUp.setText(ev);
-            else
-                mHintUp = addHint(ev, Gravity.TOP, mHintKeyStyle.getKeyStyle("up", mHintKeyStyle));
+        if (ev != null) {
+            if (mHintKeyStyle.hasKey("up")) {
+                KeyStyle ht = mHintKeyStyle.getKeyStyle("up", mHintKeyStyle);
+                mHintStyles[SWIPE_UP] = ht;
+                if (mHints[SWIPE_UP] != null)
+                    mHints[SWIPE_UP].setText(ht.getSpan(ev));
+                else
+                    mHints[SWIPE_UP] = addHint(ev, Gravity.TOP, ht);
+            } else {
+                mHintStyles[SWIPE_UP] = mHintKeyStyle;
+            }
         }
         ev = mKey.getHint(SWIPE_DOWN);
-        if (ev != null && mHintKeyStyle.hasKey("down")) {
-            if (mHintDown != null)
-                mHintDown.setText(ev);
-            else
-                mHintDown = addHint(ev, Gravity.BOTTOM, mHintKeyStyle.getKeyStyle("down", mHintKeyStyle));
+        if (ev != null) {
+            if (mHintKeyStyle.hasKey("down")) {
+                KeyStyle ht = mHintKeyStyle.getKeyStyle("down", mHintKeyStyle);
+                mHintStyles[SWIPE_DOWN] = ht;
+                if (mHints[SWIPE_DOWN] != null)
+                    mHints[SWIPE_DOWN].setText(ht.getSpan(ev));
+                else
+                    mHints[SWIPE_DOWN] = addHint(ev, Gravity.BOTTOM, ht);
+            } else {
+                mHintStyles[SWIPE_DOWN] = mHintKeyStyle;
+            }
         }
         ev = mKey.getHint(SWIPE_LEFT);
-        if (ev != null && mHintKeyStyle.hasKey("left")) {
-            if (mHintLeft != null)
-                mHintLeft.setText(ev);
-            else
-                mHintLeft = addHint(ev, Gravity.LEFT, mHintKeyStyle.getKeyStyle("left", mHintKeyStyle));
+        if (ev != null) {
+            if (mHintKeyStyle.hasKey("left")) {
+                KeyStyle ht = mHintKeyStyle.getKeyStyle("left", mHintKeyStyle);
+                mHintStyles[SWIPE_LEFT] = ht;
+                if (mHints[SWIPE_LEFT] != null)
+                    mHints[SWIPE_LEFT].setText(ht.getSpan(ev));
+                else
+                    mHints[SWIPE_LEFT] = addHint(ev, Gravity.LEFT, ht);
+            } else {
+                mHintStyles[SWIPE_LEFT] = mHintKeyStyle;
+            }
         }
         ev = mKey.getHint(SWIPE_RIGHT);
-        if (ev != null && mHintKeyStyle.hasKey("right")) {
-            if (mHintRight != null)
-                mHintRight.setText(ev);
-            else
-                mHintRight = addHint(ev, Gravity.RIGHT, mHintKeyStyle.getKeyStyle("right", mHintKeyStyle));
+        if (ev != null) {
+            if (mHintKeyStyle.hasKey("right")) {
+                KeyStyle ht = mHintKeyStyle.getKeyStyle("right", mHintKeyStyle);
+                mHintStyles[SWIPE_RIGHT] = ht;
+                if (mHints[SWIPE_RIGHT] != null)
+                    mHints[SWIPE_RIGHT].setText(ht.getSpan(ev));
+                else
+                    mHints[SWIPE_RIGHT] = addHint(ev, Gravity.RIGHT, ht);
+            } else {
+                mHintStyles[SWIPE_RIGHT] = mHintKeyStyle;
+            }
         }
     }
 
@@ -771,7 +796,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             return null;
         TextView hint = (g == Gravity.TOP || g == Gravity.BOTTOM) ? new TightTextView(getContext()) : new TextView(getContext());
         hint.setIncludeFontPadding(true);
-        hint.setText(label);
+        hint.setText(mHintStyle.getSpan(label));
         hint.setSingleLine(true);
         hint.setVisibility(View.VISIBLE);
         hint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, mHintStyle.getTextSize(8));
@@ -807,7 +832,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         @Override
         public void run() {
             if (!isPressed()) return;
-            
+
             if (mKeyStyle.getLongClickKeyStyle().isVibrationEnabled()) {
                 VibrationEffect ve = mKeyStyle.getLongClickKeyStyle().getVibrationEffect();
                 if (ve != null) {
@@ -1006,12 +1031,15 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
     // 1. 定义方向常量
     public static final int SWIPE_NONE = 0;
+    public static final int HINT = KeyEventType.CLICK.ordinal();
+    public static final int HINT_LONG = KeyEventType.LONG_CLICK.ordinal();
     public static final int SWIPE_UP = KeyEventType.SWIPE_UP.ordinal();
     public static final int SWIPE_DOWN = KeyEventType.SWIPE_DOWN.ordinal();
     public static final int SWIPE_LEFT = KeyEventType.SWIPE_LEFT.ordinal();
     public static final int SWIPE_RIGHT = KeyEventType.SWIPE_RIGHT.ordinal();
     private int direction = 0;
     private int lastDirection = 0;
+    private final KeyStyle[] mHintStyles = new KeyStyle[8];
 
     private void handleSwipeEvent(MotionEvent event) {
         float x = event.getX();
@@ -1039,7 +1067,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
                 Event ev = mKey.getEvent(direction);
                 if (ev != null) {
-                    showPreview(true, ev.getLabel());
+                    showPreview(true, mHintStyles[direction]!=null?mHintStyles[direction].getSpan(ev.getLabel()):ev.getLabel());
                     if (mKey.isSwipeRepeatable())
                         postDelayed(mSwipRepeatableRunnable, mKeyStyle.getRepeatClickTime());
                 } else {
@@ -1048,7 +1076,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
                 }
             } else {
                 // 回到按键中心，恢复普通预览
-                showPreview(true, mKey.getLabel());
+                showPreview(true, mKeyStyle.getPressedStyle().getSpan(mKey.getLabel()));
                 removeCallbacks(mSwipRepeatableRunnable);
             }
             lastDirection = direction;

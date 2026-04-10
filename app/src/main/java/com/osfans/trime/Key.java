@@ -210,21 +210,21 @@ public class Key {
         }
 
         LuaValue a = mk.get("ascii");
-        if (a.isstring()){
+        if (a.isstring()) {
             ascii = new Event(a.tojstring());
-        } else if(a.istable()){
-            if(!a.get("click").isnil()){
-                mAsciiKey=new Key(a);
+        } else if (a.istable()) {
+            if (!a.get("click").isnil()) {
+                mAsciiKey = new Key(a);
                 mAsciiKey.setAsciiMode(true);
             } else {
-                ascii=new Event(a);
+                ascii = new Event(a);
             }
         }
         mStyle = mk.get("style").optjstring(mk.get("click").optjstring("key"));
         label = mk.get("label").optjstring("");
         hint = mk.get("hint").optjstring("");
         description = mk.get("description").optjstring("");
-        mSwipeRepeatable=mk.get("swipe_repeatable").toboolean();
+        mSwipeRepeatable = mk.get("swipe_repeatable").toboolean();
         // send_bindings 逻辑转换
         if (!mk.get("send_bindings").isnil()) {
             send_bindings = mk.get("send_bindings").optboolean(false);
@@ -286,7 +286,7 @@ public class Key {
     }
 
     private void setAsciiMode(boolean b) {
-        mAsciiMode=b;
+        mAsciiMode = b;
     }
 
     public Key(String s) {
@@ -608,6 +608,8 @@ public class Key {
         Event e = null;
         if (i > 0 && i <= EVENT_NUM) e = events[i];
         if (e != null) return e;
+        if (i != 0)
+            return null;
         if (ascii != null && Rime.isAsciiMode()) return ascii;
         if (send_bindings) {
             if (paging != null && Rime.isPaging()) return paging;
@@ -640,17 +642,17 @@ public class Key {
                         return action;
                 }
             }
-            if (Rime.isAsciiMode()&&!mAsciiMode)
+            if (Rime.isAsciiMode() && !mAsciiMode)
                 return event.getLabel();
             if (event.getCode() == KeyEvent.KEYCODE_SPACE) {
-                 if (!Rime.isAsciiMode()) {
-                     if(TextUtils.isEmpty(event.getLabel()) || "space".equals(event.getLabel()) || "schema_name".equals(label)) {
-                         String id = Rime.getRimeStatus().getSchemaName();
-                         if (!TextUtils.isEmpty(id))
-                             return id;
-                         else if ("schema_name".equals(label))
-                             return event.getLabel();
-                     }
+                if (!Rime.isAsciiMode()) {
+                    if (TextUtils.isEmpty(event.getLabel()) || "space".equals(event.getLabel()) || "schema_name".equals(label)) {
+                        String id = Rime.getRimeStatus().getSchemaName();
+                        if (!TextUtils.isEmpty(id))
+                            return id;
+                        else if ("schema_name".equals(label))
+                            return event.getLabel();
+                    }
                 }
             }
             if (!TextUtils.isEmpty(label))
@@ -687,7 +689,7 @@ public class Key {
         Event event = getLongClick();
         if (event == null)
             return null;
-        if(hints[1]!=null)
+        if (hints[1] != null)
             return hints[1];
         return event.getLabel();
     }

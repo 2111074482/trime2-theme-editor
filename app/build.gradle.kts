@@ -41,8 +41,8 @@ android {
         applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 57
-        versionName = "0.5.7"
+        versionCode = 59
+        versionName = "0.5.9"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")

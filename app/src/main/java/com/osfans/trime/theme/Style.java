@@ -7,33 +7,25 @@ package com.osfans.trime.theme;
 
 import static com.osfans.trime.theme.ThemeManager.dp2px;
 
-import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.fonts.Font;
 import android.graphics.fonts.FontFamily;
-import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextUtils;
-import android.text.style.DynamicDrawableSpan;
-import android.text.style.ImageSpan;
 import android.util.Log;
 import android.view.Gravity;
 
-import com.androlua.LuaApplication;
-import com.androlua.LuaBitmap;
 import com.androlua.LuaBitmapDrawable;
 import com.osfans.trime.Config;
+import com.osfans.trime.util.Function;
 
 import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class Style {
@@ -136,7 +128,14 @@ public class Style {
         }
         return style;
     }
-
+    public Style getStyle(int key) {
+        Style style = mStyleCache.get(Integer.toString(key));
+        if (style == null) {
+            style = new Style(mTable.get(key+1));
+            mStyleCache.put(Integer.toString(key), style);
+        }
+        return style;
+    }
     public Style getStyle(String key, Style def) {
         if(TextUtils.isEmpty(key))
             return def;
@@ -222,8 +221,10 @@ public class Style {
     public int getGravity(int def) {
         return parse(getString("gravity", ""), def);
     }
-
-    protected String getString(String key, String def) {
+    public String getString(String key) {
+        return mTable.get(key).optjstring("");
+    }
+    public String getString(String key, String def) {
         return mTable.get(key).optjstring(def);
     }
 
@@ -308,4 +309,28 @@ public class Style {
         return Typeface.DEFAULT;
     }
 
+    public int getInt(String s) {
+        LuaValue i = get(s);
+        if(i.isint())
+            return i.toint();
+        return 0;
+    }
+    public int getInt(String s,int def) {
+        LuaValue i = get(s);
+        if(i.isint())
+            return i.toint();
+        return def;
+    }
+
+
+    public boolean getBoolean(String s) {
+        return get(s).optboolean(false);
+    }
+    public boolean getBoolean(String s,boolean def) {
+        return get(s).optboolean(def);
+    }
+
+    public int getLength() {
+        return mTable.length();
+    }
 }

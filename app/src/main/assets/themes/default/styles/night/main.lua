@@ -190,7 +190,7 @@ candidate.expanded.key = {
 candidate.expanded.key.pressed = {
     scale_x = 0.9,
     scale_y = 0.9,
-    text_color = 0xffddffff,
+    text_color = 0xffdddddd,
     translation_z = 10,
     translation_x = 0,
     translation_y = 0,
@@ -225,6 +225,61 @@ preedit = {
     text_size = 18,
     text_color = 0xffdddddd,
     background = 0xaa444444
+}
+composition = {
+    text_color = 0xffdddddd,
+    background = 0xaa222222,
+    position = "fixed", -- 位置：left|right|left_up|right_up|fixed|bottom_left|bottom_right|top_left|top_right(left、right需要>=Android5.0)
+    min_length = 8, -- 最小词长
+    max_length = 10, -- 超过字数则换行
+    sticky_lines = 0, -- 固顶行数
+    max_entries = -1, -- 最大词条数
+    all_phrases = false, -- 所有满足条件的词语都显示在窗口
+    border = 2, -- 边框宽度
+    max_width = 230, -- 最大宽度，超过则自动换行
+    max_height = 400, -- 最大高度
+    min_width = 40, -- 最小宽度
+    min_height = 0, -- 最小高度
+    padding = {
+        left = 5,
+        top = 5,
+        right = 5,
+        bottom = 5
+    },
+    line_spacing = 0, -- 候选词的行间距(px)
+    line_spacing_multiplier = 1.2, -- 候选词的行间距(倍数)
+    spacing = 1, -- 与预编辑或边缘的距离
+    round_corner = 8, -- 窗口圆角
+    elevation = 5, -- 阴影
+    background = 0xaa222222, -- 颜色或者图片文件名
+    movable = "false", -- 是否可移动窗口，或仅移动一次 true|false|once
+
+    pressed={
+        text_color = 0xffcccccc,
+        background = 0xcc666666
+    },
+    window = {
+        -- 悬浮窗口组件
+        {
+            start = "",
+            move = "✎ ",
+            ["end"] = ""
+        },
+        {
+            start = "",
+            composition = "%s",
+            ["end"] = "",
+            letter_spacing = 0
+        },
+        {
+            start = "\n",
+            label = "%s.",
+            candidate = "%s",
+            comment = " %s",
+            ["end"] = "",
+            sep = " "
+        }
+    }
 }
 
 --总高度

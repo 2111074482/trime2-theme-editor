@@ -5,6 +5,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     id("com.osfans.trime.app-convention")
@@ -41,8 +42,8 @@ android {
         applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 59
-        versionName = "0.5.9"
+        versionCode = 60
+        versionName = "0.6.0"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")
@@ -50,6 +51,14 @@ android {
         buildConfigField("String", "BUILD_COMMIT_HASH", "\"${project.buildCommitHash}\"")
         buildConfigField("String", "BUILD_GIT_REPO", "\"${project.buildGitRepo}\"")
         buildConfigField("String", "BUILD_VERSION_NAME", "\"${project.buildVersionName}\"")
+
+        // --- 新增：注入 APP_KEY ---
+        // 从文件中获取，如果文件或 Key 不存在，提供一个默认空字符串，防止编译报错
+        var appKey = project.findProperty("API_KEY") as String
+        buildConfigField("String", "API_KEY", appKey)
+        var appId = project.findProperty("API_ID") as String
+        buildConfigField("String", "API_ID", appId)
+        // -------------------------
     }
 
     base {
@@ -200,7 +209,7 @@ dependencies {
     implementation(libs.community.material.typeface) {
         artifact { type = "aar" }
     }
-
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
     // Testing
     //testImplementation(libs.junit)
     //testImplementation(libs.kotest.runner.junit5)

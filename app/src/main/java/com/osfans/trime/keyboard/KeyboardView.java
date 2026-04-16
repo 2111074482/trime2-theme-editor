@@ -275,4 +275,8 @@ public class KeyboardView extends FrameLayout {
     public void setLock(boolean b) {
         mLock = b;
     }
+
+    public void setKeySwipe(boolean b){
+        keySwipe = b;
+    }
 }

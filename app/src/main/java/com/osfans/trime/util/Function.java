@@ -5,14 +5,21 @@
 
 package com.osfans.trime.util;
 
+import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.hardware.display.DisplayManager;
 import android.icu.util.Calendar;
 import android.icu.util.ULocale;
 import android.net.Uri;
@@ -21,11 +28,21 @@ import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.ActionMode;
+import android.view.Display;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.Toast;
 
+import com.androlua.LuaApplication;
 import com.osfans.trime.BuildConfig;
 import com.osfans.trime.Config;
 import com.osfans.trime.TrimeService;
+import com.osfans.trime.VivoGpt;
 import com.osfans.trime.core.DataManager;
 import com.osfans.trime.dialog.DeployDialog;
 
@@ -270,23 +287,25 @@ public class Function {
             return ret.toString();
         }
         switch (command) {
-            /* case "gpt": {
-                if (context.isTouchExplorationEnabled()) {
-                    handle(context, "gpt1", option);
-                    return null;
-                }
+             case "gpt": {
                 if (TextUtils.isEmpty(option)) {
                     Toast.makeText(context, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
                     return null;
                 }
                 Toast.makeText(context, "正在生成，请稍后...", Toast.LENGTH_SHORT).show();
-                EditText tv = new EditText(context);
+                 // 获取当前服务所在的屏幕或默认屏幕
+                 DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+                 Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+
+// 为特定屏幕创建 Context
+                 Context displayContext = context.createDisplayContext(defaultDisplay);
+                 EditText tv = new EditText(displayContext);
                 if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
                     tv.setTextColor(0xffffffff);
                 } else {
                     tv.setTextColor(0xff000000);
                 }
-                AlertDialog dlg = context.showDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                AlertDialog dlg = context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
                         .setTitle(option)
                         .setView(tv)
                         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -337,12 +356,13 @@ public class Function {
                         dialog.dismiss();
                     }
                 });
-                Window window = mProgressDialog.getWindow();
+                /*Window window = mProgressDialog.getWindow();
                 WindowManager.LayoutParams lp = window.getAttributes();
-                lp.type = Trime.getDialogType();
+                lp.type = TrimeService.getDialogType();
                 window.setAttributes(lp);
                 window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-                mProgressDialog.show();
+                mProgressDialog.show();*/
+                TrimeService.getInstance().showWidthDialog(mProgressDialog);
                 Toast.makeText(context, "正在生成，请稍后...", Toast.LENGTH_SHORT).show();
 
                 VivoGpt.gpt1(option, new HttpUtil.HttpCallback() {
@@ -352,7 +372,12 @@ public class Function {
                             @Override
                             public void run() {
                                 mProgressDialog.dismiss();
-                                EditText tv = new EditText(context);
+                                DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+                                Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+
+// 为特定屏幕创建 Context
+                                Context displayContext = context.createDisplayContext(defaultDisplay);
+                                EditText tv = new EditText(displayContext);
                                 if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
                                     tv.setTextColor(0xffffffff);
                                 } else {
@@ -360,7 +385,7 @@ public class Function {
                                 }
                                 tv.setText(result.text);
                                 tv.setShowSoftInputOnFocus(false);
-                                AlertDialog dlg = context.showDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                                context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
                                         .setTitle(option)
                                         .setView(tv)
                                         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -399,12 +424,13 @@ public class Function {
                         dialog.dismiss();
                     }
                 });
-                Window window = mProgressDialog.getWindow();
+                /*Window window = mProgressDialog.getWindow();
                 WindowManager.LayoutParams lp = window.getAttributes();
                 lp.type = Trime.getDialogType();
                 window.setAttributes(lp);
                 window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
-                mProgressDialog.show();
+                mProgressDialog.show();*/
+                TrimeService.getInstance().showWidthDialog(mProgressDialog);
                 Toast.makeText(context, "正在生成，请稍后...", Toast.LENGTH_SHORT).show();
                 VivoGpt.gpt1(option, new HttpUtil.HttpCallback() {
                     @Override
@@ -414,7 +440,12 @@ public class Function {
                             context.commitText(result.text);
                             return;
                         }
-                        EditText tv = new EditText(context);
+                        DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+                        Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+
+// 为特定屏幕创建 Context
+                        Context displayContext = context.createDisplayContext(defaultDisplay);
+                        EditText tv = new EditText(displayContext);
                         if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
                             tv.setTextColor(0xffffffff);
                         } else {
@@ -423,7 +454,7 @@ public class Function {
                         tv.setText(result.text);
                         tv.setShowSoftInputOnFocus(false);
 
-                        context.showDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                        context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
                                 .setTitle(option)
                                 .setView(tv)
                                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -468,7 +499,7 @@ public class Function {
                     }
                 });
                 break;
-            }*/
+            }
             case "date":
                 s = getDate(option);
                 break;

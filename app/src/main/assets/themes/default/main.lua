@@ -101,10 +101,10 @@ preset_keys = {
     IME_last = { label = "上一输入法", send = "LANGUAGE_SWITCH", select = ".last" }, --直接切換到上一輸入法
     IME_next = { label = "下一输入法", send = "LANGUAGE_SWITCH", select = ".next" }, --直接切換到下一輸入法
     Schema_switch = { label = "下一方案", send = "Control+Shift+1" },
-    Color_switch = { label = "配色", send = "PROG_RED" },
+    Color_switch = { label = "样式", send = "PROG_RED" },
     Menu = { label = "方案", send = "Menu" },
-    Settings = { label = "設定", send = "SETTINGS" },
-    Color_settings = { label = "配色", send = "SETTINGS", option = "color" },--添加select参数可以直接设置指定配色
+    Settings = { label = "设置", send = "SETTINGS" },
+    Color_settings = { label = "样式", send = "SETTINGS", option = "color" },--添加select参数可以直接设置指定配色
     Theme_settings = { label = "主題", send = "SETTINGS", option = "theme" },--添加select参数可以直接设置指定主题
     Schema_settings = { label = "方案", send = "SETTINGS", option = "schema" },--添加select参数可以直接设置指定方案
     Candidate_switch = { toggle = "_hide_candidate", send = "Mode_switch", states = { "有候选", "无候选" } },
@@ -143,4 +143,37 @@ preset_keys = {
     Deploy = { label = "部署", command = "deploy"},
     Sync = { label = "同步", command = "broadcast", option = "com.osfans.trime.action.SYNC_USER_DATA" },
     RepeatCommit = { label = "重复", command = "commit", option = "%1$s" }, --重复输入刚上屏的内容
+
+    gpt1 = {
+        label = "生成",
+        send = "function",
+        command = "gpt",
+        option = "根据 %4$s 生成内容"
+    },
+    gpt2 = {
+        label = "润色",
+        send = "function",
+        command = "gpt",
+        option = "润色以下内容 %4$s"
+    },
+    gpt3 = {
+        label = "改错",
+        send = "function",
+        command = "gpt",
+        option = "改正以下内容的文字与错误 %4$s"
+    },
+    gpt4 = {
+        label = "续写",
+        send = "function",
+        command = "gpt",
+        option = "根据以下内容续写 %4$s"
+    },
+    gpt5 = {
+        label = "小v",
+        send = "function",
+        command = "gpt",
+        option = "%4$s"
+    }
 }
+
+

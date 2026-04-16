@@ -50,6 +50,8 @@ import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
 
+import java.util.List;
+
 public class KeyView extends FrameLayout implements View.OnClickListener {
 
     // --- 1. 静态常量 ---
@@ -77,7 +79,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     //private TextView mHintDown;
     //private TextView mHintLeft;
     //private TextView mHintRight;
-    private TextView[] mHints=new TextView[8];
+    private TextView[] mHints = new TextView[8];
 
     // --- 3. 构造函数 ---
     public KeyView(@NonNull Context context) {
@@ -263,7 +265,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         updateTextColor(mClick, isPressed, mKeyStyle);
         for (int i = 0; i < mHints.length; i++) {
             TextView hint = mHints[i];
-            if(hint==null)
+            if (hint == null)
                 continue;
             updateTextColor(hint, isPressed, mHintStyles[i]);
         }
@@ -507,12 +509,12 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             if (!mKeyStyle.hasKey("long_click"))
                 return;
             KeyStyle mLongClickStyle = mKeyStyle.getLongClickKeyStyle();
-            mHintStyles[HINT_LONG]=mLongClickStyle;
+            mHintStyles[HINT_LONG] = mLongClickStyle;
             if (!mLongClickStyle.isShow())
                 return;
             mLongClick = new TightTextView(getContext());
             //mLongClick.setBackgroundColor(0xff0000ff);
-            mHints[HINT_LONG]=mLongClick;
+            mHints[HINT_LONG] = mLongClick;
 
             mLongClick.setIncludeFontPadding(true);
             mLongClick.setSingleLine(true);
@@ -546,13 +548,13 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             if (!mKeyStyle.hasKey("hint"))
                 return;
             KeyStyle mHintStyle = mKeyStyle.getHintKeyStyle();
-            mHintStyles[HINT]=mHintStyle;
+            mHintStyles[HINT] = mHintStyle;
             if (!mHintStyle.isShow())
                 return;
             if (!mHintStyle.isShow())
                 return;
             mHint = new TightTextView(getContext());
-            mHints[HINT]=mHint;
+            mHints[HINT] = mHint;
             mHint.setIncludeFontPadding(true);
             mHint.setSingleLine(true);
             mHint.setVisibility(View.VISIBLE);
@@ -827,12 +829,21 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     }
 
     private boolean mLongClicked;
+    private FloatKeyboard popupKeyboard;
     // --- 7. 内部类与 Runnables ---
     private final Runnable mLongClickRunnable = new Runnable() {
         @Override
         public void run() {
             if (!isPressed()) return;
-
+            List<String> popup = mKey.getPopupKeys();
+            if (popup != null) {
+                popupKeyboard = new FloatKeyboard(getContext(), ThemeManager.getGlobals(), popup);
+                int[] point = new int[2];
+                getLocationInWindow(point);
+                TrimeService.getInstance().showPopup(popupKeyboard, point[0], point[1], getWidth());
+                setPressed(false);
+                return;
+            }
             if (mKeyStyle.getLongClickKeyStyle().isVibrationEnabled()) {
                 VibrationEffect ve = mKeyStyle.getLongClickKeyStyle().getVibrationEffect();
                 if (ve != null) {
@@ -992,7 +1003,19 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         if (isShapeDetectionEnabled && event.getAction() == MotionEvent.ACTION_DOWN) {
             if (isPixelTransparent(event)) return false;
         }
+        if (popupKeyboard != null) {
+            if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+                popupKeyboard.dispatchTouchEvent(event);
+                return true;
+            }
 
+            if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                popupKeyboard.dispatchTouchEvent(event);
+                TrimeService.getInstance().showPopup(null, 0, 0, getWidth());
+                popupKeyboard = null;
+                return true;
+            }
+        }
         if (mKey == null || !mKey.hasSwipeEvent())
             return super.onTouchEvent(event);
 
@@ -1067,7 +1090,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
                 Event ev = mKey.getEvent(direction);
                 if (ev != null) {
-                    showPreview(true, mHintStyles[direction]!=null?mHintStyles[direction].getSpan(ev.getLabel()):ev.getLabel());
+                    showPreview(true, mHintStyles[direction] != null ? mHintStyles[direction].getSpan(ev.getLabel()) : ev.getLabel());
                     if (mKey.isSwipeRepeatable())
                         postDelayed(mSwipRepeatableRunnable, mKeyStyle.getRepeatClickTime());
                 } else {

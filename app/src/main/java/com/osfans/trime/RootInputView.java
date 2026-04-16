@@ -9,9 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Spanned;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -27,10 +25,10 @@ import androidx.annotation.NonNull;
 
 import com.osfans.trime.candidate.CandidateView;
 import com.osfans.trime.candidate.ExpandedCandidateView;
-import com.osfans.trime.candidate.FloatCandidateView;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.keyboard.ClipboardKeyboardView;
+import com.osfans.trime.keyboard.FloatKeyboard;
 import com.osfans.trime.keyboard.KeyView;
 import com.osfans.trime.keyboard.SymbolsKeyboardView;
 import com.osfans.trime.theme.Style;
@@ -63,6 +61,7 @@ public class RootInputView extends FrameLayout {
     private ClipboardKeyboardView mClipboardKeyboardView;
     private int mStartIdx = 0;
     private int mCompositionMinLength;
+    private FloatKeyboard mPopupKeyboard;
 
     public RootInputView(@NonNull Context context) {
         super(context);
@@ -800,5 +799,22 @@ public class RootInputView extends FrameLayout {
                 mPreedit.addCompositions(list);
             }
         });
+    }
+
+    public void showPopup(FloatKeyboard popupKeyboard, final int x, final int y, int width) {
+        if (mPopupKeyboard != null)
+            removeView(mPopupKeyboard);
+        mPopupKeyboard = popupKeyboard;
+        if (popupKeyboard == null)
+            return;
+        addView(popupKeyboard, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
+        int dx = x + width / 2 - popupKeyboard.getRawWidth() / 2;
+        if (dx < 0)
+            dx = 0;
+        else if (dx + popupKeyboard.getRawWidth() > getWidth())
+            dx = getWidth() - popupKeyboard.getRawWidth();
+        popupKeyboard.setX(dx);
+        popupKeyboard.setY(y);
+        popupKeyboard.setOffsetX(x - dx);
     }
 }

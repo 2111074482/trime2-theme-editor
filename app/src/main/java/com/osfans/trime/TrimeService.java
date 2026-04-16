@@ -45,16 +45,17 @@ import com.androlua.LuaUtil;
 import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
-import com.osfans.trime.core.RimeApi;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
 import com.osfans.trime.dialog.OptionsDialog;
 import com.osfans.trime.dialog.StyleDialog;
 import com.osfans.trime.dialog.ThemeDialog;
 import com.osfans.trime.enums.InlineModeType;
+import com.osfans.trime.keyboard.FloatKeyboard;
 import com.osfans.trime.keyboard.ModifierState;
 import com.osfans.trime.theme.ThemeManager;
 import com.osfans.trime.util.Function;
+import com.osfans.trime.util.HttpUtil;
 
 import org.luaj.Globals;
 import org.luaj.LuaTable;
@@ -129,7 +130,7 @@ public class TrimeService extends InputMethodService {
                         // Rime.setRimeOption(soft_cursor_key, true); //軟光標
                         // mRootInputView.setSchema(Rime.getCurrentRimeSchema());
                         String id = Function.getPref(getInstance()).getString("select_schema_id", "");
-                        if(!TextUtils.isEmpty(id))
+                        if (!TextUtils.isEmpty(id))
                             Rime.selectRimeSchema(id);
                     }
                 });
@@ -643,7 +644,7 @@ public class TrimeService extends InputMethodService {
             return ret;
         }
         if (!canCompose || Rime.isVoidKeycode(keyCode)) return false;
-        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:4 " + keyCode);
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onKeyDown:4 " + keyCode);
         return true;
     }
 
@@ -657,7 +658,7 @@ public class TrimeService extends InputMethodService {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         //Log.info("onKeyDown=" + event);
-        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown: " + keyCode);
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onKeyDown: " + keyCode);
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
             try {
                 if (Rime.isComposing()) {
@@ -671,7 +672,7 @@ public class TrimeService extends InputMethodService {
             }
         }
         if (composeEvent(event) && onKeyEvent(event)) {
-            if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:2 " + keyCode);
+            if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onKeyDown:2 " + keyCode);
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -731,7 +732,7 @@ public class TrimeService extends InputMethodService {
             mask = event.getMetaState();
         }
         ret = handleKey(keyCode, mask);
-        if (BuildConfig.DEBUG)  android.util.Log.w(TAG, "onKeyDown:3 " + keyCode + ret);
+        if (BuildConfig.DEBUG) android.util.Log.w(TAG, "onKeyDown:3 " + keyCode + ret);
         if (isComposing()) setCandidatesViewShown(canCompose); //藍牙鍵盤打字時顯示候選欄
         return ret;
     }
@@ -770,7 +771,7 @@ public class TrimeService extends InputMethodService {
         } else if (message instanceof RimeMessage.CandidateMenuMessage || message instanceof RimeMessage.CandidateListMessage) {
             updateCandidate();
         } else if (message instanceof RimeMessage.OptionMessage) {
-             RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
+            RimeMessage.OptionMessage msg = (RimeMessage.OptionMessage) message;
             if ("ascii_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setAsciiMode(msg.getData().isValue());
                 updateRimeOption();
@@ -778,7 +779,7 @@ public class TrimeService extends InputMethodService {
                 mRootInputView.setSmallMode(msg.getData().isValue());
             } else if ("float_mode".equals(msg.getData().getOption())) {
                 mRootInputView.setFloatMode(msg.getData().isValue());
-            }else {
+            } else {
                 updateRimeOption();
             }
         } else if (message instanceof RimeMessage.StatusMessage) {
@@ -897,7 +898,7 @@ public class TrimeService extends InputMethodService {
     }
 
     public void setCloudText(String s) {
-        if(mRootInputView!=null)
+        if (mRootInputView != null)
             mRootInputView.setCloudText(s);
     }
 
@@ -1099,6 +1100,25 @@ public class TrimeService extends InputMethodService {
         }
         return dialog;
     }
+    public AlertDialog showWidthDialog(AlertDialog dialog) {
+        Window window = dialog.getWindow();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        lp.token = getToken();
+        window.setAttributes(lp);
+        window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
+
+        dialog.show();
+        window = dialog.getWindow();
+        if (window != null) {
+            lp = window.getAttributes();
+            // 设置为屏幕宽度的 80%，避免撑满全屏
+            DisplayMetrics dm = getResources().getDisplayMetrics();
+            window.setAttributes(lp);
+        }
+        return dialog;
+    }
 
     public AlertDialog showListDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
@@ -1140,6 +1160,7 @@ public class TrimeService extends InputMethodService {
     public int getHeight() {
         return getResources().getDisplayMetrics().heightPixels;
     }
+
     public int getStatusBarHeight() {
         int result = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -1150,9 +1171,9 @@ public class TrimeService extends InputMethodService {
     }
 
     public int getWidth() {
-        if(Config.isSmallMode()||Config.isFloatMode())
-        //if (Rime.getRimeOption("small_mode"))
-            return Math.max(Math.min(Config.getSmallModeWidth(),(getMaxWidth())),(int)(getMaxWidth()*0.2));
+        if (Config.isSmallMode() || Config.isFloatMode())
+            //if (Rime.getRimeOption("small_mode"))
+            return Math.max(Math.min(Config.getSmallModeWidth(), (getMaxWidth())), (int) (getMaxWidth() * 0.2));
         return getMaxWidth();
     }
 
@@ -1471,6 +1492,7 @@ public class TrimeService extends InputMethodService {
         mRootInputView.setCandidates(items);
         mComposing = !items.isEmpty();
     }
+
     public void addCompositions(ArrayList<String> list) {
         mRootInputView.addCompositions(list);
     }
@@ -1493,5 +1515,13 @@ public class TrimeService extends InputMethodService {
 
     public Rime getRime() {
         return mRime;
+    }
+
+    public void showPopup(FloatKeyboard popupKeyboard, int x, int y, int width) {
+        mRootInputView.showPopup(popupKeyboard, x, y, width);
+    }
+
+    public Handler getHandler() {
+        return mHandler;
     }
 }

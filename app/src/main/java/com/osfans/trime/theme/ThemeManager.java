@@ -64,6 +64,9 @@ public class ThemeManager {
     public static ResourceFinder getFinder() {
         return mResourceFinder;
     }
+    public static Globals getGlobals() {
+        return mGlobals;
+    }
 
     public static void vibrate(VibrationEffect ve) {
         if (vibrator == null) {

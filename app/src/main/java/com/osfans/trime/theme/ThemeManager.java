@@ -25,6 +25,7 @@ import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.inputmethod.EditorInfo;
 
 import com.androlua.LuaApplication;
 import com.androlua.LuaBitmap;
@@ -349,4 +350,12 @@ public class ThemeManager {
         }
     }
 
+    public static void callFunction(String s, Object... args) {
+        if(mGlobals==null)
+            return;
+        LuaValue f = mGlobals.get(s);
+        if(f.isfunction()){
+            f.jcall(args);
+        }
+    }
 }

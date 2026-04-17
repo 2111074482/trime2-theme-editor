@@ -180,13 +180,13 @@ public class CandidateView extends LinearLayout implements View.OnClickListener 
         }
         CandidatesManager.reset();
         CandidatesManager.resetFilter();
-        CandidatesManager.setStart(idx);
+        //CandidatesManager.setStart(idx);
         mAdapter.setData(CandidatesManager.next());
         // 第一种方式：直接调用 RecyclerView 的方法
-        mListView.scrollToPosition(0);
         //mListView.invalidateItemDecorations();
         mListView.requestLayout();
         announceCandidate(0);
+        setIdx(idx);
     }
 
     private void announceCandidate(int index) {

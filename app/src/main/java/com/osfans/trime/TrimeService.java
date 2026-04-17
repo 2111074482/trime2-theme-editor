@@ -188,6 +188,7 @@ public class TrimeService extends InputMethodService {
         sInstance = null;
         Rime.unregisterRimeMessageHandler(mMessageHandler);
         mRime.finalize();
+        ThemeManager.callFunction("onDestroy");
         super.onDestroy();
     }
 
@@ -201,6 +202,7 @@ public class TrimeService extends InputMethodService {
         showCustomView(null);
         String soft_cursor_key = "soft_cursor";
         Rime.setRimeOption(soft_cursor_key, true); //軟光標
+        ThemeManager.callFunction("onWindowShown");
     }
 
     @Override
@@ -211,6 +213,7 @@ public class TrimeService extends InputMethodService {
             mRime.clearComposition();
         }
         super.onFinishInput();
+        ThemeManager.callFunction("onFinishInput");
     }
 
     @Override
@@ -221,6 +224,7 @@ public class TrimeService extends InputMethodService {
             mRime.clearComposition();
         }
         super.onWindowHidden();
+        ThemeManager.callFunction("onWindowHidden");
     }
 
     @Override
@@ -254,6 +258,7 @@ public class TrimeService extends InputMethodService {
             ThemeManager.setTheme(Config.getTheme());
             mRootInputView.setTheme(Config.getTheme());
         }
+        ThemeManager.callFunction("onConfigurationChanged",newConfig);
     }
 
     public boolean isLandscape() {
@@ -419,6 +424,7 @@ public class TrimeService extends InputMethodService {
         updateRimeOption();
         canCompose = canCompose && !Rime.getCurrentRimeSchema().isEmpty();
         //if (!onEvaluateInputViewShown()) setCandidatesViewShown(canCompose); //實體鍵盤進入文本框時顯示候選欄
+        ThemeManager.callFunction("onStartInput",attribute, restarting);
     }
 
     public void sendEvent(String s) {

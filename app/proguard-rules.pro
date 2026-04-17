@@ -51,3 +51,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# OkHttp 相关的可选依赖忽略
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.bouncycastle.jsse.provider.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+
+# 如果你还没有 OkHttp 的基础混淆规则，建议一并加上
+-keepattributes Signature, InnerClasses, AnnotationDefault

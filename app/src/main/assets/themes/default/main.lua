@@ -175,5 +175,5 @@ preset_keys = {
         option = "%4$s"
     }
 }
-
+--支持回调，onConfigurationChanged，onStartInput，onWindowShown，onWindowHidden，onFinishInput，onDestroy
 

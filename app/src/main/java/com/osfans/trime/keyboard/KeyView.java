@@ -839,7 +839,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             if (popup != null) {
                 popupKeyboard = new FloatKeyboard(getContext(), ThemeManager.getGlobals(), popup);
                 int[] point = new int[2];
-                getLocationInWindow(point);
+                getLocationOnScreen(point);
                 TrimeService.getInstance().showPopup(popupKeyboard, point[0], point[1], getWidth());
                 setPressed(false);
                 return;

@@ -10,6 +10,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -801,12 +802,18 @@ public class RootInputView extends FrameLayout {
         });
     }
 
-    public void showPopup(FloatKeyboard popupKeyboard, final int x, final int y, int width) {
+    public void showPopup(FloatKeyboard popupKeyboard, final int x, int y, int width) {
         if (mPopupKeyboard != null)
             removeView(mPopupKeyboard);
         mPopupKeyboard = popupKeyboard;
         if (popupKeyboard == null)
             return;
+        int[] point = new int[2];
+        getLocationOnScreen(point);
+        Log.w("TAG", "showPopup:1 "+y );
+        y=y+point[1]-popupKeyboard.getRawHeight();
+        Log.w("TAG", "showPopup:2 "+point[1] );
+        Log.w("TAG", "showPopup:3 "+popupKeyboard.getRawHeight() );
         addView(popupKeyboard, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
         int dx = x + width / 2 - popupKeyboard.getRawWidth() / 2;
         if (dx < 0)

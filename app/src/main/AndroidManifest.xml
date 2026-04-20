@@ -20,6 +20,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
         android:icon="@drawable/icon"
         android:label="@string/trime_app_name"
         android:requestLegacyExternalStorage="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.TrimeAppTheme">
 
         <service

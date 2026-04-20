@@ -484,6 +484,8 @@ public class TrimeService extends InputMethodService {
                         filterCandidate();
                     } else if (cmd.endsWith(".lua") && TextUtils.isEmpty(opt)) {
                         s = Function.handle(this, cmd, getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
+                    } else if (cmd.equals("commit")) {
+                        s = String.format(event.getOption(), getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
                     } else {
                         String arg = String.format(event.getOption(), getActiveText(1), getActiveText(2), getActiveText(3), getActiveText(4));
                         if ((cmd.equals("gpt") || cmd.equals("gpt2")) && (TextUtils.isEmpty(arg) || (event.getOption().contains("%") && event.getOption().equals(arg)))) {

@@ -5,6 +5,7 @@
 
 package com.osfans.trime.util;
 
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
 import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
@@ -83,7 +84,7 @@ public class Function {
         String category = sApplicationLaunchKeyCategories.get(keyCode);
         if (category != null) {
             Intent intent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, category);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent.setFlags(FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
             try {
                 context.startActivity(intent);
             } catch (Exception ex) {
@@ -111,7 +112,7 @@ public class Function {
                 // Assume the argument is a package name.
                 intent = context.getPackageManager().getLaunchIntentForPackage(arg);
             }
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent.setFlags(FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
             context.startActivity(intent);
         } catch (Exception ex) {
             Log.e(TAG, "Start Activity Exception" + ex);
@@ -139,7 +140,7 @@ public class Function {
                     if (!TextUtils.isEmpty(arg)) intent.setData(Uri.parse(arg));
                     break;
             }
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent.setFlags(FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY);
             context.startActivity(intent);
         } catch (Exception ex) {
             Log.e(TAG, "Start Activity Exception" + ex);
@@ -274,7 +275,7 @@ public class Function {
         String s = null;
         if (command == null)
             return s;
-       String path = Config.getScriptsPath(command);
+        String path = Config.getScriptsPath(command);
         Log.w(TAG, "handle: "+path );
         if (new File(path).exists()) {
             Object ret = context.doFile(path, option);
@@ -505,7 +506,13 @@ public class Function {
                 break;
             case "run":
                 if (option.startsWith("http")) {
-                    context.startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(option)));
+                    try {
+                        context.startActivity(new Intent(Intent.ACTION_VIEW).addFlags(FLAG_ACTIVITY_NEW_TASK).setData(Uri.parse(option)));
+                    }catch (Exception e){
+                        Log.w(TAG, "handle: "+option );
+                        e.printStackTrace();
+                        Toast.makeText(context,e.toString(),Toast.LENGTH_SHORT).show();
+                    }
                     break;
                 }
                 startIntent(context, option); //啓動程序
@@ -520,7 +527,11 @@ public class Function {
                     context.sendBroadcast(new Intent(option)); //廣播
                 break;
             case "add_phrase":
-                //Trime.getService().addPhrase(); //新建短语
+                TrimeService.getInstance().addPhrase(option); //新建短语
+                Toast.makeText(context,"已添加到短语 "+option,Toast.LENGTH_SHORT).show();
+                break;
+            case "commit":
+                s = option;
                 break;
             default:
                 startIntent(context, command, option); //其他intent

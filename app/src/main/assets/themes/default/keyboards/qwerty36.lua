@@ -73,7 +73,7 @@ rows = {
             { click = "，", ascii = ",", long_click = "<" },
             { click = "space", label = "schema_name", width = 30, swipe_repeatable = true, swipe_left = "Left", swipe_right = "Right", swipe_up = "Up", swipe_down = "Down" },
             { click = "。", ascii = ".", long_click = ">" },
-            { click = "Mode_switch", style = "functional" , composing = "CommitScriptText"},
+            { click = "Mode_switch",long_click="Zdic", style = "functional" , composing = "CommitScriptText"},
             { click = "Return", style = "enter", label = "Enter", width = 15 ,long_click="AI", popup={"gpt1","gpt2","gpt3","gpt4","gpt5",}},
         }
     },

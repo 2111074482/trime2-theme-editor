@@ -44,6 +44,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
 
     private View mKeyboardView;
     private Globals globals;
+    private View oldView;
 
     public InputView(@NonNull Context context) {
         super(context);
@@ -67,7 +68,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
     private void setKeyboardView(KeyboardView keyboardView) {
         if (keyboardView.equals(mKeyboardView))
             return;
-        View oldView = mKeyboardView;
+        oldView = mKeyboardView;
         mKeyboardView = keyboardView;
         ViewParent parent = keyboardView.getParent();
         if (parent != null && parent instanceof ViewGroup) {
@@ -93,7 +94,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
     }
 
     private void setKeyboardView(View keyboardView) {
-        View oldView = mKeyboardView;
+        oldView = mKeyboardView;
         mKeyboardView = keyboardView;
         ViewParent parent = keyboardView.getParent();
         if (parent != null && parent instanceof ViewGroup) {
@@ -121,6 +122,11 @@ public class InputView extends FrameLayout implements ResourceFinder {
 
     public void setKeyboard(String id) {
         Log.w("TAG", "setKeyboard:s " + id);
+        if(".last".equals(id)){
+            if(oldView!=null)
+                setKeyboardView(oldView);
+            return;
+        }
         if (id == null || id.equals(mCurrentSchemaId)) return;
         mCurrentSchemaId = id;
         id=getKeyboardId(id);

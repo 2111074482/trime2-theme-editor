@@ -72,7 +72,7 @@ public class Composition extends TextView {
     private int max_length, sticky_lines;
     private int max_entries = 5;
     private int cloud_max_entries = 0;
-    private boolean candidate_use_cursor, show_comment;
+    private boolean candidate_use_cursor, show_comment=true;
     private int highlightIndex;
     private Style components;
     private SpannableStringBuilder ss;
@@ -994,6 +994,9 @@ public class Composition extends TextView {
                 measure(0, 0);
                 if (getMeasuredWidth() >= getMaxWidth())
                     setSingleLine(false);
+                //measure(0, 0);
+                //setMinWidth(getMeasuredWidth());
+                //setMinHeight(getMeasuredHeight());
             }
             /*if(BuildConfig.DEBUG){
                 Log.i(TAG, "setWindow:s "+ss);

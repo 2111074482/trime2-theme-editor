@@ -7,6 +7,7 @@ package com.osfans.trime.candidate;
 
 import android.content.Context;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -21,6 +22,8 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexWrap;
 import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.flexbox.JustifyContent;
+import com.osfans.trime.Event;
+import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.keyboard.KeyView;
@@ -28,9 +31,11 @@ import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
 
+import org.luaj.LuaValue;
+
 import java.util.ArrayList;
 
-public class ExpandedCandidateView extends LinearLayout{
+public class ExpandedCandidateView extends LinearLayout {
 
     private final TrimeService mTrime;
     private final Style mCandidateStyle;
@@ -42,9 +47,9 @@ public class ExpandedCandidateView extends LinearLayout{
     public ExpandedCandidateView(@NonNull Context context) {
         super(context);
         Style candidateStyle = ThemeManager.getStyle().getStyle("candidate");
-        mCandidateStyle=candidateStyle.getStyle("expanded",candidateStyle);
-        mKeyStyle=mCandidateStyle.getKeyStyle("key",ThemeManager.getStyle().getKeyStyle("key"));
-        mTrime=TrimeService.getInstance();
+        mCandidateStyle = candidateStyle.getStyle("expanded", candidateStyle);
+        mKeyStyle = mCandidateStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"));
+        mTrime = TrimeService.getInstance();
         setBackground(mCandidateStyle.getBackground(0x00000000));
         initView();
         //setClipChildren(false);
@@ -52,10 +57,10 @@ public class ExpandedCandidateView extends LinearLayout{
     }
 
     private void initView() {
-        mListView=new RecyclerView(getContext());
+        mListView = new RecyclerView(getContext());
         mListView.setClipChildren(false);
         mListView.setClipToPadding(false);
-        FlexboxLayoutManager flexManager = new FlexboxLayoutManager(getContext()){
+        FlexboxLayoutManager flexManager = new FlexboxLayoutManager(getContext()) {
             @Override
             public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
                 try {
@@ -87,20 +92,79 @@ public class ExpandedCandidateView extends LinearLayout{
         mButtonBar.setClipChildren(false);
         mButtonBar.setClipToPadding(false);
 
-        addView(mButtons,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
-        addView(mListView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ThemeManager.getContentHeight(),1));
-        addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+        LinearLayout layout = new LinearLayout(getContext());
+
+        switch (mCandidateStyle.getKeyStyle("filter_bar").getGravity(Gravity.LEFT)) {
+            case Gravity.LEFT:
+                mButtons.setOrientation(VERTICAL);
+                layout.setOrientation(HORIZONTAL);
+                layout.addView(mButtons, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                layout.addView(mListView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                addView(layout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                break;
+            case Gravity.RIGHT:
+                mButtons.setOrientation(VERTICAL);
+                layout.setOrientation(HORIZONTAL);
+                layout.addView(mListView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                layout.addView(mButtons, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                addView(layout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                break;
+            case Gravity.TOP:
+                mButtons.setOrientation(HORIZONTAL);
+                layout.setOrientation(VERTICAL);
+                layout.addView(mButtons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                layout.addView(mListView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                addView(layout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                break;
+            case Gravity.BOTTOM:
+                mButtons.setOrientation(HORIZONTAL);
+                layout.setOrientation(VERTICAL);
+                layout.addView(mListView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                layout.addView(mButtons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                addView(layout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                break;
+        }
+        if (!mCandidateStyle.getKeyStyle("filter_bar").getBoolean("show", true)) {
+            mButtons.setVisibility(GONE);
+        }
+        switch (mCandidateStyle.getKeyStyle("tool_bar").getGravity(Gravity.RIGHT)) {
+            case Gravity.LEFT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+                break;
+            case Gravity.RIGHT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+                break;
+            case Gravity.TOP:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                break;
+            case Gravity.BOTTOM:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                break;
+        }
+
+        //addView(mButtons,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+        //addView(mListView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ThemeManager.getContentHeight(),1));
+        //addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
 
         // 添加左侧六个笔画过滤/功能键
-        addStrokeKey(mButtons, "h", "一","横"); //
-        addStrokeKey(mButtons, "s", "丨","竖"); //
-        addStrokeKey(mButtons, "p", "丿","撇"); //
-        addStrokeKey(mButtons, "n", "丶","点/捺"); //
-        addStrokeKey(mButtons, "z", "乙","折"); //
-        addStrokeKey(mButtons, null, "X","清空过滤"); //  (对应你代码中的 x)
+        addStrokeKey(mButtons, "h", "一", "横"); //
+        addStrokeKey(mButtons, "s", "丨", "竖"); //
+        addStrokeKey(mButtons, "p", "丿", "撇"); //
+        addStrokeKey(mButtons, "n", "丶", "点/捺"); //
+        addStrokeKey(mButtons, "z", "乙", "折"); //
+        addStrokeKey(mButtons, null, "X", "清空过滤"); //  (对应你代码中的 x)
 
-        mListView.setAdapter(mAdapter=new FlexboxCandidateAdapter(new ArrayList<>()));
-        KeyView mHide = new KeyView(getContext(),mKeyStyle);
+        mListView.setAdapter(mAdapter = new FlexboxCandidateAdapter(new ArrayList<>()));
+
+        KeyView mHide = new KeyView(getContext(), mKeyStyle);
         mHide.setText("△");
         mHide.setContentDescription("收起候选面板");
         mHide.setOnClickListener(new OnClickListener() {
@@ -109,7 +173,7 @@ public class ExpandedCandidateView extends LinearLayout{
                 mTrime.showExtractedCandidatesView(false);
             }
         });
-        KeyView mPrev = new KeyView(getContext(),mKeyStyle);
+        KeyView mPrev = new KeyView(getContext(), mKeyStyle);
         mPrev.setText("⇑");
         mPrev.setContentDescription("上一页");
         mPrev.setOnClickListener(new OnClickListener() {
@@ -118,7 +182,7 @@ public class ExpandedCandidateView extends LinearLayout{
                 pageUp();
             }
         });
-        KeyView mNext = new KeyView(getContext(),mKeyStyle);
+        KeyView mNext = new KeyView(getContext(), mKeyStyle);
         mNext.setText("⇓");
         mNext.setContentDescription("下一页");
         mNext.setOnClickListener(new OnClickListener() {
@@ -127,32 +191,58 @@ public class ExpandedCandidateView extends LinearLayout{
                 pageDown();
             }
         });
-        mChar = new KeyView(getContext(),mKeyStyle);
+        mChar = new KeyView(getContext(), mKeyStyle);
         mChar.setText("全/单");
         mChar.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-               mChar.setText(CandidatesManager.toggleFilterChar()?"单/全":"全/单");
-               update();
+                mChar.setText(CandidatesManager.toggleFilterChar() ? "单/全" : "全/单");
+                update();
             }
         });
-        mButtonBar.addView(mHide,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-        mButtonBar.addView(mPrev,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-        mButtonBar.addView(mNext,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-        mButtonBar.addView(mChar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
+
+        LuaValue keys = mCandidateStyle.getKeyStyle("tool_bar").get("keys");
+        if (keys.istable()) {
+            int len = keys.length();
+            for (int i = 0; i < len; i++) {
+                String k = keys.get(i + 1).tojstring();
+                switch (k) {
+                    case "hide":
+                        mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    case "page_up":
+                        mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    case "page_down":
+                        mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    case "char_filter":
+                        mButtonBar.addView(mChar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    default:
+                        KeyView key = new KeyView(getContext(), new Key(new Event(k)), mKeyStyle);
+                        mButtonBar.addView(key, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                }
+            }
+        } else {
+            mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mChar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        }
     }
 
     public boolean pageDown() {
-        mListView.smoothScrollBy(0,ThemeManager.getContentHeight());
+        mListView.smoothScrollBy(0, ThemeManager.getContentHeight());
         return true;
     }
 
     public boolean pageUp() {
-        mListView.smoothScrollBy(0,-ThemeManager.getContentHeight());
+        mListView.smoothScrollBy(0, -ThemeManager.getContentHeight());
         return true;
     }
 
-    private void addStrokeKey(LinearLayout parent, String stroke, String label,String cd) {
+    private void addStrokeKey(LinearLayout parent, String stroke, String label, String cd) {
         KeyView key = new KeyView(getContext(), mKeyStyle);
         key.setText(label);
         key.setContentDescription(cd);
@@ -161,8 +251,9 @@ public class ExpandedCandidateView extends LinearLayout{
             update();
         });
         parent.addView(key, new LinearLayout.LayoutParams(
-                ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
     }
+
     public void update() {
         if (mListView.isComputingLayout()) {
             // 如果正在布局，延迟一帧更新，防止冲突
@@ -176,7 +267,7 @@ public class ExpandedCandidateView extends LinearLayout{
         //mListView.invalidateItemDecorations();
     }
 
-    public void show(){
+    public void show() {
         if (mListView.isComputingLayout()) {
             // 如果正在布局，延迟一帧更新，防止冲突
             mListView.post(this::show);
@@ -186,9 +277,9 @@ public class ExpandedCandidateView extends LinearLayout{
         CandidatesManager.resetFilter();
         mAdapter.setData(CandidatesManager.next(40));
         mListView.scrollToPosition(0);
-        mChar.setText(CandidatesManager.isFilterChar()?"单/全":"全/单");
+        mChar.setText(CandidatesManager.isFilterChar() ? "单/全" : "全/单");
         //mListView.invalidateItemDecorations();
-        if(mAdapter.getItemCount()==0){
+        if (mAdapter.getItemCount() == 0) {
             mTrime.showExtractedCandidatesView(false);
         }
     }
@@ -220,7 +311,7 @@ public class ExpandedCandidateView extends LinearLayout{
     }
 
     public void setIdx(int idx) {
-        if(idx<0||idx>=mAdapter.getItemCount()-1)
+        if (idx < 0 || idx >= mAdapter.getItemCount() - 1)
             return;
         FlexboxLayoutManager layoutManager = (FlexboxLayoutManager) mListView.getLayoutManager();
         if (layoutManager == null) return;

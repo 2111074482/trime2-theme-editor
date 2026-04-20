@@ -237,6 +237,17 @@ candidate.expanded = {
     text_size = 22,
     text_color = 0xff000000,
 }
+--笔画筛选栏
+candidate.expanded.filter_bar={
+    gravity="bottom",--left,top,right,bottom
+    show = true--设置为false隐藏
+}
+
+candidate.expanded.tool_bar={
+    gravity="right",--left,top,right,bottom
+    keys={"hide","page_up","page_down","char_filter","BackSpace"}
+}
+
 candidate.expanded.pressed = {
     background = 0xffffffff,
     ripple_color = 0x40000000,

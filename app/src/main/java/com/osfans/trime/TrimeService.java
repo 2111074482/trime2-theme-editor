@@ -48,6 +48,7 @@ import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
 import com.osfans.trime.dialog.OptionsDialog;
+import com.osfans.trime.dialog.SchemaGroupDialog;
 import com.osfans.trime.dialog.StyleDialog;
 import com.osfans.trime.dialog.ThemeDialog;
 import com.osfans.trime.enums.InlineModeType;
@@ -258,7 +259,7 @@ public class TrimeService extends InputMethodService {
             ThemeManager.setTheme(Config.getTheme());
             mRootInputView.setTheme(Config.getTheme());
         }
-        ThemeManager.callFunction("onConfigurationChanged",newConfig);
+        ThemeManager.callFunction("onConfigurationChanged", newConfig);
     }
 
     public boolean isLandscape() {
@@ -424,7 +425,7 @@ public class TrimeService extends InputMethodService {
         updateRimeOption();
         canCompose = canCompose && !Rime.getCurrentRimeSchema().isEmpty();
         //if (!onEvaluateInputViewShown()) setCandidatesViewShown(canCompose); //實體鍵盤進入文本框時顯示候選欄
-        ThemeManager.callFunction("onStartInput",attribute, restarting);
+        ThemeManager.callFunction("onStartInput", attribute, restarting);
     }
 
     public void sendEvent(String s) {
@@ -512,6 +513,14 @@ public class TrimeService extends InputMethodService {
                                 mRime.selectSchema(event.getSelect());
                             else
                                 showSchemaDialog();
+                            break;
+                        case "group":
+                            if (!TextUtils.isEmpty(event.getSelect())) {
+                                Config.setGroup(event.getSelect());
+                                restart();
+                            } else {
+                                showSchemaGroupDialog();
+                            }
                             break;
                         default:
                             Function.showPrefDialog(this);
@@ -1106,6 +1115,7 @@ public class TrimeService extends InputMethodService {
         }
         return dialog;
     }
+
     public AlertDialog showWidthDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
@@ -1145,6 +1155,10 @@ public class TrimeService extends InputMethodService {
             e.printStackTrace();
         }
         return dialog;
+    }
+
+    private void showSchemaGroupDialog() {
+        new SchemaGroupDialog(this).show(getToken());
     }
 
     private void showSchemaDialog() {

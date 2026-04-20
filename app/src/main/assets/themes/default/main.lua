@@ -107,6 +107,7 @@ preset_keys = {
     Color_settings = { label = "样式", send = "SETTINGS", option = "color" },--添加select参数可以直接设置指定配色
     Theme_settings = { label = "主題", send = "SETTINGS", option = "theme" },--添加select参数可以直接设置指定主题
     Schema_settings = { label = "方案", send = "SETTINGS", option = "schema" },--添加select参数可以直接设置指定方案
+    Schema_group = { label = "方案组", send = "SETTINGS", option = "group" },--添加select参数可以直接设置指定方案
     Candidate_switch = { toggle = "_hide_candidate", send = "Mode_switch", states = { "有候选", "无候选" } },
     Comment_switch = { toggle = "_hide_comment", send = "Mode_switch", states = { "有注释", "无注释" } },
     Hint_switch = { toggle = "_hide_key_hint", send = "Mode_switch", states = { "有助記", "無助記" } },

@@ -34,6 +34,7 @@ import com.osfans.trime.BuildConfig;
 import com.osfans.trime.Config;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
+import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeSchema;
 import com.osfans.trime.util.Function;
 
@@ -160,6 +161,11 @@ public class ThemeManager {
         String styleName = Function.loadString(LuaApplication.getInstance(), Config.getStyleKey(name), mGlobals.get("style").optjstring("light"));
         setStyle(styleName);
         Key.presetKeys = getPresetKeys();
+        //Style candidate = getStyle().getStyle("candidate");
+        //Rime.setRimeOption("_hide_candidate",!candidate.get("show").optboolean(true));
+        //Style comment = getStyle().getStyle("candidate").getStyle("comment");
+        //Rime.setRimeOption("_hide_comment",!comment.get("show").optboolean(true));
+
     }
 
     public static void sendMsg(String s) {
@@ -205,14 +211,20 @@ public class ThemeManager {
     }
 
     public static int getHeight() {
+        if(Rime.getRimeOption("_hide_candidate"))
+            return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight) - getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) - getStyle().getStyle("candidate").getSize("height", mCandidateHeight) + getKeyboardHeight();
         return getStyle().getSize("height", mCandidateHeight + mKeyboardHeight) - getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) - getStyle().getStyle("candidate").getSize("height", mCandidateHeight) + getKeyboardHeight() + getCandidateHeight();
     }
 
     public static int getContentHeight() {
+        if(Rime.getRimeOption("_hide_candidate"))
+            return getCandidateHeight();
         return getCandidateHeight() + getKeyboardHeight();
     }
 
     public static int getRawContentHeight() {
+        if(Rime.getRimeOption("_hide_candidate"))
+            return getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight);
         return getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) + getStyle().getStyle("candidate").getSize("height", mCandidateHeight);
     }
 

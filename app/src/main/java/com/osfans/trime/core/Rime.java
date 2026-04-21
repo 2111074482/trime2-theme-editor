@@ -149,16 +149,11 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
         return menuCached;
     }
 
-    @Override
-    public String getRawInputCached() {
-        return rawInputCached;
-    }
 
     private RimeSchema schemaCached;
     private RimeProto.Status statusCached = new RimeProto.Status();
     private RimeProto.Context.Composition compositionCached = new RimeProto.Context.Composition();
     private RimeProto.Context.Menu menuCached = new RimeProto.Context.Menu();
-    private String rawInputCached = "";
 
     // Simulating delegated property: AppPrefs.defaultInstance().general.asciiSwitchTips
     private boolean getShowAsciiSwitchTips() {
@@ -598,8 +593,7 @@ public class Rime implements RimeApi, RimeLifecycleOwner {
             RimeProto.Context.Composition data = ((RimeMessage.CompositionMessage) message).getData();
             isComposing=statusCached.isComposing();
             this.compositionCached = data;
-
-        } else if (message instanceof RimeMessage.CandidateMenuMessage) {
+         } else if (message instanceof RimeMessage.CandidateMenuMessage) {
             RimeProto.Context.Menu menu = ((RimeMessage.CandidateMenuMessage) message).getData();
             paging = menu.getPageNumber() != 0;
             hasMenu = menu.getCandidates() != null && menu.getCandidates().length!=0;

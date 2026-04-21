@@ -9,6 +9,7 @@ import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.UI_MODE_NIGHT_MASK;
 import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Gravity;
@@ -190,9 +191,15 @@ public class Config {
         File dir = new File(getStyleDir(getStyle()), s);
         return dir.getAbsolutePath();
     }
-
-    public static int getDialogTheme() {
-        return android.R.style.Theme_DeviceDefault_Dialog;
+    public static int getDialogTheme(){
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP_MR1) {
+            return android.R.style.Theme_Material_Dialog;
+        }
+        if ((LuaApplication.getInstance().getResources().getConfiguration().uiMode & UI_MODE_NIGHT_MASK) == UI_MODE_NIGHT_YES) {
+            return android.R.style.Theme_DeviceDefault_Dialog_Alert;
+        } else {
+            return android.R.style.Theme_DeviceDefault_Light_Dialog_Alert;
+        }
     }
 
     public static String[] getThemes() {
@@ -357,6 +364,23 @@ public class Config {
         else if (isSmallMode())
             buf.append("_small");
         return buf.toString();
+    }
+    private static boolean _hide_comment;
+    public static void set_hide_comment(boolean b) {
+        _hide_comment=b;
+    }
+
+    public static boolean is_hide_comment() {
+        return _hide_comment;
+    }
+
+    private static boolean _hide_key_hint;
+    public static void set_hide_key_hint(boolean b) {
+        _hide_key_hint=b;
+    }
+
+    public static boolean is_hide_key_hint() {
+        return _hide_key_hint;
     }
 
 }

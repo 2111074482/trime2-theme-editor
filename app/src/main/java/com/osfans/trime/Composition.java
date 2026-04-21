@@ -46,6 +46,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.androlua.LuaBitmapDrawable;
+import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeProto;
@@ -757,7 +758,7 @@ public class Composition extends TextView {
                         span);
                 ss.setSpan(new AbsoluteSizeSpan(candidate_text_size), start, end, span);
                 String comment = o.getComment();
-                if (show_comment && !TextUtils.isEmpty(comment_format) && !TextUtils.isEmpty(comment)) {
+                if (!Config.is_hide_comment() && !TextUtils.isEmpty(comment_format) && !TextUtils.isEmpty(comment)) {
                     comment = String.format(comment_format, comment);
                     start = ss.length();
                     if(comment.contains("<html>")){
@@ -862,7 +863,7 @@ public class Composition extends TextView {
                         span);
                 ss.setSpan(new AbsoluteSizeSpan(candidate_text_size), start, end, span);
                 String comment = o.getComment();
-                if (show_comment && !TextUtils.isEmpty(comment_format) && !TextUtils.isEmpty(comment)) {
+                if (!Config.is_hide_comment() && !TextUtils.isEmpty(comment_format) && !TextUtils.isEmpty(comment)) {
                     comment = String.format(comment_format, comment);
                     start = ss.length();
                     if(comment.contains("<html>")){

@@ -25,6 +25,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.osfans.trime.candidate.CandidateView;
+import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.candidate.ExpandedCandidateView;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
@@ -477,6 +478,14 @@ public class RootInputView extends FrameLayout {
                 }
             });
         }
+
+        if(Rime.getRimeOption("_hide_candidate"))
+            mCandidateView.setVisibility(GONE);
+        else
+            mCandidateView.setVisibility(VISIBLE);
+        Config.set_hide_comment(Rime.getRimeOption("_hide_comment"));
+        Config.set_hide_key_hint(Rime.getRimeOption("_hide_key_hint"));
+
     }
 
     public View getRoot() {
@@ -703,8 +712,17 @@ public class RootInputView extends FrameLayout {
     }
 
     public void invalidateAllKeys() {
+         Config.set_hide_comment(Rime.getRimeOption("_hide_comment"));
+        Config.set_hide_key_hint(Rime.getRimeOption("_hide_key_hint"));
         if (mInputView != null) mInputView.invalidateAllKeys();
-        if (mCandidateView != null) mCandidateView.invalidateAllKeys();
+        if (mCandidateView != null){
+            if(Rime.getRimeOption("_hide_candidate"))
+                mCandidateView.setVisibility(GONE);
+            else
+                mCandidateView.setVisibility(VISIBLE);
+            mCandidateView.invalidateAllKeys();
+            mRoot.requestApplyInsets();
+        }
     }
 
     public void showClipboardView(boolean b) {

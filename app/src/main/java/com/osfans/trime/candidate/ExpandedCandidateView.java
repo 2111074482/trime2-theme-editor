@@ -131,12 +131,12 @@ public class ExpandedCandidateView extends LinearLayout {
             case Gravity.LEFT:
                 setOrientation(HORIZONTAL);
                 mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
                 break;
             case Gravity.RIGHT:
                 setOrientation(HORIZONTAL);
                 mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
                 break;
             case Gravity.TOP:
                 setOrientation(VERTICAL);
@@ -150,9 +150,9 @@ public class ExpandedCandidateView extends LinearLayout {
                 break;
         }
 
-        //addView(mButtons,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
-        //addView(mListView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ThemeManager.getContentHeight(),1));
-        //addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+        //addView(mButtons,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+        //addView(mListView,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT,1));
+        //addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
 
         // 添加左侧六个笔画过滤/功能键
         addStrokeKey(mButtons, "h", "一", "横"); //
@@ -233,12 +233,12 @@ public class ExpandedCandidateView extends LinearLayout {
     }
 
     public boolean pageDown() {
-        mListView.smoothScrollBy(0, ThemeManager.getContentHeight());
+        mListView.smoothScrollBy(0, mListView.getHeight());
         return true;
     }
 
     public boolean pageUp() {
-        mListView.smoothScrollBy(0, -ThemeManager.getContentHeight());
+        mListView.smoothScrollBy(0, -mListView.getHeight());
         return true;
     }
 

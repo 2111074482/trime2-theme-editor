@@ -20,6 +20,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.osfans.trime.Config;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
@@ -147,7 +148,7 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
     public void onBindViewHolder(@NonNull CandidateAdapter.CandidateViewHolder holder, int position) {
         final CandidateItem data = mData.get(position);
         // 处理注释为空的情况，隐藏 View 节省空间
-        if (TextUtils.isEmpty(data.getComment())) {
+        if (TextUtils.isEmpty(data.getComment())|| Config.is_hide_comment()) {
             holder.tvComment.setVisibility(View.GONE);
         } else {
             holder.tvComment.setVisibility(View.VISIBLE);

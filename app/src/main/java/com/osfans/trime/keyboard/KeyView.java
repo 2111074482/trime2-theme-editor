@@ -41,6 +41,7 @@ import androidx.annotation.NonNull;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import com.androlua.LuaBitmapDrawable;
+import com.osfans.trime.Config;
 import com.osfans.trime.Event;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
@@ -80,6 +81,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     //private TextView mHintLeft;
     //private TextView mHintRight;
     private TextView[] mHints = new TextView[8];
+    private boolean _hide_key_hint;
 
     // --- 3. 构造函数 ---
     public KeyView(@NonNull Context context) {
@@ -600,6 +602,19 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
             if (mKey.isShift()) {
                 setSelected(ModifierState.isShifted());
+            }
+        }
+        if(Config.is_hide_key_hint()==_hide_key_hint)
+            return;
+        if(Config.is_hide_key_hint()){
+            for (TextView hint : mHints) {
+                if(hint!=null)
+                    hint.setVisibility(GONE);
+            }
+        }else {
+            for (TextView hint : mHints) {
+                if(hint!=null)
+                    hint.setVisibility(VISIBLE);
             }
         }
     }

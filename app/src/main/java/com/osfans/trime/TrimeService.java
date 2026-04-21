@@ -492,6 +492,9 @@ public class TrimeService extends InputMethodService {
                             Toast.makeText(this, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
                             return;
                         }
+                        Log.w(TAG, "onEvent: "+ event.getOption());
+                        Log.w(TAG, "onEvent: "+ arg);
+
                         s = Function.handle(this, event.getCommand(), arg);
                     }
                     if (s != null) commitText(s);
@@ -853,7 +856,7 @@ public class TrimeService extends InputMethodService {
                     s = mRime.getCompositionCached().getPreedit();
                     break;
                 case INLINE_INPUT:
-                    s = mRime.getRawInputCached();
+                    s = Rime.getRimeRawInput();
                     break;
             }
             if (s == null) s = "";
@@ -1207,7 +1210,7 @@ public class TrimeService extends InputMethodService {
 
     // 11. 文本获取辅助 (Text Extraction)
     private String getActiveText(int type) {
-        if (type == 2) return mRime.getRawInputCached();
+        if (type == 2) return Rime.getRimeRawInput();
         String s = mRime.getComposingText();
         if (TextUtils.isEmpty(s)) {
             InputConnection ic = getCurrentInputConnection();

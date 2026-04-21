@@ -32,8 +32,6 @@ public interface RimeApi {
 
     RimeProto.Context.Menu getMenuCached();
 
-    String getRawInputCached();
-
     // --- Suspend Functions (Converted to Synchronous Methods) ---
 
     boolean isEmpty();

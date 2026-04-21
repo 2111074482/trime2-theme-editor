@@ -136,8 +136,8 @@ preset_keys = {
     Google = { label = "谷歌", command = "run", option = "https://www.google.com/search?q=%s" }, --搜索網頁= %s或者%1$s爲當前字符
     MoeDict = { label = "萌典", command = "run", option = "https://www.moedict.tw/%3$s" }, --搜索網頁= %3$s爲光標前字符
     Baidu = { label = "百度搜索", command = "run", option = "https://www.baidu.com/s?wd=%4$s" }, --搜索網頁= %4s爲光標前所有字符
-    Zdic = { label = "漢典", command = "run", option = "http://www.zdic.net/sousuo/?q=%1$s" }, --搜索網頁= %s或者%1$s爲當前字符
-    Zdic2 = { label = "漢典", command = "run", option = "http://www.zdic.net/sousuo/?q=%2$s" }, --搜索網頁= %2$s爲當前輸入的編碼
+    Zdic = { label = "漢典", command = "run", option = "http://www.zdic.net/hans/%1$s" }, --搜索網頁= %s或者%1$s爲當前字符
+    Zdic2 = { label = "漢典", command = "run", option = "http://www.zdic.net/hans/%2$s" }, --搜索網頁= %2$s爲當前輸入的編碼
     WebSearch = { label = "搜索网页", command = "web_search", option = "%4$s" }, --搜索，其他view、dial、edit、search等intent，參考安卓的intent文檔：https://developer.android.com/reference/android/content/Intent.html
     Search = { label = "搜索", command = "search", option = "%1$s" }, --搜索短信、字典等
     Share = { label = "分享", command = "send", option = "%s" }, --分享指定文本= %s或者%1$s爲當前字符

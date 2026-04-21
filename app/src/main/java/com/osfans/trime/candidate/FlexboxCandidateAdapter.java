@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.flexbox.FlexboxLayoutManager;
+import com.osfans.trime.Config;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.theme.KeyStyle;
@@ -103,7 +104,7 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
     @Override
     public void onBindViewHolder(@NonNull FlexboxCandidateAdapter.CandidateViewHolder holder, int position) {
         final CandidateItem data = mData.get(position);
-        if (TextUtils.isEmpty(data.getComment())) {
+        if (TextUtils.isEmpty(data.getComment())|| Config.is_hide_comment()) {
             holder.tvComment.setVisibility(View.GONE);
         } else {
             holder.tvComment.setVisibility(View.VISIBLE);

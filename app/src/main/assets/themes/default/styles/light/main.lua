@@ -134,8 +134,27 @@ key.preview = {
     stroke_color = 0x88dddddd,
     --边框宽度
     stroke_width = 1,
+    shadow_color = 0xffff0000
+}
+
+--弹出键盘
+popup = {
+    elevation = 16,
+    corner_radius = 8,
+    --键盘背景颜色或图片
+    background = 0xffdddddd,
+    --边框颜色
+    stroke_color = 0x88dddddd,
+    --边框宽度
+    stroke_width = 1,
     shadow_color = 0xff000000
 }
+popup.key=table.clone(key)
+popup.key.text_size = 18
+popup.key.width = 10
+popup.key.height = 15
+popup.key.preview=nil
+
 
 space = table.clone(key)
 space.text_size = 18

@@ -1542,9 +1542,6 @@ public class TrimeService extends InputMethodService {
         return mRime;
     }
 
-    public void showPopup(FloatKeyboard popupKeyboard, int x, int y, int width) {
-        mRootInputView.showPopup(popupKeyboard, x, y, width);
-    }
 
     public Handler getHandler() {
         return mHandler;

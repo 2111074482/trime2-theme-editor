@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -606,6 +607,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         }
         if(Config.is_hide_key_hint()==_hide_key_hint)
             return;
+        _hide_key_hint=Config.is_hide_key_hint();
         if(Config.is_hide_key_hint()){
             for (TextView hint : mHints) {
                 if(hint!=null)
@@ -735,6 +737,13 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             keyPreview.setElevation(previewStyle.getElevation());
             keyPreview.setTextSize(TypedValue.COMPLEX_UNIT_DIP, previewStyle.getTextSize());
             keyPreview.setTextColor(previewStyle.getTextColor());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                int dShadowColor = previewStyle.getShadowColor();
+                if (dShadowColor != 0) {
+                    keyPreview.setOutlineAmbientShadowColor(dShadowColor);
+                    keyPreview.setOutlineSpotShadowColor(dShadowColor);
+                }
+            }
             addView(keyPreview, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
         keyRoot.setOutlineProvider(ViewOutlineProvider.BACKGROUND);
@@ -853,9 +862,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             List<String> popup = mKey.getPopupKeys();
             if (popup != null) {
                 popupKeyboard = new FloatKeyboard(getContext(), ThemeManager.getGlobals(), popup);
-                int[] point = new int[2];
-                getLocationOnScreen(point);
-                TrimeService.getInstance().showPopup(popupKeyboard, point[0], point[1], getWidth());
+                showPopup();
                 setPressed(false);
                 return;
             }
@@ -897,6 +904,23 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             postDelayed(mRepeatableRunnable, 200);
         }
     };
+
+    private void showPopup() {
+;       int[] point = new int[2];
+        getLocationOnScreen(point);
+        int x=point[0];
+        int width = getWidth();
+        addView(popupKeyboard, new FrameLayout.LayoutParams(popupKeyboard.getRawWidth(), popupKeyboard.getRawHeight(), Gravity.TOP | Gravity.LEFT));
+        int dx = x + width / 2 - popupKeyboard.getRawWidth() / 2;
+        TrimeService trime = TrimeService.getInstance();
+        if (dx < 0)
+            dx = 0;
+        else if (dx + popupKeyboard.getRawWidth() > trime.getWidth())
+            dx = trime.getWidth() - popupKeyboard.getRawWidth();
+        popupKeyboard.setTranslationX(dx-x);
+        popupKeyboard.setTranslationY(-popupKeyboard.getRawHeight());
+        popupKeyboard.setOffsetX(x - dx);
+    }
 
     private final Runnable mRepeatableRunnable = new Runnable() {
         @Override
@@ -1026,7 +1050,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
 
             if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 popupKeyboard.dispatchTouchEvent(event);
-                TrimeService.getInstance().showPopup(null, 0, 0, getWidth());
+                removeView(popupKeyboard);
                 popupKeyboard = null;
                 return true;
             }

@@ -63,7 +63,6 @@ public class RootInputView extends FrameLayout {
     private ClipboardKeyboardView mClipboardKeyboardView;
     private int mStartIdx = 0;
     private int mCompositionMinLength;
-    private FloatKeyboard mPopupKeyboard;
 
     public RootInputView(@NonNull Context context) {
         super(context);
@@ -820,26 +819,4 @@ public class RootInputView extends FrameLayout {
         });
     }
 
-    public void showPopup(FloatKeyboard popupKeyboard, final int x, int y, int width) {
-        if (mPopupKeyboard != null)
-            removeView(mPopupKeyboard);
-        mPopupKeyboard = popupKeyboard;
-        if (popupKeyboard == null)
-            return;
-        int[] point = new int[2];
-        getLocationOnScreen(point);
-        Log.w("TAG", "showPopup:1 "+y );
-        y=y+point[1]-popupKeyboard.getRawHeight();
-        Log.w("TAG", "showPopup:2 "+point[1] );
-        Log.w("TAG", "showPopup:3 "+popupKeyboard.getRawHeight() );
-        addView(popupKeyboard, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
-        int dx = x + width / 2 - popupKeyboard.getRawWidth() / 2;
-        if (dx < 0)
-            dx = 0;
-        else if (dx + popupKeyboard.getRawWidth() > getWidth())
-            dx = getWidth() - popupKeyboard.getRawWidth();
-        popupKeyboard.setX(dx);
-        popupKeyboard.setY(y);
-        popupKeyboard.setOffsetX(x - dx);
-    }
 }

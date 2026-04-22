@@ -6,6 +6,7 @@
 package com.osfans.trime.keyboard;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -18,6 +19,8 @@ import androidx.annotation.NonNull;
 
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
+import com.osfans.trime.theme.KeyStyle;
+import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
 
 import org.luaj.Globals;
@@ -29,6 +32,8 @@ import java.util.List;
 public class FloatKeyboard extends KeyboardView {
 
     private final List<String> mKeys;
+    private final Style mPopupStyle;
+    private final KeyStyle mKeyStyle;
     private double mHeight;
     private double mWidth;
 
@@ -40,36 +45,48 @@ public class FloatKeyboard extends KeyboardView {
 
     public FloatKeyboard(@NonNull Context context, Globals globals, List<String> keys) {
         super(context, globals);
-        setClipChildren(true);
-        setClipToPadding(true);
+        setClipChildren(false);
+        setClipToPadding(false);
         mKeys = keys;
         long time = System.currentTimeMillis();
-        setBackground(ThemeManager.getStyle().getStyle("keyboard").getBackground(0xffdddddd));
+        mPopupStyle=ThemeManager.getStyle().getStyle("popup",ThemeManager.getStyle().getStyle("keyboard"));
+        mKeyStyle=mPopupStyle.getKeyStyle("key",ThemeManager.getStyle().getKeyStyle());
+        setBackground(mPopupStyle.getBackground(0xffdddddd));
         loadRows();
         Log.w("FloatKeyboard", "init time: " + (System.currentTimeMillis() - time));
         setKeySwipe(true);
+        setElevation(mPopupStyle.getInt("elevation"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            int dShadowColor = mPopupStyle.getColor("shadow_color");
+            if (dShadowColor != 0) {
+                setOutlineAmbientShadowColor(dShadowColor);
+                setOutlineSpotShadowColor(dShadowColor);
+            }
+        }
     }
 
     private void loadRows() {
         GridLayout grid = new GridLayout(getContext());
+        grid.setClipChildren(false);
+        grid.setClipToPadding(false);
         grid.setColumnCount(5);
         TrimeService mTrime = TrimeService.getInstance();
         mHeight = ThemeManager.getKeyboardHeight();
         mWidth = mTrime.getWidth();
         int len = mKeys.size();
-        mKeyWidth = 10;
-        mKeyHeight = 20;
+        mKeyWidth = mKeyStyle.getInt("width",10);
+        mKeyHeight = mKeyStyle.getInt("height",15);
         for (int i = 0; i < len; i++) {
             loadKey(grid, mKeys.get(i), mKeyWidth, mKeyHeight);
         }
-        addView(grid, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        addView(grid, new ViewGroup.LayoutParams(getRawWidth(), getRawHeight()));
     }
 
 
     private void loadKey(GridLayout grid, String key, double width, double height) {
         width = (mWidth * width / 100);
         height = (mHeight * height / 100);
-        KeyView keyView = new KeyView(getContext(), new Key(key));
+        KeyView keyView = new KeyView(getContext(), new Key(key), mKeyStyle);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams((int) width, (int) height, Gravity.TOP | Gravity.LEFT);
         grid.addView(keyView, layoutParams);
     }

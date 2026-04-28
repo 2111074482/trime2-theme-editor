@@ -362,12 +362,13 @@ public class ThemeManager {
         }
     }
 
-    public static void callFunction(String s, Object... args) {
+    public static Object callFunction(String s, Object... args) {
         if(mGlobals==null)
-            return;
+            return null;
         LuaValue f = mGlobals.get(s);
         if(f.isfunction()){
-            f.jcall(args);
+            return f.jcall(args);
         }
+        return null;
     }
 }

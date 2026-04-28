@@ -37,7 +37,7 @@ preset_keys = {
     POWER = { label = "電源", send = "POWER" },
     SEARCH = { label = "搜尋", send = "Find" },
     SLEEP = { label = "休眠", send = "SLEEP" },
-    VOICE_ASSIST = { label = "語音", send = "VOICE_ASSIST" },
+    VOICE_ASSIST = { label = "语 音", send = "VOICE_ASSIST" },
     VOLUME_DOWN = { label = "音量 -", send = "VOLUME_DOWN" },
     VOLUME_UP = { label = "音量 +", send = "VOLUME_UP" },
     VOLUME_MUTE = { label = "靜音", send = "VOLUME_MUTE" },
@@ -177,5 +177,5 @@ preset_keys = {
         option = "%4$s"
     }
 }
---支持回调，onConfigurationChanged，onStartInput，onWindowShown，onWindowHidden，onFinishInput，onDestroy
+--支持回调，onConfigurationChanged，onStartInput，onWindowShown，onWindowHidden，onFinishInput，onDestroy,onSpeechResults
 

@@ -42,8 +42,8 @@ android {
         applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 65
-        versionName = "0.6.5"
+        versionCode = 66
+        versionName = "0.6.6"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")
@@ -171,7 +171,9 @@ android.applicationVariants.all {
 }
 
 dependencies {
+    implementation(files("libs/com.vivo.speechsdk.asr_tts_5.2.4.00_external.aar"))
     ksp(project(":codegen"))
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
     implementation(libs.kotlinx.coroutines)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.activity)

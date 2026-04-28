@@ -541,7 +541,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         }
 
         mLongClick.setVisibility(text != null ? VISIBLE : GONE);
-        mLongClick.setText(text);
+        mLongClick.setText(mKeyStyle.getLongClickKeyStyle().getSpan(text));
         //mLongClick.postInvalidate();
     }
 
@@ -571,7 +571,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         }
 
         mHint.setVisibility(text != null ? VISIBLE : GONE);
-        mHint.setText(text);
+        mHint.setText(mKeyStyle.getHintKeyStyle().getSpan(text));
         //mHint.postInvalidate();
     }
 
@@ -1087,6 +1087,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
             // 重置状态
             lastDirection = SWIPE_NONE;
             showPreview(false, null);
+            mTrime.onUp(0);
         }
         return super.onTouchEvent(event);
     }

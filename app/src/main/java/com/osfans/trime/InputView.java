@@ -275,11 +275,11 @@ public class InputView extends FrameLayout implements ResourceFinder {
     }
 
     public void invalidateAllKeys() {
-        //if (mKeyboardView != null)
-        //    mKeyboardView.invalidateAllKeys();
-        for (KeyboardView value : mViewCache.values()) {
-            value.invalidateAllKeys();
-        }
+        if (mKeyboardView instanceof KeyboardView)
+            ((KeyboardView) mKeyboardView).invalidateAllKeys();
+        //for (KeyboardView value : mViewCache.values()) {
+        //    value.invalidateAllKeys();
+        //}
     }
 
     public boolean isShifted() {

@@ -107,6 +107,7 @@ public class TrimeService extends InputMethodService {
     private int uiMode;
     private String mLastInputClass;
     private Globals globals;
+    private Speech mSpeech;
 
     // 3. 静态访问器与生命周期
     public static TrimeService getInstance() {
@@ -204,6 +205,7 @@ public class TrimeService extends InputMethodService {
         String soft_cursor_key = "soft_cursor";
         Rime.setRimeOption(soft_cursor_key, true); //軟光標
         ThemeManager.callFunction("onWindowShown");
+        mSpeech = new Speech(this);
     }
 
     @Override
@@ -215,6 +217,10 @@ public class TrimeService extends InputMethodService {
         }
         super.onFinishInput();
         ThemeManager.callFunction("onFinishInput");
+        if (mSpeech != null)
+            mSpeech.destroy();
+        mSpeech = null;
+
     }
 
     @Override
@@ -421,8 +427,9 @@ public class TrimeService extends InputMethodService {
             android.util.Log.i(TAG, "onStartInput: " + keyboard);
         if (!TextUtils.isEmpty(keyboard) && !keyboard.equals(mLastInputClass))
             setKeyboard(keyboard);
+        else
+            updateRimeOption();
         mLastInputClass = keyboard;
-        updateRimeOption();
         canCompose = canCompose && !Rime.getCurrentRimeSchema().isEmpty();
         //if (!onEvaluateInputViewShown()) setCandidatesViewShown(canCompose); //實體鍵盤進入文本框時顯示候選欄
         ThemeManager.callFunction("onStartInput", attribute, restarting);
@@ -492,12 +499,16 @@ public class TrimeService extends InputMethodService {
                             Toast.makeText(this, "输入内容不能为空，请输入一些文字后重试", Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        Log.w(TAG, "onEvent: "+ event.getOption());
-                        Log.w(TAG, "onEvent: "+ arg);
+                        Log.w(TAG, "onEvent: " + event.getOption());
+                        Log.w(TAG, "onEvent: " + arg);
 
                         s = Function.handle(this, event.getCommand(), arg);
                     }
                     if (s != null) commitText(s);
+                    break;
+                case KeyEvent.KEYCODE_VOICE_ASSIST: //語音輸入
+                    if (mSpeech != null)
+                        mSpeech.start();
                     break;
                 case KeyEvent.KEYCODE_SETTINGS:
                     switch (event.getOption()) {
@@ -542,6 +553,17 @@ public class TrimeService extends InputMethodService {
                     onKey(event.getCode(), event.getMask());
                     break;
             }
+        }
+    }
+
+    public void onUp(int keyCode) {
+        if (BuildConfig.DEBUG)
+            android.util.Log.i(TAG, "onUp: " + keyCode + ":" + mSpeech.getState());
+        if (mSpeech != null) {
+            if (mSpeech.getState() == Speech.STATE_BEGIN)
+                mSpeech.stop();
+            else if (mSpeech.getState() == Speech.STATE_READY || mSpeech.getState() == Speech.STATE_START)
+                mSpeech.cancel();
         }
     }
 

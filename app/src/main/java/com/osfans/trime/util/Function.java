@@ -551,4 +551,11 @@ public class Function {
     public static String loadString(Context context, String id, String def) {
         return getPref(context).getString(id,def);
     }
+
+    public static void saveBoolean(Context context, String id, boolean s) {
+        getPref(context).edit().putBoolean(id,s).apply();
+    }
+    public static boolean loadBoolean(Context context, String id, boolean def) {
+        return getPref(context).getBoolean(id,def);
+    }
 }

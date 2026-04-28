@@ -38,6 +38,7 @@ import org.luaj.LuaString;
 import org.luaj.LuaValue;
 
 import com.osfans.trime.BuildConfig;
+import com.osfans.trime.util.Function;
 
 import org.luaj.compiler.DumpState;
 
@@ -1085,14 +1086,9 @@ public class LuaUtil {
 
     private static void checkPermissionAndNotify(Activity activity) {
         // 1. 只有 Android 13 (API 33) 及以上需要动态申请
-        if (Build.VERSION.SDK_INT >= 33) { // 33 即 Build.VERSION_CODES.TIRAMISU
-
+        if (Build.VERSION.SDK_INT >= 33&&!Function.loadBoolean(activity,"skip_notify",false)) { // 33 即 Build.VERSION_CODES.TIRAMISU
             if (activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                    == PackageManager.PERMISSION_GRANTED) {
-
-            } else {
-                if (activity.checkCallingOrSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
+                    != PackageManager.PERMISSION_GRANTED) {
                     new AlertDialog.Builder(activity)
                             .setTitle("获取通知权限")
                             .setMessage("输入法需要通知权限播报状态改变")
@@ -1105,12 +1101,51 @@ public class LuaUtil {
                                             1111);
                                 }
                             })
-                            .setNegativeButton(android.R.string.cancel, null)
+                            .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Function.saveBoolean(activity,"skip_notify",true);
+                                }
+                            })
+                            .create()
+                            .show();
+                    return;
+            }
+        }
+        checkPermissionAudio(activity);
+    }
+
+    private static void checkPermissionAudio(Activity activity) {
+        if(Function.loadBoolean(activity,"skip_audio",false))
+            return;
+        // 1. 只有 Android 13 (API 33) 及以上需要动态申请
+        if (Build.VERSION.SDK_INT >= 23) { // 33 即 Build.VERSION_CODES.TIRAMISU
+
+            if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    new AlertDialog.Builder(activity)
+                            .setTitle("获取录音权限")
+                            .setMessage("输入法需要录音权限进行语音输入")
+                            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // 2. 直接向系统请求权限
+                                    // 如果需要解释原因，可以先判断 shouldShowRequestPermissionRationale
+                                    activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},
+                                            2222);
+                                }
+                            })
+                            .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Function.saveBoolean(activity,"skip_audio",true);
+                                }
+                            })
                             .create()
                             .show();
 
                 }
             }
         }
-    }
+
 }

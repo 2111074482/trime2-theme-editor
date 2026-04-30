@@ -119,6 +119,7 @@ public class InputView extends FrameLayout implements ResourceFinder {
 
     // 2. 视图缓存：SchemaId -> KeyboardView 实例
     private final Map<String, KeyboardView> mViewCache = new HashMap<>();
+    private final Map<String, SymbolsKeyboardView> mSymbolsViewCache = new HashMap<>();
 
     public void setKeyboard(String id) {
         Log.w("TAG", "setKeyboard:s " + id);
@@ -160,7 +161,13 @@ public class InputView extends FrameLayout implements ResourceFinder {
             } else if (globals.get("keys").istable()) {
                 targetView = new AbsKeyboardView(getContext(), globals);
             } else if (globals.get("key_maps").istable()) {
-                TrimeService.getInstance().showCustomView(new SymbolsKeyboardView(getContext(), globals));
+                SymbolsKeyboardView symbolsView = mSymbolsViewCache.get(id);
+                if(symbolsView==null){
+                    symbolsView=new SymbolsKeyboardView(getContext(), globals);
+                    mSymbolsViewCache.put(id,symbolsView);
+                }
+                TrimeService.getInstance().showCustomView(symbolsView);
+                mCurrentSchemaId=null;
                 return;
             } else {
                 func = globals.loadfilex("themes/default/keyboards/qwerty36.lua");

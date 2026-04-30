@@ -131,7 +131,7 @@ public class TrimeService extends InputMethodService {
                         // String soft_cursor_key = "soft_cursor";
                         // Rime.setRimeOption(soft_cursor_key, true); //軟光標
                         // mRootInputView.setSchema(Rime.getCurrentRimeSchema());
-                        String id = Function.getPref(getInstance()).getString("select_schema_id", "");
+                        String id = Function.getPref(TrimeService.this).getString("select_schema_id", "");
                         if (!TextUtils.isEmpty(id))
                             Rime.selectRimeSchema(id);
                     }
@@ -217,9 +217,6 @@ public class TrimeService extends InputMethodService {
         }
         super.onFinishInput();
         ThemeManager.callFunction("onFinishInput");
-        if (mSpeech != null)
-            mSpeech.destroy();
-        mSpeech = null;
 
     }
 
@@ -232,6 +229,9 @@ public class TrimeService extends InputMethodService {
         }
         super.onWindowHidden();
         ThemeManager.callFunction("onWindowHidden");
+        if (mSpeech != null)
+            mSpeech.destroy();
+        mSpeech = null;
     }
 
     @Override

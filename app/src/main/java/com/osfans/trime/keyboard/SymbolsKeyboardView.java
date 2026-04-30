@@ -8,6 +8,7 @@ package com.osfans.trime.keyboard;
 import android.content.Context;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,8 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.osfans.trime.Config;
+import com.osfans.trime.Event;
+import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.keyboard.adapter.ListPagerAdapter;
 import com.osfans.trime.theme.KeyStyle;
@@ -28,6 +31,7 @@ import com.osfans.trime.theme.ThemeManager;
 
 import org.luaj.Globals;
 import org.luaj.LuaTable;
+import org.luaj.LuaValue;
 import org.luaj.lib.ResourceFinder;
 import org.luaj.lib.jse.JsePlatform;
 
@@ -128,11 +132,56 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
                 mTrime.onKey(KeyEvent.KEYCODE_DEL, 0);
             }
         });
-        mButtonBar.addView(mHide,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
-        mButtonBar.addView(mPrev,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-        mButtonBar.addView(mNext,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-        mButtonBar.addView(backSpace,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
-        addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+
+        LuaValue keys = mSymbolStyle.getKeyStyle("tool_bar").get("keys");
+        if (keys.istable()) {
+            int len = keys.length();
+            for (int i = 0; i < len; i++) {
+                String k = keys.get(i + 1).tojstring();
+                switch (k) {
+                    case "hide":
+                        mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    case "page_up":
+                        mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    case "page_down":
+                        mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                        break;
+                    default:
+                        KeyView key = new KeyView(getContext(), new Key(new Event(k)), mKeyStyle);
+                        mButtonBar.addView(key, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                }
+            }
+        } else{
+            mButtonBar.addView(mHide,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
+            mButtonBar.addView(mPrev,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
+            mButtonBar.addView(mNext,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
+            mButtonBar.addView(backSpace,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
+        }
+        switch (mSymbolStyle.getKeyStyle("tool_bar").getGravity(Gravity.RIGHT)) {
+            case Gravity.LEFT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                break;
+            case Gravity.RIGHT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                break;
+            case Gravity.TOP:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                break;
+            case Gravity.BOTTOM:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                break;
+        }
+        //addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
     }
     public boolean pageDown() {
         getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getContentHeight());

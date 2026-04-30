@@ -300,13 +300,13 @@ public class KeyStyle extends Style {
         return mShow;
     }
 
-    public CharSequence getSpan(String text) {
+    public CharSequence getSpan(final String text) {
         if (TextUtils.isEmpty(text))
             return text;
         CharSequence s = mSpanCache.get(text);
         if (s != null)
             return s;
-        String path = Config.findImagePath(text + ".png");
+        String path = Config.findImagePath(text.endsWith(".png")?text:text + ".png");
         if (!TextUtils.isEmpty(path)) {
             SpannableString span = new SpannableString(text);
             try {

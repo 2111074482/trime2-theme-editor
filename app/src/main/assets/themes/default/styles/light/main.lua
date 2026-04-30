@@ -149,12 +149,11 @@ popup = {
     stroke_width = 1,
     shadow_color = 0xff000000
 }
-popup.key=table.clone(key)
+popup.key = table.clone(key)
 popup.key.text_size = 18
 popup.key.width = 10
 popup.key.height = 15
-popup.key.preview=nil
-
+popup.key.preview = nil
 
 space = table.clone(key)
 space.text_size = 18
@@ -205,7 +204,10 @@ symbol.key.pressed = {
     shadow_color = 0xff00ffff,
     background = 0xffaaaaaa,
 }
-
+symbol.tool_bar = {
+    gravity = "right", --left,top,right,bottom
+    keys = { "hide", "page_up", "page_down", "BackSpace" }
+}
 
 --候选栏样式
 candidate = {
@@ -257,14 +259,14 @@ candidate.expanded = {
     text_color = 0xff000000,
 }
 --笔画筛选栏
-candidate.expanded.filter_bar={
-    gravity="bottom",--left,top,right,bottom
+candidate.expanded.filter_bar = {
+    gravity = "bottom", --left,top,right,bottom
     show = true--设置为false隐藏
 }
 
-candidate.expanded.tool_bar={
-    gravity="right",--left,top,right,bottom
-    keys={"hide","page_up","page_down","char_filter","BackSpace"}
+candidate.expanded.tool_bar = {
+    gravity = "right", --left,top,right,bottom
+    keys = { "hide", "page_up", "page_down", "char_filter", "BackSpace" }
 }
 
 candidate.expanded.pressed = {
@@ -303,6 +305,10 @@ clipboard.item.padding = {
     top = 4,
     right = 4,
     bottom = 4
+}
+clipboard.tool_bar = {
+    gravity = "right", --left,top,right,bottom
+    keys = { "hide", "page_up", "page_down", "undo" }
 }
 
 --工具栏样式
@@ -355,7 +361,7 @@ composition = {
     background = 0xaaaaaaaa, -- 颜色或者图片文件名
     movable = "false", -- 是否可移动窗口，或仅移动一次 true|false|once
 
-    pressed={
+    pressed = {
         text_color = 0xff222222,
         background = 0xcccccccc
     },

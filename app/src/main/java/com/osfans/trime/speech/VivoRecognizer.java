@@ -78,6 +78,10 @@ public class VivoRecognizer implements Recognizer, IRecognizerListener {
 
     @Override
     public void startListening() {
+        if(mEngine==null){
+            init2();
+            return;
+        }
         Bundle bundle = new Bundle();
         bundle.putBoolean(SpeechConstants.KEY_INNER_RECORD, true);
         bundle.putInt(SpeechConstants.KEY_REQUEST_MODE, SpeechConstants.TYPE_REQUEST_MODE_ASR);
@@ -101,6 +105,10 @@ public class VivoRecognizer implements Recognizer, IRecognizerListener {
 
     @Override
     public void startInputting() {
+        if(mEngine==null){
+            init2();
+            return;
+        }
         Bundle bundle = new Bundle();
         bundle.putBoolean(SpeechConstants.KEY_INNER_RECORD, true);
         bundle.putInt(SpeechConstants.KEY_REQUEST_MODE, SpeechConstants.TYPE_REQUEST_MODE_ASR);
@@ -124,16 +132,25 @@ public class VivoRecognizer implements Recognizer, IRecognizerListener {
 
     @Override
     public void stop() {
+        if(mEngine==null){
+            return;
+        }
         mEngine.stop();
     }
 
     @Override
     public void cancel() {
+        if(mEngine==null){
+            return;
+        }
         mEngine.cancel();
     }
 
     @Override
     public void destroy() {
+        if(mEngine==null){
+            return;
+        }
         mEngine.destroy();
     }
 

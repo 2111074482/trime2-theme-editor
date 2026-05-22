@@ -143,11 +143,12 @@ public class CoerceLuaToJava {
         public int score(LuaValue value) {
             int fromStringPenalty = 0;
             if (value.type() == LuaValue.TSTRING) {
-                value = value.tonumber();
+                /*value = value.tonumber();
                 if (value.isnil()) {
                     return SCORE_UNCOERCIBLE;
                 }
-                fromStringPenalty = 4;
+                fromStringPenalty = 4;*/
+                return SCORE_UNCOERCIBLE;
             }
             if (value.isint()) {
                 switch (targetType) {

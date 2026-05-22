@@ -306,7 +306,7 @@ public class Function {
                 } else {
                     tv.setTextColor(0xff000000);
                 }
-                AlertDialog dlg = context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                AlertDialog dlg = context.showWidthDialog(new AlertDialog.Builder(displayContext, Config.getDialogTheme())
                         .setTitle(option)
                         .setView(tv)
                         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -386,7 +386,7 @@ public class Function {
                                 }
                                 tv.setText(result.text);
                                 tv.setShowSoftInputOnFocus(false);
-                                context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                                context.showWidthDialog(new AlertDialog.Builder(displayContext, Config.getDialogTheme())
                                         .setTitle(option)
                                         .setView(tv)
                                         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -455,7 +455,7 @@ public class Function {
                         tv.setText(result.text);
                         tv.setShowSoftInputOnFocus(false);
 
-                        context.showWidthDialog(new AlertDialog.Builder(context, Config.getDialogTheme())
+                        context.showWidthDialog(new AlertDialog.Builder(displayContext, Config.getDialogTheme())
                                 .setTitle(option)
                                 .setView(tv)
                                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

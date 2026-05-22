@@ -1092,7 +1092,7 @@ public class LuaString extends LuaValue {
         while (i < j && m_bytes[j - 1] == ' ') --j;
         if (i >= j)
             return Double.NaN;
-        if (m_bytes[i] == '0' && i + 1 < j && (m_bytes[i + 1] == 'x' || m_bytes[i + 1] == 'X'))
+        if (m_bytes[i] == '0' && i + 1 < j && (m_bytes[i + 1] == 'x' || m_bytes[i + 1] == 'X')&&j>2)
             return scanlong(16, i + 2, j);
         double l = scanlong(10, i, j);
         return Double.isNaN(l) ? scandouble(i, j) : l;

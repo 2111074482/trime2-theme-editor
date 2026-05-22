@@ -185,7 +185,9 @@ public class CoerceJavaToLua {
 	public static LuaValue coerce(Object o) {
 		if ( o == null )
 			return LuaValue.NIL;
-		Class<?> clazz = o.getClass();
+        if (o.equals(null))
+            return LuaValue.NIL;
+        Class<?> clazz = o.getClass();
 
 		Coercion c = (Coercion) COERCIONS.get( clazz );
 		if ( c == null ) {

@@ -8,6 +8,7 @@ package com.osfans.trime;
 import static com.osfans.trime.core.RimeKeyMap.RimeKey_VoidSymbol;
 
 import android.app.AlertDialog;
+import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -16,6 +17,8 @@ import android.inputmethodservice.InputMethodService;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.text.Html;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -1127,7 +1130,10 @@ public class TrimeService extends InputMethodService {
     public AlertDialog showDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O&&Settings.canDrawOverlays(this))
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        else
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
         lp.token = getToken();
         window.setAttributes(lp);
         window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
@@ -1146,7 +1152,10 @@ public class TrimeService extends InputMethodService {
     public AlertDialog showWidthDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O&&Settings.canDrawOverlays(this))
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        else
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
         lp.token = getToken();
         window.setAttributes(lp);
         window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
@@ -1393,16 +1402,33 @@ public class TrimeService extends InputMethodService {
         if (manager == null)
             return;
         mOnPrimaryClipChangedListener = new ClipboardManager.OnPrimaryClipChangedListener() {
+            private long lastProcessTime = 0L;    // 记录上一次处理的时间戳
+
             @Override
             public void onPrimaryClipChanged() {
+                long currentTime = SystemClock.uptimeMillis();
+                if (currentTime - lastProcessTime < 100) {
+                    return;
+                }
                 try {
-                    if (manager.hasPrimaryClip() && manager.getPrimaryClip().getItemCount() > 0) {
-                        CharSequence addedText = manager.getPrimaryClip().getItemAt(0).getText();
-                        if (!TextUtils.isEmpty(addedText)) {
-                            String text = addedText.toString();
-                            addClipboard(text);
+                    // 1. 先通过 Description 快速判断是否有文本内容，这比直接获取内容开销更小
+                    if (manager.hasPrimaryClip()) {
+                        ClipData clip = manager.getPrimaryClip(); // 只读取一次，缓存到局部变量
+
+                        if (clip != null && clip.getItemCount() > 0) {
+                            ClipData.Item item = clip.getItemAt(0);
+                            CharSequence addedText = item.getText();
+
+                            if (!TextUtils.isEmpty(addedText)) {
+                                String text = addedText.toString();
+                                addClipboard(text);
+                                lastProcessTime = currentTime;
+                            }
                         }
                     }
+                } catch (SecurityException e) {
+                    // 处理 Android 10+ 后台读取剪切板权限限制
+                    Log.e("Clipboard", "No permission to access clipboard: " + e.getMessage());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

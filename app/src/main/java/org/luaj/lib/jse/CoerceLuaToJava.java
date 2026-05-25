@@ -23,6 +23,8 @@ package org.luaj.lib.jse;
 
 import android.util.Log;
 
+import com.osfans.trime.BuildConfig;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +40,6 @@ import org.luaj.LuaString;
 import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 import org.luaj.Varargs;
-import com.osfans.trime.BuildConfig;
 
 /**
  * Helper class to coerce values from lua to Java within the luajava library.

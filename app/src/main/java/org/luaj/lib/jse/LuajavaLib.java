@@ -108,6 +108,7 @@ public class LuajavaLib extends VarArgFunction {
     static final int LOADLIB = 5;
     static final int ASTABLE = 6;
     static final int INSTANCEOF = 7;
+    static final int override = 8;
 
     static final String[] NAMES = {
             "bindClass",
@@ -117,6 +118,7 @@ public class LuajavaLib extends VarArgFunction {
             "loadLib",
             "astable",
             "instanceof",
+            "override",
     };
 
     static final int METHOD_MODIFIERS_VARARGS = Modifier.TRANSIENT;//0x80;
@@ -216,6 +218,9 @@ public class LuajavaLib extends VarArgFunction {
                 case INSTANCEOF:
                     Class cls = args.arg(2).touserdata(Class.class);
                     return LuaValue.valueOf(cls.isInstance(args.checkuserdata(1)));
+                case override:
+                    Class cls1 = args.arg(1).touserdata(Class.class);
+                    return override(cls1,args.arg(2));
                 default:
                     throw new LuaError("not yet supported: " + this);
             }

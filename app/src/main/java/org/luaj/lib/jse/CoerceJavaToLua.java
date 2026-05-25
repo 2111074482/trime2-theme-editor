@@ -26,6 +26,7 @@ import android.util.Log;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONObject;
 import org.luaj.LuaBoolean;
 import org.luaj.LuaDouble;
 import org.luaj.LuaInteger;
@@ -185,9 +186,9 @@ public class CoerceJavaToLua {
 	public static LuaValue coerce(Object o) {
 		if ( o == null )
 			return LuaValue.NIL;
-        if (o.equals(null))
-            return LuaValue.NIL;
-        Class<?> clazz = o.getClass();
+		if (o.equals(null))
+			return LuaValue.NIL;
+		Class<?> clazz = o.getClass();
 
 		Coercion c = (Coercion) COERCIONS.get( clazz );
 		if ( c == null ) {

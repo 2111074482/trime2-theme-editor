@@ -236,6 +236,7 @@ public class LuaUtil {
             for (File f : fs)
                 rmDir(f);
         }
+        dir.setWritable(true);
         return dir.delete();
     }
 

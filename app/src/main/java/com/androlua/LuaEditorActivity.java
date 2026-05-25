@@ -56,6 +56,8 @@ import org.luaj.LuaTable;
 import org.luaj.LuaValue;
 import org.luaj.Varargs;
 import com.osfans.trime.BuildConfig;
+import com.osfans.trime.Config;
+
 import org.luaj.android.file;
 import org.luaj.android.http;
 import org.luaj.android.json;
@@ -131,22 +133,12 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sInstance = this;
-        try {
-            InputStream f = getAssets().open("main.lua");
-            if (f != null) {
-                startActivity(new Intent(this, LuaActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                finish();
-                return;
-            }
-        } catch (Exception e) {
-            if (BuildConfig.DEBUG)
-                e.printStackTrace();
-        }
-        ComponentName networkActivity = new ComponentName(getApplicationContext(), ImportProject.class);
-        PackageManager packageManager = getApplicationContext().getPackageManager();
-        int i = packageManager.getComponentEnabledSetting(networkActivity);
-        Log.d("luaj", "ImportProject: " + i);
-        packageManager.setComponentEnabledSetting(networkActivity, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+
+        //ComponentName networkActivity = new ComponentName(getApplicationContext(), ImportProject.class);
+        //PackageManager packageManager = getApplicationContext().getPackageManager();
+        //int i = packageManager.getComponentEnabledSetting(networkActivity);
+        //Log.d("luaj", "ImportProject: " + i);
+        //packageManager.setComponentEnabledSetting(networkActivity, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
 
 
         dm = getResources().getDisplayMetrics();
@@ -156,41 +148,20 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
         File f = new File(mDir, "android.json");
         history = JsonUtil.loadHistoryData(mHistoryPath);
 
-        /*if (f.exists())
+        if (f.exists())
             PackageUtil.load(this, f.getAbsolutePath());
         else
-            PackageUtil.load(this);*/
+            PackageUtil.load(this);
         initView();
         loadConfig();
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkCallingOrSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                try {
-                    permissions = new ArrayList<String>();
-                    PackageManager pm = getPackageManager();
-                    String[] ps2 = pm.getPackageInfo(getPackageName(), PackageManager.GET_PERMISSIONS).requestedPermissions;
-                    for (String p : ps2) {
-                        try {
-                            if ((pm.getPermissionInfo(p, 0).protectionLevel & 1) != 0)
-                                checkPermission(p);
-                        } catch (Exception e) {
-                            if (BuildConfig.DEBUG)
-                                e.printStackTrace();
-                        }
-                    }
-                    if (!permissions.isEmpty()) {
-                        String[] ps = new String[permissions.size()];
-                        permissions.toArray(ps);
-                        requestPermissions(ps,
-                                0);
-                        return;
-                    }
-                } catch (Exception e) {
-                    if (BuildConfig.DEBUG)
-                        e.printStackTrace();
-                }
-            }
-        }
 
+        Uri uri = getIntent().getData();
+        if(uri!=null){
+            File f1 = new File(uri.getPath());
+            mDir=f1.getParentFile();
+            readFile(f1.getName());
+            return;
+        }
         if (history.size() > 0 && readHistory(0))
             return;
 
@@ -321,7 +292,7 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
         pList.addView(createButton("新建工程", 11));
         pList.addView(createButton("打开工程", 14));
         pList.addView(createButton("工程属性", 15));
-        pList.addView(createButton("打包", 13));
+        //pList.addView(createButton("打包", 13));
         pList.addView(createButton("导出", 17));
 
         LinearLayout eList = new LinearLayout(this);
@@ -379,7 +350,7 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
                 mMenu.addView(eList);
             }
         }));
-        mList.addView(createButton("插件", 19));
+        //mList.addView(createButton("插件", 19));
        /* mList.addView(createButton("最近", 12));
         mList.addView(createButton("打开", 4));
         mList.addView(createButton("保存", 6));
@@ -702,7 +673,7 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
 
 
     private void initDir() {
-        mDir = new File(Environment.getExternalStorageDirectory(), "LuaJ");
+        mDir = new File(Config.getDataDir());
         mRootDir = mDir;
         mProjectsDir = new File(mRootDir, "Projects");
         if (!mDir.exists())
@@ -1122,6 +1093,8 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
     protected void onStart() {
         super.onStart();
         try {
+            if(TextUtils.isEmpty(path))
+                return;
             String s = new String(LuaUtil.readAll(path));
             if (!s.trim().equals(edit.getText().toString().trim())) {
                 new AlertDialog.Builder(this)

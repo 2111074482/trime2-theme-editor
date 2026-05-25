@@ -62,7 +62,32 @@ SPDX-License-Identifier: GPL-3.0-or-later
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity android:name="com.osfans.trime.ToolActivity" />
+        <activity
+            android:name="com.androlua.LuaActivity"
+            android:theme="@android:style/Theme.DeviceDefault"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name="com.androlua.LuaEditorActivity"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.androlua.LuaActivityX"
+            android:configChanges='orientation|screenSize|keyboardHidden'
+            android:documentLaunchMode="intoExisting"
+            android:excludeFromRecents="false"/>
         <!-- All activities must be declared above <activity-alias> tag -->
     </application>
 </manifest>

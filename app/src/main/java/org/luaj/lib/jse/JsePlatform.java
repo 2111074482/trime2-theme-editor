@@ -21,26 +21,10 @@
  ******************************************************************************/
 package org.luaj.lib.jse;
 
-import android.content.Intent;
-
-import com.android.cglib.dx.rop.code.TranslationAdvice;
-import com.androlua.Http;
-import com.osfans.trime.TrimeService;
-
 import org.luaj.Globals;
 import org.luaj.LoadState;
 import org.luaj.LuaThread;
 import org.luaj.LuaValue;
-import org.luaj.android.file;
-import org.luaj.android.http;
-import org.luaj.android.json;
-import org.luaj.android.loadlayout;
-import org.luaj.android.print;
-import org.luaj.android.printf;
-import org.luaj.android.res;
-import org.luaj.android.task;
-import org.luaj.android.thread;
-import org.luaj.android.timer;
 import org.luaj.compiler.LuaC;
 import org.luaj.lib.Bit32Lib;
 import org.luaj.lib.CoroutineLib;
@@ -122,25 +106,7 @@ public class JsePlatform {
 		globals.load(new LuajavaLib());
 		globals.load(new DebugLib());
 		globals.load(new Utf8Lib());
-        try {
-            TrimeService trime = TrimeService.getInstance();
-            globals.jset("service", trime);
-            globals.jset("this", trime);
-            globals.set("print", new print(trime, globals));
-            globals.set("printf", new printf(trime, globals));
-            globals.set("loadlayout", new loadlayout(trime, globals));
-            // globals.load(new res(trime));
-            globals.load(new json());
-            globals.load(new file());
-            globals.jset("Http", Http.class);
-            globals.jset("http", http.class);
-            globals.set("android", new JavaPackage("android"));
-            globals.set("java", new JavaPackage("java"));
-            globals.set("com", new JavaPackage("com"));
-            globals.set("org", new JavaPackage("org"));
-        } catch (final Exception e) {
-        }
-        LoadState.install(globals);
+		LoadState.install(globals);
 		LuaC.install(globals);
 		return globals;		
 	}

@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
+import com.osfans.trime.Config;
 import com.osfans.trime.TrimeApplication;
 
 import org.luaj.Globals;
@@ -109,10 +110,7 @@ public class LuaApplication extends TrimeApplication implements LuaContext {
     public String getLuaExtDir() {
         if (mExtDir != null)
             return mExtDir;
-        File d = new File(Environment.getExternalStorageDirectory(), "LuaJ");
-        if (!d.exists())
-            d.mkdirs();
-        mExtDir = d.getAbsolutePath();
+        mExtDir = Config.getDataDir();
         return mExtDir;
     }
 

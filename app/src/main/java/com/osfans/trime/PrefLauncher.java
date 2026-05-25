@@ -6,6 +6,7 @@
 package com.osfans.trime;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.os.Build;
@@ -107,18 +108,25 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0,1,0,"部署").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(0,2,0,"工具").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (TrimeService.getInstance() == null) {
-            Toast.makeText(this, "请先启用输入法", Toast.LENGTH_SHORT).show();
-            return super.onOptionsItemSelected(item);
+        switch (item.getItemId()){
+            case 1:
+                if (TrimeService.getInstance() == null) {
+                    Toast.makeText(this, "请先启用输入法", Toast.LENGTH_SHORT).show();
+                    return super.onOptionsItemSelected(item);
+                }
+                new DeployDialog(this).show();
+                break;
+            case 2:
+                startActivity(new Intent(this,ToolActivity.class));
+                break;
         }
-        if(item.getItemId()==1){
-            new DeployDialog(this).show();
-        }
+
         return super.onOptionsItemSelected(item);
     }
 

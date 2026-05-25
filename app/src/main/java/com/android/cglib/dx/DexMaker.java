@@ -358,6 +358,7 @@ public final class DexMaker {
 
     private ClassLoader generateClassLoader(File result, File dexCache, ClassLoader parent) {
         try {
+            result.setWritable(false);
             return (ClassLoader) Class.forName("dalvik.system.DexClassLoader")
                     .getConstructor(String.class, String.class, String.class, ClassLoader.class)
                     .newInstance(result.getPath(), dexCache.getAbsolutePath(), null, parent);

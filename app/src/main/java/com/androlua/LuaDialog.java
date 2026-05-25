@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.Window;
@@ -203,7 +204,10 @@ public class LuaDialog extends AlertDialog implements  DialogInterface.OnClickLi
     public void showDialog(TrimeService service) {
         Window window = getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O&& Settings.canDrawOverlays(service))
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        else
+            lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
         lp.token = service.getToken();
         window.setAttributes(lp);
         window.addFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);

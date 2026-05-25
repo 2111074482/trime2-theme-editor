@@ -183,9 +183,12 @@ public class VivoGpt {
         String queryStr = mapToQueryString(map);
 
         //构建请求体
-        Map<String, String> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("prompt", s);
         data.put("model", "vivo-BlueLM-TB-Pro");
+        HashMap<Object, Object> extra = new HashMap<>();
+        extra.put("enable_thinking",false);
+        data.put("extra",extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());
@@ -285,9 +288,12 @@ public class VivoGpt {
         String queryStr = mapToQueryString(map);
 
         //构建请求体
-        Map<String, String> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("prompt", s);
         data.put("model", "vivo-BlueLM-TB-Pro");
+        HashMap<Object, Object> extra = new HashMap<>();
+        extra.put("enable_thinking",false);
+        data.put("extra",extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());
@@ -365,6 +371,9 @@ public class VivoGpt {
         }
         data.put("messages", msg);
         data.put("model", "vivo-BlueLM-TB-Pro");
+        HashMap<Object, Object> extra = new HashMap<>();
+        extra.put("enable_thinking",false);
+        data.put("extra",extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());

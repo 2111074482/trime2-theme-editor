@@ -32,6 +32,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.androlua.LuaUtil;
 import com.osfans.trime.core.DataManager;
@@ -59,7 +61,7 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
             setTheme(android.R.style.Theme_DeviceDefault);
         }
         super.onCreate(savedInstanceState);
-        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        //getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         DataManager.sync();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -76,12 +78,13 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
         ListView mListView = new ListView(this);
         // 解决内容被导航栏遮挡的关键：应用 WindowInsets
          mListView.setAdapter(adapter);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         // 修改后的布局结构逻辑
         LinearLayout root = new LinearLayout(this);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             root.setOnApplyWindowInsetsListener((v, insets) -> {
                 // 获取系统状态栏和导航栏的 Insets，但不包含键盘 (ime)
-                Insets systemBars = insets.getInsets(WindowInsets.Type.systemBars());
+                Insets systemBars = insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.ime());
                 // 获取键盘高度
                 Insets ime = insets.getInsets(WindowInsets.Type.ime());
                 v.setPadding(
@@ -95,7 +98,8 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
         }
         root.setOrientation(LinearLayout.VERTICAL);
         EditText editText = new EditText(this);
-        root.addView(mListView, new LinearLayout.LayoutParams(-1, -2)); // ListView 占据剩余空间
+        //editText.setHint("点击展开键盘测试");
+        root.addView(mListView, new LinearLayout.LayoutParams(-1, -2, 1)); // ListView 占据剩余空间
         root.addView(editText, new LinearLayout.LayoutParams(-1, -2)); // EditText 固定在底部
         TextView tv = new TextView(this);
         tv.setAutoLinkMask(Linkify.ALL);

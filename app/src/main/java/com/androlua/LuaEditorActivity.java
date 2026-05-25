@@ -41,6 +41,10 @@ import android.widget.Toast;
 
 import android.content.FileProvider;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import com.myopicmobile.textwarrior.android.OnSelectionChangedListener;
 import com.myopicmobile.textwarrior.common.AutoIndent;
 import com.myopicmobile.textwarrior.common.DocumentProvider;
@@ -154,6 +158,20 @@ public class LuaEditorActivity extends Activity implements ResourceFinder {
             PackageUtil.load(this);
         initView();
         loadConfig();
+        View v = findViewById(android.R.id.content);
+        if(v!=null){
+            ViewCompat.setOnApplyWindowInsetsListener(v, (view, windowInsets) -> {
+                // 关键点：将 systemBars() 和 ime() 合并
+                Insets insets = windowInsets.getInsets(
+                        WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime()
+                );
+                // 为 RecyclerView 应用顶部和底部内边距
+                view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+
+                // 返回 CONSUMED，表示我们已经处理了这些 Insets
+                return WindowInsetsCompat.CONSUMED;
+            });
+        }
 
         Uri uri = getIntent().getData();
         if(uri!=null){

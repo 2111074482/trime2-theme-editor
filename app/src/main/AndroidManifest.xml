@@ -54,6 +54,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
             android:name="com.osfans.trime.PrefLauncher"
             android:exported="true"
             android:label="@string/trime_app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

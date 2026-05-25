@@ -44,6 +44,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.content.FileProvider;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import org.luaj.Globals;
 import org.luaj.Lua;
 import org.luaj.LuaError;
@@ -250,6 +254,18 @@ public class LuaActivity extends Activity implements ResourceFinder, LuaContext,
             res.putExtra(DATA, e.toString());
             setResult(-1, res);
         }
+        View v = findViewById(android.R.id.content);
+        if(v==null)
+            return;
+        ViewCompat.setOnApplyWindowInsetsListener(v, (view, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // 为 RecyclerView 应用顶部和底部内边距
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+
+            // 返回 CONSUMED，表示我们已经处理了这些 Insets
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     private Object runMainFunc(String name, Object[] arg) {

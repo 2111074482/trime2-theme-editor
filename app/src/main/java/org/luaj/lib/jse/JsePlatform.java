@@ -10,7 +10,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,10 +21,26 @@
  ******************************************************************************/
 package org.luaj.lib.jse;
 
+import android.content.Intent;
+
+import com.android.cglib.dx.rop.code.TranslationAdvice;
+import com.androlua.Http;
+import com.osfans.trime.TrimeService;
+
 import org.luaj.Globals;
 import org.luaj.LoadState;
 import org.luaj.LuaThread;
 import org.luaj.LuaValue;
+import org.luaj.android.file;
+import org.luaj.android.http;
+import org.luaj.android.json;
+import org.luaj.android.loadlayout;
+import org.luaj.android.print;
+import org.luaj.android.printf;
+import org.luaj.android.res;
+import org.luaj.android.task;
+import org.luaj.android.thread;
+import org.luaj.android.timer;
 import org.luaj.compiler.LuaC;
 import org.luaj.lib.Bit32Lib;
 import org.luaj.lib.CoroutineLib;
@@ -78,68 +94,86 @@ import org.luaj.lib.Utf8Lib;
  * The debug globals are simply the standard globals plus the {@code debug} library {@link DebugLib}.
  * <p>
  * The class ensures that initialization is done in the correct order.
- * 
+ *
  * @see Globals
 
  */
 public class JsePlatform {
 
-	/**
-	 * Create a standard set of globals for JSE including all the libraries.
-	 * 
-	 * @return Table of globals initialized with the standard JSE libraries
-	 * @see #debugGlobals()
-	 * @see org.luaj.lib.jse.JsePlatform
+    /**
+     * Create a standard set of globals for JSE including all the libraries.
+     *
+     * @return Table of globals initialized with the standard JSE libraries
+     * @see #debugGlobals()
+     * @see org.luaj.lib.jse.JsePlatform
 
-	 */
-	public static Globals standardGlobals() {
-		Globals globals = new Globals();
-		globals.load(new JseBaseLib());
-		globals.load(new PackageLib());
-		globals.load(new Bit32Lib());
-		globals.load(new TableLib());
-		globals.load(new StringLib());
-		globals.load(new CoroutineLib());
-		globals.load(new JseMathLib());
-		globals.load(new JseIoLib());
-		globals.load(new JseOsLib());
-		globals.load(new LuajavaLib());
-		globals.load(new DebugLib());
-		globals.load(new Utf8Lib());
-		LoadState.install(globals);
-		LuaC.install(globals);
-		return globals;		
-	}
+     */
+    public static Globals standardGlobals() {
+        Globals globals = new Globals();
+        globals.load(new JseBaseLib());
+        globals.load(new PackageLib());
+        globals.load(new Bit32Lib());
+        globals.load(new TableLib());
+        globals.load(new StringLib());
+        globals.load(new CoroutineLib());
+        globals.load(new JseMathLib());
+        globals.load(new JseIoLib());
+        globals.load(new JseOsLib());
+        globals.load(new LuajavaLib());
+        globals.load(new DebugLib());
+        globals.load(new Utf8Lib());
+        try {
+            TrimeService trime = TrimeService.getInstance();
+            globals.jset("service", trime);
+            globals.jset("this", trime);
+            globals.set("print", new print(trime, globals));
+            globals.set("printf", new printf(trime, globals));
+            globals.set("loadlayout", new loadlayout(trime, globals));
+            // globals.load(new res(trime));
+            globals.load(new json());
+            globals.load(new file());
+            globals.jset("Http", Http.class);
+            globals.jset("http", http.class);
+            globals.set("android", new JavaPackage("android"));
+            globals.set("java", new JavaPackage("java"));
+            globals.set("com", new JavaPackage("com"));
+            globals.set("org", new JavaPackage("org"));
+        } catch (final Exception e) {
+        }
+        LoadState.install(globals);
+        LuaC.install(globals);
+        return globals;
+    }
 
-	/** Create standard globals including the {@link DebugLib} library.
-	 * 
-	 * @return Table of globals initialized with the standard JSE and debug libraries
-	 * @see #standardGlobals()
-	 * @see org.luaj.lib.jse.JsePlatform
+    /** Create standard globals including the {@link DebugLib} library.
+     *
+     * @return Table of globals initialized with the standard JSE and debug libraries
+     * @see #standardGlobals()
+     * @see org.luaj.lib.jse.JsePlatform
 
-	 * @see DebugLib
-	 */
-	public static Globals debugGlobals() {
-		Globals globals = standardGlobals();
-		globals.load(new DebugLib());
-		return globals;
-	}
+     * @see DebugLib
+     */
+    public static Globals debugGlobals() {
+        Globals globals = standardGlobals();
+        globals.load(new DebugLib());
+        return globals;
+    }
 
 
-	/** Simple wrapper for invoking a lua function with command line arguments.  
-	 * The supplied function is first given a new Globals object, 
-	 * then the program is run with arguments.
-	 */
-	public static void luaMain(LuaValue mainChunk, String[] args) {
-		Globals g = standardGlobals();
-		int n = args.length;
-		LuaValue[] vargs = new LuaValue[args.length];
-		for (int i = 0; i < n; ++i)
-			vargs[i] = LuaValue.valueOf(args[i]);
-		LuaValue arg = LuaValue.listOf(vargs);
-		arg.set("n", n);
-		g.set("arg", arg);
-		mainChunk.initupvalue1(g);
-		mainChunk.invoke(LuaValue.varargsOf(vargs));
-	}
+    /** Simple wrapper for invoking a lua function with command line arguments.
+     * The supplied function is first given a new Globals object,
+     * then the program is run with arguments.
+     */
+    public static void luaMain(LuaValue mainChunk, String[] args) {
+        Globals g = standardGlobals();
+        int n = args.length;
+        LuaValue[] vargs = new LuaValue[args.length];
+        for (int i = 0; i < n; ++i)
+            vargs[i] = LuaValue.valueOf(args[i]);
+        LuaValue arg = LuaValue.listOf(vargs);
+        arg.set("n", n);
+        g.set("arg", arg);
+        mainChunk.initupvalue1(g);
+        mainChunk.invoke(LuaValue.varargsOf(vargs));
+    }
 }

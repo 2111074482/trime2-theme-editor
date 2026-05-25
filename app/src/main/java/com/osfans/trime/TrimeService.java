@@ -50,6 +50,7 @@ import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeMessage;
 import com.osfans.trime.core.RimeProto;
+import com.osfans.trime.dialog.KeyboardDialog;
 import com.osfans.trime.dialog.OptionsDialog;
 import com.osfans.trime.dialog.SchemaGroupDialog;
 import com.osfans.trime.dialog.StyleDialog;
@@ -539,6 +540,14 @@ public class TrimeService extends InputMethodService {
                                 restart();
                             } else {
                                 showSchemaGroupDialog();
+                            }
+                            break;
+                        case "keyboard":
+                            if (!TextUtils.isEmpty(event.getSelect())) {
+                                Config.setKeyboard(event.getSelect());
+                                setTheme(Config.getTheme());
+                            } else {
+                                showKeyboardDialog();
                             }
                             break;
                         default:
@@ -1193,20 +1202,24 @@ public class TrimeService extends InputMethodService {
         return dialog;
     }
 
-    private void showSchemaGroupDialog() {
+    public void showSchemaGroupDialog() {
         new SchemaGroupDialog(this).show(getToken());
     }
 
-    private void showSchemaDialog() {
+    public void showSchemaDialog() {
         new OptionsDialog(this).show(getToken());
     }
 
-    private void showColorDialog() {
+    public void showColorDialog() {
         new StyleDialog(this).show(getToken());
     }
 
-    private void showThemeDialog() {
+    public void showThemeDialog() {
         new ThemeDialog(this).show(getToken());
+    }
+
+    public void showKeyboardDialog() {
+        new KeyboardDialog(this).show(getToken());
     }
 
     public IBinder getToken() {

@@ -42,11 +42,9 @@ import okhttp3.Response;
 public class VivoGpt {
 
 
-
-
     private static final Charset UTF8 = StandardCharsets.UTF_8;
-    private static String TAG="VivoGpt";
-    private static final  String appId = BuildConfig.API_ID;
+    private static String TAG = "VivoGpt";
+    private static final String appId = BuildConfig.API_ID;
     private static final String appKey = BuildConfig.API_KEY;
 
     private static String generateRandomString(int len) {
@@ -102,7 +100,7 @@ public class VivoGpt {
     }
 
 
-    public static HashMap<String,String> generateAuthHeaders(String appId, String appKey, String method, String uri, String queryParams)
+    public static HashMap<String, String> generateAuthHeaders(String appId, String appKey, String method, String uri, String queryParams)
             throws UnsupportedEncodingException {
         String nonce = generateRandomString(8);
         String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
@@ -128,7 +126,7 @@ public class VivoGpt {
             }
         }
 //        System.out.println(buf.toString());
-        HashMap<String,String> headers = new HashMap<>();
+        HashMap<String, String> headers = new HashMap<>();
         headers.put("X-AI-GATEWAY-APP-ID", appId.toString());
         headers.put("X-AI-GATEWAY-TIMESTAMP", timestamp.toString());
         headers.put("X-AI-GATEWAY-NONCE", nonce.toString());
@@ -137,9 +135,9 @@ public class VivoGpt {
         return headers;
     }
 
-    public static void gpt(String s, HttpUtil.HttpCallback callback){
+    public static void gpt(String s, HttpUtil.HttpCallback callback) {
         try {
-            vivogpt(s,callback);
+            vivogpt(s, callback);
         } catch (Exception e) {
             e.printStackTrace();
             callback.onDone(new HttpUtil.HttpResult(e.toString()));
@@ -176,7 +174,7 @@ public class VivoGpt {
         String METHOD = "POST";
         UUID requestId = UUID.randomUUID();
         System.out.println("requestId: " + requestId);
-        Log.w("vivogpt", "vivogpt: "+requestId );
+        Log.w("vivogpt", "vivogpt: " + requestId);
 
         Map<String, Object> map = new HashMap<>();
         map.put("requestId", requestId.toString());
@@ -185,17 +183,27 @@ public class VivoGpt {
         //构建请求体
         Map<String, Object> data = new HashMap<>();
         data.put("prompt", s);
-        data.put("model", "vivo-BlueLM-TB-Pro");
+        ArrayList<Map<String, String>> msg = new ArrayList<>();
+        HashMap<String, String> m1 = new HashMap<>();
+        m1.put("role", "system");
+        m1.put("content", "你的名字是蓝心小v，专为输入法服务，");
+        msg.add(m1);
+        HashMap<String, String> m = new HashMap<>();
+        m.put("role", "user");
+        m.put("content", s);
+        msg.add(m);
+        data.put("messages", msg);
+        data.put("model", "BlueLM-Vision-Aid");
         HashMap<Object, Object> extra = new HashMap<>();
-        extra.put("enable_thinking",false);
-        data.put("extra",extra);
+        extra.put("enable_thinking", false);
+        data.put("extra", extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());
         System.out.println(sessionId);
 
 
-        HashMap<String,String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
+        HashMap<String, String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
         headers.put("Content-Type", "application/json");
         System.out.println(headers);
         String url = String.format("https://%s%s?%s", DOMAIN, URI, queryStr);
@@ -221,10 +229,10 @@ public class VivoGpt {
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 BufferedReader stream = new BufferedReader(new InputStreamReader(response.body().byteStream()));
                 String line = stream.readLine();
-                while (line!=null){
+                while (line != null) {
                     try {
-                        if(!TextUtils.isEmpty(line)) {
-                            if(line.startsWith("event")) {
+                        if (!TextUtils.isEmpty(line)) {
+                            if (line.startsWith("event")) {
                                 callback.onDone(null);
                                 break;
                             }
@@ -251,8 +259,8 @@ public class VivoGpt {
         return null;
     }
 
-    public static void gpt1(String s, HttpUtil.HttpCallback callback){
-        new AsyncTaskX<String,String,String>(){
+    public static void gpt1(String s, HttpUtil.HttpCallback callback) {
+        new AsyncTaskX<String, String, String>() {
 
             @Override
             protected String doInBackground(String... strings) {
@@ -266,22 +274,23 @@ public class VivoGpt {
             @Override
             protected void onPostExecute(String s) {
                 super.onPostExecute(s);
-                Log.w(TAG, "onPostExecute: "+s );
+                Log.w(TAG, "onPostExecute: " + s);
                 try {
-                    s=new JSONObject(s).getJSONObject("data").getString("content");
+                    s = new JSONObject(s).getJSONObject("data").getString("content");
                 } catch (JSONException e) {
                 }
                 callback.onDone(new HttpUtil.HttpResult(s));
             }
         }.execute();
     }
+
     public static String vivogpt1(String s) throws Exception {
         String URI = "/vivogpt/completions";
         String DOMAIN = "api-ai.vivo.com.cn";
         String METHOD = "POST";
         UUID requestId = UUID.randomUUID();
         System.out.println("requestId: " + requestId);
-        Log.w("vivogpt", "vivogpt: "+requestId );
+        Log.w("vivogpt", "vivogpt: " + requestId);
 
         Map<String, Object> map = new HashMap<>();
         map.put("requestId", requestId.toString());
@@ -290,17 +299,28 @@ public class VivoGpt {
         //构建请求体
         Map<String, Object> data = new HashMap<>();
         data.put("prompt", s);
-        data.put("model", "vivo-BlueLM-TB-Pro");
+        ArrayList<Map<String, String>> msg = new ArrayList<>();
+        HashMap<String, String> m1 = new HashMap<>();
+        m1.put("role", "system");
+        m1.put("content", "你的名字是蓝心小v，专为输入法服务，");
+        msg.add(m1);
+        HashMap<String, String> m = new HashMap<>();
+        m.put("role", "user");
+        m.put("content", s);
+        msg.add(m);
+        data.put("messages", msg);
+
+        data.put("model", "BlueLM-Vision-Aid");
         HashMap<Object, Object> extra = new HashMap<>();
-        extra.put("enable_thinking",false);
-        data.put("extra",extra);
+        extra.put("enable_thinking", false);
+        data.put("extra", extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());
         System.out.println(sessionId);
 
 
-        HashMap<String,String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
+        HashMap<String, String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
         headers.put("Content-Type", "application/json");
         System.out.println(headers);
         String url = String.format("https://%s%s?%s", DOMAIN, URI, queryStr);
@@ -323,8 +343,8 @@ public class VivoGpt {
         }
     }
 
-    public static void gpt1(ArrayList<String>  s, HttpUtil.HttpCallback callback){
-        new AsyncTaskX<String,String,String>(){
+    public static void gpt1(ArrayList<String> s, HttpUtil.HttpCallback callback) {
+        new AsyncTaskX<String, String, String>() {
 
             @Override
             protected String doInBackground(String... strings) {
@@ -338,15 +358,16 @@ public class VivoGpt {
             @Override
             protected void onPostExecute(String s) {
                 super.onPostExecute(s);
-                Log.w(TAG, "onPostExecute: "+s );
+                Log.w(TAG, "onPostExecute: " + s);
                 try {
-                    s=new JSONObject(s).getJSONObject("data").getString("content");
+                    s = new JSONObject(s).getJSONObject("data").getString("content");
                 } catch (JSONException e) {
                 }
                 callback.onDone(new HttpUtil.HttpResult(s));
             }
         }.execute();
     }
+
     public static String vivogpt1(ArrayList<String> s) throws Exception {
 
         String URI = "/vivogpt/completions";
@@ -354,7 +375,7 @@ public class VivoGpt {
         String METHOD = "POST";
         UUID requestId = UUID.randomUUID();
         System.out.println("requestId: " + requestId);
-        Log.w("vivogpt", "vivogpt: "+requestId );
+        Log.w("vivogpt", "vivogpt: " + requestId);
 
         Map<String, Object> map = new HashMap<>();
         map.put("requestId", requestId.toString());
@@ -365,22 +386,22 @@ public class VivoGpt {
         ArrayList<Map<String, String>> msg = new ArrayList<>();
         for (int i = 0; i < s.size(); i++) {
             HashMap<String, String> m = new HashMap<>();
-            m.put("role",i%2==0?"user":"assistant");
-            m.put("content",s.get(i));
+            m.put("role", i % 2 == 0 ? "user" : "assistant");
+            m.put("content", s.get(i));
             msg.add(m);
         }
         data.put("messages", msg);
-        data.put("model", "vivo-BlueLM-TB-Pro");
+        data.put("model", "BlueLM-Vision-Aid");
         HashMap<Object, Object> extra = new HashMap<>();
-        extra.put("enable_thinking",false);
-        data.put("extra",extra);
+        extra.put("enable_thinking", false);
+        data.put("extra", extra);
         //data.put("model_version", "2024-05-10");
         UUID sessionId = UUID.randomUUID();
         data.put("sessionId", sessionId.toString());
         System.out.println(sessionId);
 
 
-        HashMap<String,String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
+        HashMap<String, String> headers = generateAuthHeaders(appId, appKey, METHOD, URI, queryStr);
         headers.put("Content-Type", "application/json");
         System.out.println(headers);
         String url = String.format("https://%s%s?%s", DOMAIN, URI, queryStr);
@@ -402,7 +423,7 @@ public class VivoGpt {
             throw new IOException("Unexpected code " + response); // 处理错误情况...
         }
     }
-    
+
     public static String mapToQueryString(Map<String, Object> map) {
         if (map.isEmpty()) {
             return "";

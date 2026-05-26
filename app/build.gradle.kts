@@ -42,8 +42,8 @@ android {
         applicationId = "com.nirenr.trime"
         minSdk = 21
         targetSdk = 35
-        versionCode = 71
-        versionName = "0.7.1"
+        versionCode = 72
+        versionName = "0.7.2"
 
         multiDexEnabled = true
         buildConfigField("String", "BUILDER", "\"${project.builder}\"")
@@ -175,7 +175,7 @@ dependencies {
     ksp(project(":codegen"))
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
     implementation(libs.kotlinx.coroutines)
-    implementation(libs.kotlinx.serialization.json)
+    //implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.autofill)
@@ -186,31 +186,31 @@ dependencies {
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.preference)
     implementation(libs.androidx.recyclerview)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
+    //ksp(libs.androidx.room.compiler)
+    //implementation(libs.androidx.room.runtime)
+    //implementation(libs.androidx.room.ktx)
+    //implementation(libs.androidx.room.paging)
     implementation(libs.androidx.viewpager2)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.flexbox)
-    implementation(libs.bravh)
-    implementation(libs.kaml)
+    //implementation(libs.bravh)
+    //implementation(libs.kaml)
     implementation(libs.timber)
-    implementation(libs.xxpermissions)
-    ksp(libs.kotlin.inject.compiler)
-    implementation(libs.kotlin.inject.runtime)
-    implementation(libs.splitties.bitflags)
-    implementation(libs.splitties.systemservices)
-    implementation(libs.splitties.views.dsl)
-    implementation(libs.splitties.views.dsl.constraintlayout)
-    implementation(libs.splitties.views.dsl.coordinatorlayout)
-    implementation(libs.splitties.views.dsl.recyclerview)
-    implementation(libs.splitties.views.recyclerview)
+    //implementation(libs.xxpermissions)
+    //ksp(libs.kotlin.inject.compiler)
+    //implementation(libs.kotlin.inject.runtime)
+    //implementation(libs.splitties.bitflags)
+    //implementation(libs.splitties.systemservices)
+    //implementation(libs.splitties.views.dsl)
+    //implementation(libs.splitties.views.dsl.constraintlayout)
+    //implementation(libs.splitties.views.dsl.coordinatorlayout)
+    //implementation(libs.splitties.views.dsl.recyclerview)
+    //implementation(libs.splitties.views.recyclerview)
     implementation(libs.aboutlibraries.core)
-    implementation(libs.iconics.core)
-    implementation(libs.community.material.typeface) {
-        artifact { type = "aar" }
-    }
+    //implementation(libs.iconics.core)
+    //implementation(libs.community.material.typeface) {
+    //    artifact { type = "aar" }
+    //}
     implementation("com.squareup.okhttp3:okhttp:4.9.1")
     // Testing
     //testImplementation(libs.junit)

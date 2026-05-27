@@ -6,7 +6,7 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # disable obfuscation
-#-dontobfuscate
+-dontobfuscate
 
 # Keep JNI interface
 -keep class com.osfans.trime.** { *; }

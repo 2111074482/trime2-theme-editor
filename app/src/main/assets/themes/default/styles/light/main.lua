@@ -331,9 +331,11 @@ toolbar.key.padding = {
 preedit = {
     text_size = 18,
     text_color = 0xff222222,
-    background = 0xaaffffff
+    background = 0xaaffffff,
+    inline="none"--嵌入式编辑 input,composition,preedit
 }
 composition = {
+    show = true,
     text_color = 0xff222222,
     background = 0xaaffffff,
     position = "fixed", -- 位置：left|right|left_up|right_up|fixed|bottom_left|bottom_right|top_left|top_right(left、right需要>=Android5.0)

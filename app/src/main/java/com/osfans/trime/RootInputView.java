@@ -819,4 +819,13 @@ public class RootInputView extends FrameLayout {
         });
     }
 
+    public InputView getInputView() {
+        return mInputView;
+    }
+
+    public CandidateView getCandidateView() {
+        return mCandidateView;
+    }
+
+
 }

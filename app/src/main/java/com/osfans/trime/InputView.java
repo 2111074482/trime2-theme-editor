@@ -302,4 +302,8 @@ public class InputView extends FrameLayout implements ResourceFinder {
         if (mKeyboardView instanceof KeyboardView)
             ((KeyboardView) mKeyboardView).setAsciiMode(asciiMode);
     }
+
+    public View getKeyboardView() {
+        return mKeyboardView;
+    }
 }

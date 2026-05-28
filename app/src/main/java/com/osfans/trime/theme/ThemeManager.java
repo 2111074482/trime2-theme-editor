@@ -36,6 +36,7 @@ import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.Rime;
 import com.osfans.trime.core.RimeSchema;
+import com.osfans.trime.enums.InlineModeType;
 import com.osfans.trime.util.Function;
 
 import org.luaj.Globals;
@@ -62,6 +63,7 @@ public class ThemeManager {
     private static Style mStyle;
     private static Vibrator vibrator;
     private static SoundPool mSoundPool;
+    private static InlineModeType mInlineModeType=null;
 
     public static ResourceFinder getFinder() {
         return mResourceFinder;
@@ -176,6 +178,7 @@ public class ThemeManager {
 
     public static void setStyle(String name) {
         mStyle = null;
+        mInlineModeType=null;
         clearSound();
         Config.setStyle(name);
         mColor = new LuaTable(mGlobals);
@@ -234,6 +237,27 @@ public class ThemeManager {
 
     public static int getKeyboardHeight() {
         return (int) (getStyle().getStyle("keyboard").getSize("height", mKeyboardHeight) * Config.getKeyboardHeightScale());
+    }
+    public static InlineModeType getInlinePreedit() {
+        if(mInlineModeType!=null)
+            return mInlineModeType;
+        switch (mStyle.getStyle("preedit").getString("inline", "none")) {
+            case "preview":
+            case "preedit":
+            case "true":
+                mInlineModeType = InlineModeType.INLINE_PREVIEW;
+                break;
+            case "composition":
+                mInlineModeType =  InlineModeType.INLINE_COMPOSITION;
+                break;
+            case "input":
+                mInlineModeType =  InlineModeType.INLINE_INPUT;
+                break;
+            default:
+                mInlineModeType =  InlineModeType.INLINE_NONE;
+                break;
+        }
+        return mInlineModeType;
     }
 
     private static final DisplayMetrics mDisplayMetrics = Resources.getSystem().getDisplayMetrics();

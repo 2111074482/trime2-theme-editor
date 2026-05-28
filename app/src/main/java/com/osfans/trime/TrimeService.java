@@ -45,6 +45,7 @@ import androidx.core.view.accessibility.AccessibilityViewCommand;
 import com.androlua.LuaActivity;
 import com.androlua.LuaDialog;
 import com.androlua.LuaUtil;
+import com.osfans.trime.candidate.CandidateView;
 import com.osfans.trime.candidate.CandidatesManager;
 import com.osfans.trime.core.CandidateItem;
 import com.osfans.trime.core.Rime;
@@ -104,7 +105,7 @@ public class TrimeService extends InputMethodService {
     private List<String> mClipboard;
     private ClipboardManager manager;
     private ClipboardManager.OnPrimaryClipChangedListener mOnPrimaryClipChangedListener;
-    private int mClipboardSize = 100;
+    private int mClipboardSize = 300;
     private ArrayList<String> mPhrase;
     private RootInputView mRootInputView;
     private int orientation;
@@ -112,6 +113,7 @@ public class TrimeService extends InputMethodService {
     private String mLastInputClass;
     private Globals globals;
     private Speech mSpeech;
+    private boolean mShowComposingText;
 
     // 3. 静态访问器与生命周期
     public static TrimeService getInstance() {
@@ -342,6 +344,8 @@ public class TrimeService extends InputMethodService {
         if (BuildConfig.DEBUG)
             android.util.Log.i(TAG, "onStartInput: " + attribute + ":" + restarting);
         super.onStartInput(attribute, restarting);
+        mShowComposingText = ThemeManager.getStyle().getStyle("composition", ThemeManager.getStyle().getStyle("preedit")).getBoolean("show", true);
+        inlinePreedit = ThemeManager.getInlinePreedit();
         // 获取 imeOptions 整数值
         int imeOptions = attribute.imeOptions;
         if ((imeOptions & EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0) {
@@ -874,30 +878,57 @@ public class TrimeService extends InputMethodService {
     }
 
     private void updateComposing(RimeProto.Context.Composition data) {
-        setComposingText(data.getPreedit());
+        if (mShowComposingText)
+            setComposingText(data.getPreedit());
+
+        if (inlinePreedit != InlineModeType.INLINE_NONE) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    String s = null;
+                    switch (inlinePreedit) {
+                        case INLINE_PREVIEW:
+                            s = data.getCommitTextPreview();
+                            break;
+                        case INLINE_COMPOSITION:
+                            s = data.getPreedit();
+                            break;
+                        case INLINE_INPUT:
+                            s = Rime.getRimeRawInput();
+                            break;
+                    }
+                    if (s == null) s = "";
+                    InputConnection ic = getCurrentInputConnection();
+                    if (ic != null) {
+                        CharSequence cs = ic.getSelectedText(0);
+                        if (cs == null || !TextUtils.isEmpty(s)) ic.setComposingText(s, 1);
+                    }
+                }
+            });
+        }
     }
 
 
-    public void updateComposing() {
+    public void updateComposing(String type) {
+        String s = null;
+        switch (type) {
+            case "preview":
+                s = mRime.getComposingText();
+                break;
+            case "composition":
+                s = mRime.getCompositionCached().getPreedit();
+                break;
+            case "input":
+                s = Rime.getRimeRawInput();
+                break;
+            default:
+                return;
+        }
+        if (s == null) s = "";
         InputConnection ic = getCurrentInputConnection();
-        if (inlinePreedit != InlineModeType.INLINE_NONE) {
-            String s = null;
-            switch (inlinePreedit) {
-                case INLINE_PREVIEW:
-                    s = mRime.getComposingText();
-                    break;
-                case INLINE_COMPOSITION:
-                    s = mRime.getCompositionCached().getPreedit();
-                    break;
-                case INLINE_INPUT:
-                    s = Rime.getRimeRawInput();
-                    break;
-            }
-            if (s == null) s = "";
-            if (ic != null) {
-                CharSequence cs = ic.getSelectedText(0);
-                if (cs == null || !TextUtils.isEmpty(s)) ic.setComposingText(s, 1);
-            }
+        if (ic != null) {
+            CharSequence cs = ic.getSelectedText(0);
+            if (cs == null || !TextUtils.isEmpty(s)) ic.setComposingText(s, 1);
         }
     }
 
@@ -932,7 +963,26 @@ public class TrimeService extends InputMethodService {
 
     public void showSymbolsView(boolean b) {
         mRootInputView.showSymbolsView(b);
+    }
 
+    public RootInputView getRootView() {
+        return mRootInputView;
+    }
+
+    public InputView getInputView() {
+        return mRootInputView.getInputView();
+    }
+
+    public View getKeyboardView() {
+        return mRootInputView.getInputView().getKeyboardView();
+    }
+
+    public CandidateView getCandidateView() {
+        return mRootInputView.getCandidateView();
+    }
+
+    public void setClipboardSize(int size) {
+        mClipboardSize = size;
     }
 
     public void showCustomView(View keyboardView) {
@@ -1139,7 +1189,7 @@ public class TrimeService extends InputMethodService {
     public AlertDialog showDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O&&Settings.canDrawOverlays(this))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.canDrawOverlays(this))
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         else
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
@@ -1150,7 +1200,7 @@ public class TrimeService extends InputMethodService {
         window = dialog.getWindow();
         if (window != null) {
             lp = window.getAttributes();
-            // 设置为屏幕宽度的 80%，避免撑满全屏
+            // 设置为屏幕宽度的 50%，避免撑满全屏
             DisplayMetrics dm = getResources().getDisplayMetrics();
             lp.width = (int) (dm.widthPixels * 0.5);
             window.setAttributes(lp);
@@ -1161,7 +1211,7 @@ public class TrimeService extends InputMethodService {
     public AlertDialog showWidthDialog(AlertDialog dialog) {
         Window window = dialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O&&Settings.canDrawOverlays(this))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Settings.canDrawOverlays(this))
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         else
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;

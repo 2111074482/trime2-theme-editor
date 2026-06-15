@@ -558,7 +558,6 @@ public class RootInputView extends FrameLayout {
                 }
             });
         }
-
         if (Rime.getRimeOption("_hide_candidate"))
             mCandidateView.setVisibility(GONE);
         else

@@ -243,10 +243,10 @@ public class ThemeManager {
             return mInlineModeType;
         switch (mStyle.getStyle("preedit").getString("inline", "none")) {
             case "preview":
-            case "preedit":
             case "true":
                 mInlineModeType = InlineModeType.INLINE_PREVIEW;
                 break;
+            case "preedit":
             case "composition":
                 mInlineModeType =  InlineModeType.INLINE_COMPOSITION;
                 break;

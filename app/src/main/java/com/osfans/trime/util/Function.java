@@ -318,7 +318,7 @@ public class Function {
                             public void onClick(DialogInterface dialog, int which) {
                                 if (!option.startsWith("根据以下内容续写"))
                                     context.getCurrentInputConnection().deleteSurroundingText(option.length(), 0);
-                                context.commitText(tv.getText());
+                                context.commitTextAndClearComposition(tv.getText());
                             }
                         })
                         .setNegativeButton(android.R.string.cancel, null)
@@ -400,7 +400,7 @@ public class Function {
                                             public void onClick(DialogInterface dialog, int which) {
                                                 if (!option.startsWith("根据以下内容续写"))
                                                     context.getCurrentInputConnection().deleteSurroundingText(option.length(), 0);
-                                                context.commitText(tv.getText());
+                                                context.commitTextAndClearComposition(tv.getText());
                                             }
                                         })
                                         .setNegativeButton(android.R.string.cancel, null)
@@ -444,7 +444,7 @@ public class Function {
                     public void onDone(HttpUtil.HttpResult result) {
                         if (mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
-                            context.commitText(result.text);
+                            context.commitTextAndClearComposition(result.text);
                             return;
                         }
                         DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
@@ -468,7 +468,7 @@ public class Function {
                                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-                                        context.commitText(result.text);
+                                        context.commitTextAndClearComposition(result.text);
                                     }
                                 })
                                 .setNegativeButton(android.R.string.cancel, null)
@@ -501,7 +501,7 @@ public class Function {
                                 }
                                 if (!context.isInputViewShown())
                                     return;
-                                context.commitText(result.text);
+                                context.commitTextAndClearComposition(result.text);
                             }
                         });
                     }

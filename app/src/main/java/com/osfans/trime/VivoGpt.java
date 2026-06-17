@@ -186,7 +186,7 @@ public class VivoGpt {
         ArrayList<Map<String, String>> msg = new ArrayList<>();
         HashMap<String, String> m1 = new HashMap<>();
         m1.put("role", "system");
-        m1.put("content", "你的名字是蓝心小v，专为输入法服务，");
+        m1.put("content", "你的名字是蓝心小v，专为输入法服务，输出结果时减少无用的自我介绍和不相关内容");
         msg.add(m1);
         HashMap<String, String> m = new HashMap<>();
         m.put("role", "user");
@@ -303,7 +303,7 @@ public class VivoGpt {
         ArrayList<Map<String, String>> msg = new ArrayList<>();
         HashMap<String, String> m1 = new HashMap<>();
         m1.put("role", "system");
-        m1.put("content", "你的名字是蓝心小v，专为输入法服务，");
+        m1.put("content", "你的名字是蓝心小v，专为输入法服务，输出结果时减少无用的自我介绍和不相关内容");
         msg.add(m1);
         HashMap<String, String> m = new HashMap<>();
         m.put("role", "user");

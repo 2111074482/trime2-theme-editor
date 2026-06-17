@@ -16,22 +16,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 77,
-      "versionName": "0.7.7",
-      "outputFile": "com.nirenr.trime-0.7.7-armeabi-v7a-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
-          "value": "x86_64"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 77,
-      "versionName": "0.7.7",
-      "outputFile": "com.nirenr.trime-0.7.7-x86_64-release.apk"
+      "versionCode": 78,
+      "versionName": "0.7.8",
+      "outputFile": "com.nirenr.trime-0.7.8-armeabi-v7a-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -42,9 +29,22 @@
         }
       ],
       "attributes": [],
-      "versionCode": 77,
-      "versionName": "0.7.7",
-      "outputFile": "com.nirenr.trime-0.7.7-arm64-v8a-release.apk"
+      "versionCode": 78,
+      "versionName": "0.7.8",
+      "outputFile": "com.nirenr.trime-0.7.8-arm64-v8a-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "x86_64"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 78,
+      "versionName": "0.7.8",
+      "outputFile": "com.nirenr.trime-0.7.8-x86_64-release.apk"
     },
     {
       "type": "ONE_OF_MANY",
@@ -55,9 +55,9 @@
         }
       ],
       "attributes": [],
-      "versionCode": 77,
-      "versionName": "0.7.7",
-      "outputFile": "com.nirenr.trime-0.7.7-x86-release.apk"
+      "versionCode": 78,
+      "versionName": "0.7.8",
+      "outputFile": "com.nirenr.trime-0.7.8-x86-release.apk"
     }
   ],
   "elementType": "File",

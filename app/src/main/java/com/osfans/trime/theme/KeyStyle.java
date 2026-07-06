@@ -66,7 +66,7 @@ public class KeyStyle extends Style {
 
     // 样式引用缓存
     private KeyStyle mHintStyle, mLongClickStyle, mPressedStyle;
-    private int mGravity;
+    private int mGravity=-1;
     private VibrationEffect mVibrationEffect;
     private boolean mHasCachedVibrationEffect;
     private boolean mHasCachedVibrationEnabled;

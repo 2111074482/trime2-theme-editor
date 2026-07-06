@@ -44,33 +44,40 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
     private final KeyStyle mKeyStyle;
     private final TrimeService mTrime;
     private final Style mSymbolStyle;
+    private final KeyStyle mTabStyle;
+    private final KeyStyle mToolStyle;
     private ViewPager2 viewPager;
     private ListPagerAdapter mAdapter;
 
     public SymbolsKeyboardView(@NonNull Context context) {
         super(context);
-        long time=System.currentTimeMillis();
+        long time = System.currentTimeMillis();
         Globals globals = JsePlatform.standardGlobals();
         globals.finder = this;
         globals.loadfile("symbols.lua").call();
-        mKeyMap=globals.get("key_maps").checktable();
+        mKeyMap = globals.get("key_maps").checktable();
         mSymbolStyle = ThemeManager.getStyle().getStyle("symbol");
-        mKeyStyle=mSymbolStyle.getKeyStyle("key",ThemeManager.getStyle().getKeyStyle("key"));
-        mTrime=TrimeService.getInstance();
+        mKeyStyle = mSymbolStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"));
+        mTabStyle = mSymbolStyle.getKeyStyle("tab_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mToolStyle = mSymbolStyle.getKeyStyle("tool_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mTrime = TrimeService.getInstance();
         setBackground(mSymbolStyle.getBackground(0x00000000));
         initView();
-        Log.w("SymbolsKeyboardView", "init time: "+(System.currentTimeMillis()-time) );
+        Log.w("SymbolsKeyboardView", "init time: " + (System.currentTimeMillis() - time));
     }
-    public SymbolsKeyboardView(@NonNull Context context,Globals globals) {
+
+    public SymbolsKeyboardView(@NonNull Context context, Globals globals) {
         super(context);
-        long time=System.currentTimeMillis();
-        mKeyMap=globals.get("key_maps").checktable();
+        long time = System.currentTimeMillis();
+        mKeyMap = globals.get("key_maps").checktable();
         mSymbolStyle = ThemeManager.getStyle().getStyle("symbol");
-        mKeyStyle=mSymbolStyle.getKeyStyle("key",ThemeManager.getStyle().getKeyStyle("key"));
-        mTrime=TrimeService.getInstance();
+        mKeyStyle = mSymbolStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"));
+        mTabStyle = mSymbolStyle.getKeyStyle("tab_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mToolStyle = mSymbolStyle.getKeyStyle("toll_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mTrime = TrimeService.getInstance();
         setBackground(mSymbolStyle.getBackground(0x00000000));
         initView();
-        Log.w("SymbolsKeyboardView", "init time: "+(System.currentTimeMillis()-time) );
+        Log.w("SymbolsKeyboardView", "init time: " + (System.currentTimeMillis() - time));
     }
 
     private void initView() {
@@ -78,25 +85,30 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         Context themedContext = new ContextThemeWrapper(getContext(), androidx.appcompat.R.style.Theme_AppCompat_Light);
         // 使用 themedContext 来初始化 TabLayout 或 View
         TabLayout tabLayout = new TabLayout(themedContext);
-        tabLayout.setTabTextColors(mKeyStyle.getTextColor(),mKeyStyle.getKeyStyle("pressed",mKeyStyle).getTextColor());
-        tabLayout.setSelectedTabIndicatorColor(mSymbolStyle.getColor("indicator_color",mKeyStyle.getKeyStyle("pressed",mKeyStyle).getTextColor()));
+        tabLayout.setTabTextColors(mKeyStyle.getTextColor(), mKeyStyle.getKeyStyle("pressed", mKeyStyle).getTextColor());
+        tabLayout.setSelectedTabIndicatorColor(mTabStyle.getColor("indicator_color", mSymbolStyle.getColor("indicator_color", mKeyStyle.getKeyStyle("pressed", mKeyStyle).getTextColor())));
         tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
         viewPager = new ViewPager2(getContext());
         LinearLayout root = new LinearLayout(getContext());
         root.setOrientation(LinearLayout.VERTICAL);
-        root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-        addView(root, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT,1));
+        if (mTabStyle.getGravity() == Gravity.BOTTOM) {
+            root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+            root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mTabStyle.getHeight(ViewGroup.LayoutParams.WRAP_CONTENT)));
+        } else {
+            root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mTabStyle.getHeight(ViewGroup.LayoutParams.WRAP_CONTENT)));
+            root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        }
+        addView(root, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
         mAdapter = new ListPagerAdapter(mKeyMap);
         viewPager.setAdapter(mAdapter);
         // 2. 使用 TabLayoutMediator 连接 TabLayout 和 ViewPager2
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            tab.setText(mKeyMap.get(position+1).get("name").optjstring(String.valueOf(position+1)));
+            tab.setText(mKeyMap.get(position + 1).get("name").optjstring(String.valueOf(position + 1)));
         }).attach();
         LinearLayout mButtonBar = new LinearLayout(getContext());
         mButtonBar.setOrientation(LinearLayout.VERTICAL);
 
-        KeyView mHide = new KeyView(getContext(),mKeyStyle);
+        KeyView mHide = new KeyView(getContext(), mKeyStyle);
         mHide.setText("△");
         mHide.setContentDescription("返回");
         mHide.setOnClickListener(new OnClickListener() {
@@ -105,22 +117,22 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
                 mTrime.showSymbolsView(false);
             }
         });
-        KeyView mPrev = new KeyView(getContext(),mKeyStyle);
+        KeyView mPrev = new KeyView(getContext(), mKeyStyle);
         mPrev.setText("⇑");
         mPrev.setContentDescription("上一页");
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager,mAdapter).smoothScrollBy(0,-ThemeManager.getContentHeight());
+                getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
             }
         });
-        KeyView mNext = new KeyView(getContext(),mKeyStyle);
+        KeyView mNext = new KeyView(getContext(), mKeyStyle);
         mNext.setText("⇓");
         mNext.setContentDescription("下一页");
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getContentHeight());
+                getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
             }
         });
         KeyView backSpace = new KeyView(getContext(), mKeyStyle);
@@ -133,7 +145,7 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
             }
         });
 
-        LuaValue keys = mSymbolStyle.getKeyStyle("tool_bar").get("keys");
+        LuaValue keys = mToolStyle.get("keys");
         if (keys.istable()) {
             int len = keys.length();
             for (int i = 0; i < len; i++) {
@@ -153,46 +165,48 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
                         mButtonBar.addView(key, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
                 }
             }
-        } else{
-            mButtonBar.addView(mHide,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
-            mButtonBar.addView(mPrev,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-            mButtonBar.addView(mNext,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT,1));
-            mButtonBar.addView(backSpace,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getCandidateHeight()));
+        } else {
+            mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(backSpace, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
         }
-        switch (mSymbolStyle.getKeyStyle("tool_bar").getGravity(Gravity.RIGHT)) {
+        switch (mToolStyle.getGravity(Gravity.RIGHT)) {
             case Gravity.LEFT:
                 setOrientation(HORIZONTAL);
                 mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(mToolStyle.getHeight(ThemeManager.getCandidateHeight()), ViewGroup.LayoutParams.MATCH_PARENT));
                 break;
             case Gravity.RIGHT:
                 setOrientation(HORIZONTAL);
                 mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+                addView(mButtonBar, new LinearLayout.LayoutParams(mToolStyle.getHeight(ThemeManager.getCandidateHeight()), ViewGroup.LayoutParams.MATCH_PARENT));
                 break;
             case Gravity.TOP:
                 setOrientation(VERTICAL);
                 mButtonBar.setOrientation(HORIZONTAL);
-                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mToolStyle.getHeight(ThemeManager.getCandidateHeight())));
                 break;
             case Gravity.BOTTOM:
                 setOrientation(VERTICAL);
                 mButtonBar.setOrientation(HORIZONTAL);
-                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
+                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mToolStyle.getHeight(ThemeManager.getCandidateHeight())));
                 break;
         }
         //addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
     }
+
     public boolean pageDown() {
-        getListView(viewPager,mAdapter).smoothScrollBy(0,ThemeManager.getContentHeight());
+        getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
         return true;
     }
 
     public boolean pageUp() {
-        getListView(viewPager,mAdapter).smoothScrollBy(0,-ThemeManager.getContentHeight());
+        getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
         return true;
     }
-    private RecyclerView getListView(ViewPager2 viewPager2, ListPagerAdapter mAdapter){
+
+    private RecyclerView getListView(ViewPager2 viewPager2, ListPagerAdapter mAdapter) {
         // 1. 获取当前页码
         int currentPos = viewPager2.getCurrentItem();
 
@@ -204,12 +218,11 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
 
         if (viewHolder instanceof ListPagerAdapter.ListViewHolder) {
             // 4. 获取你在 ViewHolder 中定义的 recyclerView
-            return  ((ListPagerAdapter.ListViewHolder) viewHolder).recyclerView;
+            return ((ListPagerAdapter.ListViewHolder) viewHolder).recyclerView;
             // 现在你可以对当前页的 RecyclerView 进行操作了
         }
         return mAdapter.getListView();
     }
-
 
 
     @Override
@@ -225,7 +238,7 @@ public class SymbolsKeyboardView extends LinearLayout implements ResourceFinder 
         }
 
         try {
-            return getContext().getAssets().open("themes/default/keyboards/"+name);
+            return getContext().getAssets().open("themes/default/keyboards/" + name);
         } catch (Exception ioe) {
            /*if (BuildConfig.DEBUG)
              e.printStackTrace();*/

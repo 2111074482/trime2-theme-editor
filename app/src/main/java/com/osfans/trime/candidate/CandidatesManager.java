@@ -148,6 +148,10 @@ public class CandidatesManager {
             // 如果触发了安全阈值，跳出 while 循环
             if (searchedCount > MAX_SEARCH_LIMIT) break;
         }
+        if(mStart==0){
+            resultList.add(new CandidateItem(Rime.getRimeRawInput()));
+            mStart=1;
+        }
         return resultList;
     }
 

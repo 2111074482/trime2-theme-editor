@@ -6,6 +6,7 @@
 package com.osfans.trime.keyboard;
 
 import android.content.Context;
+import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -15,12 +16,15 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.viewpager2.widget.ViewPager2;
 
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.osfans.trime.Event;
 import com.osfans.trime.Key;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.keyboard.adapter.WaterfallAdapter;
+import com.osfans.trime.keyboard.adapter.WaterfallPagerAdapter;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.Style;
 import com.osfans.trime.theme.ThemeManager;
@@ -32,16 +36,29 @@ public class ClipboardKeyboardView extends LinearLayout {
     private final TrimeService mTrime;
     private final KeyStyle mKeyStyle;
     private final Style mClipboardStyle;
-    private RecyclerView mListView;
-    private WaterfallAdapter mAdapter;
+    private final KeyStyle mTabStyle;
+    private final KeyStyle mToolStyle;
+    private WaterfallPagerAdapter mAdapter;
     private KeyView mUndo;
-    private KeyView phraseTitle;
-    private KeyView clipboardTitle;
+    private ViewPager2 viewPager;
+    private final ViewPager2.OnPageChangeCallback mOnPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+        @Override
+        public void onPageSelected(int position) {
+            super.onPageSelected(position);
+            try {
+                ((WaterfallAdapter) getListView(viewPager, mAdapter).getAdapter()).setData();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     public ClipboardKeyboardView(@NonNull Context context) {
         super(context);
         mClipboardStyle = ThemeManager.getStyle().getStyle("clipboard");
         mKeyStyle = mClipboardStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"));
+        mTabStyle = mClipboardStyle.getKeyStyle("tab_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mToolStyle = mClipboardStyle.getKeyStyle("toll_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
         mTrime = TrimeService.getInstance();
         setBackground(mClipboardStyle.getBackground(0x00000000));
         initView();
@@ -50,93 +67,41 @@ public class ClipboardKeyboardView extends LinearLayout {
     }
 
     private void initView() {
+        // 导入 android.view.ContextThemeWrapper
+        Context themedContext = new ContextThemeWrapper(getContext(), androidx.appcompat.R.style.Theme_AppCompat_Light);
+        // 使用 themedContext 来初始化 TabLayout 或 View
+        TabLayout tabLayout = new TabLayout(themedContext);
+        tabLayout.setTabTextColors(mKeyStyle.getTextColor(), mKeyStyle.getKeyStyle("pressed", mKeyStyle).getTextColor());
+        tabLayout.setSelectedTabIndicatorColor(mTabStyle.getColor("indicator_color", mClipboardStyle.getColor("indicator_color", mKeyStyle.getKeyStyle("pressed", mKeyStyle).getTextColor())));
+        tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+        viewPager = new ViewPager2(getContext());
         LinearLayout root = new LinearLayout(getContext());
-        root.setClipChildren(false);
-        root.setClipToPadding(false);
-        root.setOrientation(VERTICAL);
-
-        LinearLayout buttons = new LinearLayout(getContext());
-        buttons.setClipChildren(false);
-        buttons.setClipToPadding(false);
-        buttons.setOrientation(HORIZONTAL);
-
-        clipboardTitle = new KeyView(getContext(), mKeyStyle);
-        buttons.addView(clipboardTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        clipboardTitle.setText("剪贴板");
-
-        phraseTitle = new KeyView(getContext(), mKeyStyle);
-        phraseTitle.setSelected(false);
-        buttons.addView(phraseTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        phraseTitle.setText("短语");
-
-        clipboardTitle.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clipboardTitle.setSelected(true);
-                phraseTitle.setSelected(false);
-                mAdapter.setData(false);
-                clipboardTitle.setPressed(true);
+        root.setOrientation(LinearLayout.VERTICAL);
+        if (mTabStyle.getGravity() == Gravity.BOTTOM) {
+            root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+            root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mTabStyle.getHeight(ViewGroup.LayoutParams.WRAP_CONTENT)));
+        } else {
+            root.addView(tabLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mTabStyle.getHeight(ViewGroup.LayoutParams.WRAP_CONTENT)));
+            root.addView(viewPager, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        }
+        addView(root, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        mAdapter = new WaterfallPagerAdapter();
+        viewPager.setAdapter(mAdapter);
+        // 2. 使用 TabLayoutMediator 连接 TabLayout 和 ViewPager2
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("剪切板");
+                    break;
+                case 1:
+                    tab.setText("短语");
+                    break;
             }
-        });
-
-        phraseTitle.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clipboardTitle.setSelected(false);
-                phraseTitle.setSelected(true);
-                mAdapter.setData(true);
-                phraseTitle.setPressed(true);
-            }
-        });
-        root.addView(buttons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        mListView = new RecyclerView(getContext());
-        FrameLayout fr = new FrameLayout(getContext());
-        fr.addView(mListView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.addView(fr, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        mListView.setClipChildren(false);
-        mListView.setClipToPadding(false);
-        // 参数说明：2 代表列数，VERTICAL 代表垂直滚动
-        StaggeredGridLayoutManager layoutManager =
-                new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-
-        // 关键设置：防止 Item 切换位置导致闪烁（可选）
-        layoutManager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
-        mListView.setLayoutManager(layoutManager);
-        mListView.setItemViewCacheSize(40); // 增加缓存数量
-        mListView.setItemAnimator(null);
-        //mListView.setInitialPrefetchItemCount(8); // 提前预取
+        }).attach();
 
         LinearLayout mButtonBar = new LinearLayout(getContext());
-        mButtonBar.setOrientation(VERTICAL);
-        mButtonBar.setClipChildren(false);
-        mButtonBar.setClipToPadding(false);
-        addView(root, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getContentHeight(), 1));
-        switch (mClipboardStyle.getKeyStyle("tool_bar").getGravity(Gravity.RIGHT)) {
-            case Gravity.LEFT:
-                setOrientation(HORIZONTAL);
-                mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
-                break;
-            case Gravity.RIGHT:
-                setOrientation(HORIZONTAL);
-                mButtonBar.setOrientation(VERTICAL);
-                addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
-                break;
-            case Gravity.TOP:
-                setOrientation(VERTICAL);
-                mButtonBar.setOrientation(HORIZONTAL);
-                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
-                break;
-            case Gravity.BOTTOM:
-                setOrientation(VERTICAL);
-                mButtonBar.setOrientation(HORIZONTAL);
-                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ThemeManager.getCandidateHeight()));
-                break;
-        }
-        //addView(mButtonBar,new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ThemeManager.getContentHeight()));
+        mButtonBar.setOrientation(LinearLayout.VERTICAL);
 
-        mListView.setAdapter(mAdapter = new WaterfallAdapter(mTrime.getClipboard()));
         KeyView mHide = new KeyView(getContext(), mKeyStyle);
         mHide.setText("△");
         mHide.setContentDescription("返回");
@@ -152,7 +117,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0, -ThemeManager.getContentHeight());
+                getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
             }
         });
         KeyView mNext = new KeyView(getContext(), mKeyStyle);
@@ -161,7 +126,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                mListView.smoothScrollBy(0, ThemeManager.getContentHeight());
+                getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
             }
         });
         mUndo = new KeyView(getContext(), mKeyStyle);
@@ -172,7 +137,8 @@ public class ClipboardKeyboardView extends LinearLayout {
                 mTrime.onKey(KeyEvent.KEYCODE_Z, KeyEvent.META_CTRL_ON);
             }
         });
-        LuaValue keys = mClipboardStyle.getKeyStyle("tool_bar").get("keys");
+
+        LuaValue keys = mToolStyle.get("keys");
         if (keys.istable()) {
             int len = keys.length();
             for (int i = 0; i < len; i++) {
@@ -193,59 +159,101 @@ public class ClipboardKeyboardView extends LinearLayout {
                 }
             }
         } else {
-            mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT, 1));
-            mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT, 1));
-            mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT, 1));
-            mButtonBar.addView(mUndo, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mHide, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mPrev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mNext, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            mButtonBar.addView(mUndo, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
         }
+        switch (mToolStyle.getGravity(Gravity.RIGHT)) {
+            case Gravity.LEFT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(mToolStyle.getHeight(ThemeManager.getCandidateHeight()), ViewGroup.LayoutParams.MATCH_PARENT));
+                break;
+            case Gravity.RIGHT:
+                setOrientation(HORIZONTAL);
+                mButtonBar.setOrientation(VERTICAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(mToolStyle.getHeight(ThemeManager.getCandidateHeight()), ViewGroup.LayoutParams.MATCH_PARENT));
+                break;
+            case Gravity.TOP:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, 0, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mToolStyle.getHeight(ThemeManager.getCandidateHeight())));
+                break;
+            case Gravity.BOTTOM:
+                setOrientation(VERTICAL);
+                mButtonBar.setOrientation(HORIZONTAL);
+                addView(mButtonBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mToolStyle.getHeight(ThemeManager.getCandidateHeight())));
+                break;
+        }
+        //addView(mButtonBar, new LinearLayout.LayoutParams(ThemeManager.getCandidateHeight(), ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        viewPager.registerOnPageChangeCallback(mOnPageChangeCallback);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        viewPager.unregisterOnPageChangeCallback(mOnPageChangeCallback);
     }
 
     public boolean pageDown() {
-        mListView.smoothScrollBy(0, ThemeManager.getContentHeight());
+        getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
         return true;
     }
 
     public boolean pageUp() {
-        mListView.smoothScrollBy(0, -ThemeManager.getContentHeight());
+        getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
         return true;
     }
 
-    public void update() {
-        if (mListView.isComputingLayout()) {
-            // 如果正在布局，延迟一帧更新，防止冲突
-            mListView.post(this::update);
-            return;
+    private RecyclerView getListView(ViewPager2 viewPager2, WaterfallPagerAdapter mAdapter) {
+        // 1. 获取当前页码
+        int currentPos = viewPager2.getCurrentItem();
+
+// 2. 访问 ViewPager2 内部的 RecyclerView
+        RecyclerView internalRecyclerView = (RecyclerView) viewPager2.getChildAt(0);
+
+// 3. 找到当前位置对应的 ViewHolder
+        RecyclerView.ViewHolder viewHolder = internalRecyclerView.findViewHolderForAdapterPosition(currentPos);
+
+        if (viewHolder instanceof WaterfallPagerAdapter.ListViewHolder) {
+            // 4. 获取你在 ViewHolder 中定义的 recyclerView
+            return ((WaterfallPagerAdapter.ListViewHolder) viewHolder).recyclerView;
+            // 现在你可以对当前页的 RecyclerView 进行操作了
         }
-        mListView.stopScroll(); // 刷新数据前停止可能的滑动
-        mAdapter.setData(false);
-        mListView.scrollToPosition(0);
-        clipboardTitle.setSelected(true);
-        phraseTitle.setSelected(false);
-        //mListView.invalidateItemDecorations();
+        return mAdapter.getListView();
+    }
+
+
+    public void update() {
+
     }
 
     public void show() {
-        if (mListView.isComputingLayout()) {
-            // 如果正在布局，延迟一帧更新，防止冲突
-            mListView.post(this::show);
-            return;
-        }
-        mAdapter.setData(false);
-        mListView.scrollToPosition(0);
-        clipboardTitle.setSelected(true);
-        phraseTitle.setSelected(false);
+        viewPager.setCurrentItem(0, false);
+        viewPager.post(new Runnable() {
+            @Override
+            public void run() {
+                getListView(viewPager, mAdapter).scrollToPosition(0);
+                mOnPageChangeCallback.onPageSelected(1);
+            }
+        });
     }
 
 
     public void showPhrase() {
-        if (mListView.isComputingLayout()) {
-            // 如果正在布局，延迟一帧更新，防止冲突
-            mListView.post(this::show);
-            return;
-        }
-        mAdapter.setData(true);
-        mListView.scrollToPosition(0);
-        clipboardTitle.setSelected(false);
-        phraseTitle.setSelected(true);
+        viewPager.setCurrentItem(1, false);
+        viewPager.post(new Runnable() {
+            @Override
+            public void run() {
+                getListView(viewPager, mAdapter).scrollToPosition(0);
+                mOnPageChangeCallback.onPageSelected(1);
+            }
+        });
     }
 }

@@ -10,9 +10,12 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -22,8 +25,10 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.osfans.trime.Config;
 import com.osfans.trime.TrimeService;
 import com.osfans.trime.core.CandidateItem;
+import com.osfans.trime.core.Rime;
 import com.osfans.trime.theme.KeyStyle;
 import com.osfans.trime.theme.ThemeManager;
+import com.osfans.trime.util.Function;
 
 import java.util.ArrayList;
 
@@ -97,7 +102,68 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
                 TrimeService.getInstance().selectCandidate(item.getIndex());
             }
         });
+        holder.itemView.setOnLongClickListener(v -> {
+            int position = holder.getBindingAdapterPosition(); // 获取当前实时位置
+            if (position != RecyclerView.NO_POSITION && mData != null) {
+                CandidateItem candidateItem = mData.get(position);
+                PopupMenu popupMenu = new PopupMenu(context, holder.itemView);
+                if (candidateItem.getIndex() != -1) {
+                    popupMenu.getMenu().add("忘记该词").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(@NonNull MenuItem item) {
+                            Rime.forgetRimeCandidate(position);
+                            TrimeService.getInstance().getRime().clearComposition();
+                            return true;
+                        }
+                    });
+                }
+                popupMenu.getMenu().add("问AI").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(@NonNull MenuItem item) {
+                        Function.handle(TrimeService.getInstance(), "gpt", "查询以下字词的读音,解释和字源：" + candidateItem.getText());
+                        return true;
+                    }
+                });
+                popupMenu.getMenu().add("查编码").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(@NonNull MenuItem item) {
+                        Function.handle(TrimeService.getInstance(), "gpt", "输出不少于十种输入方案以下字词的编码：" + candidateItem.getText());
+                        return true;
+                    }
+                });
+                SubMenu subMenu = popupMenu.getMenu().addSubMenu("翻译");
+                String[] langs = new String[]{
+                        "英语",
+                        "西班牙语",
+                        "俄语",
+                        "法语",
+                        "葡萄牙语",
+                        "阿拉伯语",
+                        "日语",
+                        "韩语",
+                };
+                for (String lang : langs) {
+                    subMenu.add(lang).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(@NonNull MenuItem item) {
+                            Function.handle(TrimeService.getInstance(), "gpt", "将以下字词翻译为"+lang+"：" + candidateItem.getText());
+                            return true;
+                        }
+                    });
+                }
 
+                popupMenu.getMenu().add("取消").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(@NonNull MenuItem item) {
+                        popupMenu.dismiss();
+                        return true;
+                    }
+                });
+                popupMenu.show();
+
+            }
+            return true;
+        });
         return holder;
     }
 

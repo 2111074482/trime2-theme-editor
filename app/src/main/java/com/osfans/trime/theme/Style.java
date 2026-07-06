@@ -55,7 +55,7 @@ public class Style {
         mTable.setmetatable(mt);
     }
 
-    protected LuaValue getTable() {
+    public LuaValue getTable() {
         return mTable;
     }
 
@@ -195,7 +195,10 @@ public class Style {
     }
 
     public int getSize(String key, int def) {
-        return dp2px(mTable.get(key).optint(def));
+        LuaValue o = mTable.get(key);
+        if(!o.isint())
+            return def;
+        return dp2px(o.toint());
     }
 
     public Drawable getBackground(int def) {

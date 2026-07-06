@@ -83,6 +83,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
     //private TextView mHintRight;
     private TextView[] mHints = new TextView[8];
     private boolean _hide_key_hint;
+    private final float mMinPx=ThemeManager.dp2px(12);
 
     // --- 3. 构造函数 ---
     public KeyView(@NonNull Context context) {
@@ -1114,7 +1115,7 @@ public class KeyView extends FrameLayout implements View.OnClickListener {
         float dx = (x < 0) ? -x : (x > w ? x - w : 0);
         float dy = (y < 0) ? -y : (y > h ? y - h : 0);
 
-        if (dx == 0 && dy == 0) {
+        if (dx < mMinPx && dy < mMinPx) {
             direction = SWIPE_NONE;
         } else if (dx > dy) {
             direction = (x < 0) ? SWIPE_LEFT : SWIPE_RIGHT;

@@ -69,7 +69,7 @@ public class FloatKeyboard extends KeyboardView {
         GridLayout grid = new GridLayout(getContext());
         grid.setClipChildren(false);
         grid.setClipToPadding(false);
-        grid.setColumnCount(5);
+        grid.setColumnCount(mPopupStyle.getInt("column_count",5));
         TrimeService mTrime = TrimeService.getInstance();
         mHeight = ThemeManager.getKeyboardHeight();
         mWidth = mTrime.getWidth();

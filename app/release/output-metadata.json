@@ -25,19 +25,6 @@
       "filters": [
         {
           "filterType": "ABI",
-          "value": "arm64-v8a"
-        }
-      ],
-      "attributes": [],
-      "versionCode": 78,
-      "versionName": "0.7.8",
-      "outputFile": "com.nirenr.trime-0.7.8-arm64-v8a-release.apk"
-    },
-    {
-      "type": "ONE_OF_MANY",
-      "filters": [
-        {
-          "filterType": "ABI",
           "value": "x86_64"
         }
       ],
@@ -58,6 +45,19 @@
       "versionCode": 78,
       "versionName": "0.7.8",
       "outputFile": "com.nirenr.trime-0.7.8-x86-release.apk"
+    },
+    {
+      "type": "ONE_OF_MANY",
+      "filters": [
+        {
+          "filterType": "ABI",
+          "value": "arm64-v8a"
+        }
+      ],
+      "attributes": [],
+      "versionCode": 78,
+      "versionName": "0.7.8",
+      "outputFile": "com.nirenr.trime-0.7.8-arm64-v8a-release.apk"
     }
   ],
   "elementType": "File",

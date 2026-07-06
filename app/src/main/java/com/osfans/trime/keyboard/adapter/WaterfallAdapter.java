@@ -37,7 +37,8 @@ public class WaterfallAdapter extends RecyclerView.Adapter<WaterfallAdapter.View
     private final Style mStyle;
     private boolean mIsPhrase;
 
-    public WaterfallAdapter(List<String> data) {
+    public WaterfallAdapter(List<String> data, boolean isPhrase) {
+        mIsPhrase=isPhrase;
         this.mData = new ArrayList<>(data);
         mStyle=ThemeManager.getStyle().getStyle("clipboard");
         mItemStyle=mStyle.getKeyStyle("item");
@@ -85,11 +86,11 @@ public class WaterfallAdapter extends RecyclerView.Adapter<WaterfallAdapter.View
                         switch (which){
                             case 0:
                                 trime.removeClipboard(position);
-                                setData(mIsPhrase);
+                                setData();
                                 break;
                             case 1:
                                 trime.addClipboard(trime.getClipboard().get(position));
-                                setData(mIsPhrase);
+                                setData();
                                 break;
                             case 2:
                                 trime.addPhrase(trime.getClipboard().get(position));
@@ -112,11 +113,11 @@ public class WaterfallAdapter extends RecyclerView.Adapter<WaterfallAdapter.View
                         switch (which){
                             case 0:
                                 trime.removePhrase(position);
-                                setData(mIsPhrase);
+                                setData();
                                 break;
                             case 1:
                                 trime.addPhrase(trime.getPhrase().get(position));
-                                setData(mIsPhrase);
+                                setData();
                                 break;
                         }
                     }
@@ -142,11 +143,10 @@ public class WaterfallAdapter extends RecyclerView.Adapter<WaterfallAdapter.View
         return mData == null ? 0 : mData.size();
     }
 
-    public void setData(boolean b) {
-        mIsPhrase=b;
+    public void setData() {
         mData.clear();
         TrimeService trime = TrimeService.getInstance();
-        mData.addAll(b?trime.getPhrase():trime.getClipboard());
+        mData.addAll(mIsPhrase?trime.getPhrase():trime.getClipboard());
         notifyDataSetChanged();
     }
 

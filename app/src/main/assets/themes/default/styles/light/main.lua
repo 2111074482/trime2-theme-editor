@@ -139,6 +139,8 @@ key.preview = {
 
 --弹出键盘
 popup = {
+    --弹出键盘行最大数量
+    column_count = 5,
     elevation = 16,
     corner_radius = 8,
     --键盘背景颜色或图片
@@ -204,9 +206,15 @@ symbol.key.pressed = {
     shadow_color = 0xff00ffff,
     background = 0xffaaaaaa,
 }
+symbol.tab_bar = {
+    gravity = "top", --top,bottom
+    indicator_color = 0xFF0055FF,
+    height = 48
+}
 symbol.tool_bar = {
     gravity = "right", --left,top,right,bottom
-    keys = { "hide", "page_up", "page_down", "BackSpace" }
+    keys = { "hide", "page_up", "page_down", "BackSpace" },
+    height = 48
 }
 
 --候选栏样式
@@ -306,9 +314,15 @@ clipboard.item.padding = {
     right = 4,
     bottom = 4
 }
+clipboard.tab_bar = {
+    gravity = "top", --top,bottom
+    indicator_color = 0xFF0055FF,
+    height = 48
+}
 clipboard.tool_bar = {
     gravity = "right", --left,top,right,bottom
-    keys = { "hide", "page_up", "page_down", "undo" }
+    keys = { "hide", "page_up", "page_down", "undo" },
+    height = 48
 }
 
 --工具栏样式

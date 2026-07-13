@@ -149,8 +149,11 @@ public class CandidatesManager {
             if (searchedCount > MAX_SEARCH_LIMIT) break;
         }
         if(mStart==0){
-            resultList.add(new CandidateItem(Rime.getRimeRawInput()));
-            mStart=1;
+            String input = Rime.getRimeRawInput();
+            if(!TextUtils.isEmpty(input)){
+                resultList.add(new CandidateItem(input));
+                mStart=1;
+            }
         }
         return resultList;
     }

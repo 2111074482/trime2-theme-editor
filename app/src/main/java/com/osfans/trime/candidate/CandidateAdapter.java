@@ -138,7 +138,7 @@ public class CandidateAdapter extends RecyclerView.Adapter<CandidateAdapter.Cand
             if (position != RecyclerView.NO_POSITION && mData != null) {
                 CandidateItem item = mData.get(position);
                 if (item.getIndex() == -1) {
-                    TrimeService.getInstance().commitText(item.getText());
+                    TrimeService.getInstance().commitTextAndClearComposition(item.getText());
                     TrimeService.getInstance().setCandidates(null);
                 } else {
                     TrimeService.getInstance().selectCandidate(item.getIndex());

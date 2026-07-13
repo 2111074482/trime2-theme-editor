@@ -58,7 +58,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mClipboardStyle = ThemeManager.getStyle().getStyle("clipboard");
         mKeyStyle = mClipboardStyle.getKeyStyle("key", ThemeManager.getStyle().getKeyStyle("key"));
         mTabStyle = mClipboardStyle.getKeyStyle("tab_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
-        mToolStyle = mClipboardStyle.getKeyStyle("toll_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
+        mToolStyle = mClipboardStyle.getKeyStyle("tool_bar", ThemeManager.getStyle().getKeyStyle("candidate"));
         mTrime = TrimeService.getInstance();
         setBackground(mClipboardStyle.getBackground(0x00000000));
         initView();
@@ -117,7 +117,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mPrev.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
+               pageUp();
             }
         });
         KeyView mNext = new KeyView(getContext(), mKeyStyle);
@@ -126,7 +126,7 @@ public class ClipboardKeyboardView extends LinearLayout {
         mNext.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
+                pageDown();
             }
         });
         mUndo = new KeyView(getContext(), mKeyStyle);
@@ -202,12 +202,14 @@ public class ClipboardKeyboardView extends LinearLayout {
     }
 
     public boolean pageDown() {
-        getListView(viewPager, mAdapter).smoothScrollBy(0, ThemeManager.getContentHeight());
+        RecyclerView list = getListView(viewPager, mAdapter);
+        list.smoothScrollBy(0, list.getHeight());
         return true;
     }
 
     public boolean pageUp() {
-        getListView(viewPager, mAdapter).smoothScrollBy(0, -ThemeManager.getContentHeight());
+        RecyclerView list = getListView(viewPager, mAdapter);
+        list.smoothScrollBy(0, -list.getHeight());
         return true;
     }
 

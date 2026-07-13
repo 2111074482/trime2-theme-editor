@@ -26,6 +26,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.osfans.trime.candidate.CandidateView;
 import com.osfans.trime.candidate.CandidatesManager;
@@ -284,7 +286,7 @@ public class RootInputView extends FrameLayout {
                             break;
                         case BOTTOM_RIGHT:
                             if (floatMode)
-                                x = mCenterLayout.getWidth() - mPreedit.getWidth() + (int) mRoot.getX()+ (int) mCenterLayout.getX();
+                                x = mCenterLayout.getWidth() - mPreedit.getWidth() + (int) mRoot.getX() + (int) mCenterLayout.getX();
                             else
                                 x = mCenterLayout.getWidth() - mPreedit.getWidth() + (int) mCenterLayout.getX();
                             y = mParentLocation[1] - mPreedit.getHeight() - candSpacing;
@@ -795,13 +797,31 @@ public class RootInputView extends FrameLayout {
         Config.set_hide_key_hint(Rime.getRimeOption("_hide_key_hint"));
         if (mInputView != null) mInputView.invalidateAllKeys();
         if (mCandidateView != null) {
-            if (Rime.getRimeOption("_hide_candidate"))
-                mCandidateView.setVisibility(GONE);
-            else
-                mCandidateView.setVisibility(VISIBLE);
+            boolean _hide_candidate = Rime.getRimeOption("_hide_candidate");
+            if ((_hide_candidate?GONE:VISIBLE) != (mCandidateView.getVisibility())) {
+                ViewGroup.LayoutParams lp = mRoot.getLayoutParams();
+                if (_hide_candidate) {
+                    mCandidateView.setVisibility(GONE);
+                    lp.height -= ThemeManager.getCandidateHeight();
+                } else {
+                    mCandidateView.setVisibility(VISIBLE);
+                    lp.height += ThemeManager.getCandidateHeight();
+                }
+                mRoot.setLayoutParams(lp);
+            }
             mCandidateView.invalidateAllKeys();
             mRoot.requestApplyInsets();
         }
+    }
+
+    public static int getNavigationBarHeight(View view) {
+        // 获取当前 View 挂载窗口的 Insets
+        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(view);
+        if (insets != null) {
+            // 直接读取底部导航栏高度 (px)
+            return insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+        }
+        return 0;
     }
 
     public void showClipboardView(boolean b) {

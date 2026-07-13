@@ -99,7 +99,12 @@ public class FlexboxCandidateAdapter extends RecyclerView.Adapter<FlexboxCandida
             int position = holder.getBindingAdapterPosition(); // 获取当前实时位置
             if (position != RecyclerView.NO_POSITION && mData != null) {
                 CandidateItem item = mData.get(position);
-                TrimeService.getInstance().selectCandidate(item.getIndex());
+                if (item.getIndex() == -1) {
+                    TrimeService.getInstance().commitTextAndClearComposition(item.getText());
+                    TrimeService.getInstance().setCandidates(null);
+                } else {
+                    TrimeService.getInstance().selectCandidate(item.getIndex());
+                }
             }
         });
         holder.itemView.setOnLongClickListener(v -> {

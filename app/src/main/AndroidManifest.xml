@@ -65,6 +65,10 @@ SPDX-License-Identifier: GPL-3.0-or-later
         </activity>
         <activity android:name="com.osfans.trime.ToolActivity" />
         <activity
+            android:name="com.osfans.trime.editor.ui.ThemeEditorActivity"
+            android:exported="false"
+            android:label="@string/theme_editor" />
+        <activity
             android:name="com.androlua.LuaActivity"
             android:theme="@android:style/Theme.DeviceDefault"
             android:configChanges="orientation|screenSize|keyboardHidden"

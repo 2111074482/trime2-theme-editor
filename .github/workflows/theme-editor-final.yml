@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2025 Rime community
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: Theme Editor Final
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+env:
+  CI_NAME: Theme Editor Final CI
+  BUILD_ABI: arm64-v8a
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install native build tools
+        run: sdkmanager --install "cmake;3.31.6"
+
+      - name: Calculate native cache hash
+        id: native-hash
+        run: ./gradlew :app:calculateNativeCacheHash
+
+      - name: Restore native cache
+        uses: actions/cache@v4
+        id: native-cache
+        with:
+          path: app/prebuilt
+          key: ubuntu-24.04-trime-editor-${{ steps.native-hash.outputs.native-cache-hash }}
+
+      - name: Build and test editor
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: trime-theme-editor-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: trime-theme-editor-test-reports
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: warn
+          retention-days: 30

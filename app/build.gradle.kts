@@ -54,10 +54,10 @@ android {
 
         // --- 新增：注入 APP_KEY ---
         // 从文件中获取，如果文件或 Key 不存在，提供一个默认空字符串，防止编译报错
-        var appKey = project.findProperty("API_KEY") as String
-        buildConfigField("String", "API_KEY", appKey)
-        var appId = project.findProperty("API_ID") as String
-        buildConfigField("String", "API_ID", appId)
+        val appKey = (project.findProperty("API_KEY") as? String).orEmpty()
+        buildConfigField("String", "API_KEY", "\"${appKey.replace("\"", "\\\"")}\"")
+        val appId = (project.findProperty("API_ID") as? String).orEmpty()
+        buildConfigField("String", "API_ID", "\"${appId.replace("\"", "\\\"")}\"")
         // -------------------------
     }
 
@@ -75,12 +75,12 @@ android {
                 "proguard-rules.pro",
             )
             // 2. 引用它
-            signingConfig = signingConfigs.getByName("myCustomConfig")
+            signingConfig = signingConfigs.findByName("myCustomConfig")
             resValue("string", "trime_app_name", "@string/app_name_release")
         }
         debug {
             // 2. 引用它
-            signingConfig = signingConfigs.getByName("myCustomConfig")
+            signingConfig = signingConfigs.findByName("myCustomConfig")
             resValue("string", "trime_app_name", "@string/app_name_debug")
         }
         all {
@@ -218,9 +218,9 @@ dependencies {
     //}
     implementation("com.squareup.okhttp3:okhttp:4.9.1")
     // Testing
-    //testImplementation(libs.junit)
-    //testImplementation(libs.kotest.runner.junit5)
-    //testImplementation(libs.kotest.assertions.core)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
     //androidTestImplementation(libs.junit)
 }
 

@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Trime2 · 沉浸式主题画布</title>
+  <style>
+    :root {
+      --bg: #080b13;
+      --panel: rgba(18, 23, 38, .76);
+      --panel-strong: rgba(22, 28, 45, .94);
+      --line: rgba(255,255,255,.10);
+      --line-strong: rgba(255,255,255,.17);
+      --text: #f4f6ff;
+      --muted: #929bb3;
+      --accent: #8b7cff;
+      --accent-2: #55d7ff;
+      --accent-3: #b463ff;
+      --success: #6ce5ad;
+      --danger: #ff6e87;
+      --shadow: 0 20px 60px rgba(0,0,0,.42);
+      --radius: 18px;
+      --zoom: 1;
+      --pan-x: 0px;
+      --pan-y: 0px;
+      --device-width: 928px;
+      --device-height: 336px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 52% 36%, rgba(103,82,220,.13), transparent 31%),
+        radial-gradient(circle at 12% 88%, rgba(38,176,203,.08), transparent 26%),
+        #080b13;
+      font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+    .icon { width: 18px; height: 18px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .app { position: relative; width: 100%; height: 100%; isolation: isolate; }
+    .canvas {
+      position: absolute; inset: 0; overflow: hidden;
+      background-image:
+        linear-gradient(rgba(255,255,255,.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.026) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+      background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+      cursor: grab;
+    }
+    .canvas:active { cursor: grabbing; }
+    .canvas.grid-hidden { background-image: none; }
+    .canvas.pan-mode { cursor: grab; }
+    .canvas.preview-mode .guide-v, .canvas.preview-mode .ruler, .canvas.preview-mode .drop-hint { opacity: 0; }
+    .canvas.preview-mode .canvas-tools { opacity: .3; }
+    .canvas.preview-mode .keyboard-shell { box-shadow: 0 35px 90px rgba(0,0,0,.5), 0 0 38px rgba(108,229,173,.12), inset 0 1px 1px rgba(255,255,255,.11), inset 0 -1px 1px #0008; }
+    .canvas.preview-mode .key { animation: preview-breathe 1.8s ease-in-out infinite; }
+    .canvas.preview-mode .key:nth-child(2n) { animation-delay: .2s; }
+    @keyframes preview-breathe { 0%,100% { filter:brightness(1); } 50% { filter:brightness(1.12); } }
+    .canvas::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 20%, rgba(5,8,15,.33) 100%);
+    }
+
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.045);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(22px) saturate(140%);
+    }
+
+    /* 顶部浮动工具条 */
+    .topbar {
+      position: absolute; z-index: 50; top: 18px; left: 50%; transform: translateX(-50%);
+      width: min(900px, calc(100% - 470px)); min-width: 570px; height: 58px;
+      border-radius: 17px; display: flex; align-items: center; padding: 0 10px 0 15px; gap: 10px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 168px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
+      background: linear-gradient(145deg, #9d8cff, #6754db); box-shadow: 0 8px 24px rgba(116,93,235,.38);
+      font-weight: 800; letter-spacing: -.08em;
+    }
+    .brand-copy strong { display:block; font-size: 13px; line-height: 1.2; letter-spacing: .02em; }
+    .brand-copy span { display:block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .toolbar-divider { width:1px; height:26px; background:var(--line); margin:0 2px; }
+    .project-name {
+      height: 36px; padding: 0 11px; display:flex; align-items:center; gap:8px; border-radius:10px;
+      color:#dce1f2; font-size:12px; white-space:nowrap; background:rgba(255,255,255,.035);
+    }
+    .project-name .dot { width:6px; height:6px; border-radius:50%; background:var(--success); box-shadow:0 0 10px var(--success); }
+    .toolbar-actions { display:flex; align-items:center; gap:4px; margin-left:auto; }
+    .tool-btn, .icon-btn {
+      border: 0; background: transparent; cursor:pointer; display:grid; place-items:center; border-radius:10px;
+      transition: .18s ease; position:relative;
+    }
+    .tool-btn { width:36px; height:36px; color:#aab2c8; }
+    .tool-btn:hover, .icon-btn:hover { color:#fff; background:rgba(255,255,255,.075); }
+    .tool-btn:active, .icon-btn:active { transform:translateY(1px); }
+    .tool-btn[data-tip]::after {
+      content:attr(data-tip); position:absolute; top:43px; left:50%; transform:translateX(-50%) translateY(-4px);
+      padding:5px 8px; border-radius:7px; color:#dce0ee; font-size:10px; background:#202638; border:1px solid var(--line);
+      opacity:0; pointer-events:none; transition:.16s; white-space:nowrap;
+    }
+    .tool-btn:hover::after { opacity:1; transform:translateX(-50%) translateY(0); }
+    .primary-btn {
+      height:36px; border:0; border-radius:10px; padding:0 14px; margin-left:5px; cursor:pointer;
+      background:linear-gradient(135deg,#8d7df7,#6556d8); box-shadow:0 7px 20px rgba(112,89,222,.3);
+      font-size:12px; font-weight:650; display:flex; align-items:center; gap:7px; transition:.18s;
+    }
+    .primary-btn:hover { filter:brightness(1.12); transform:translateY(-1px); }
+
+    /* 左侧工具箱 */
+    .toolbox {
+      position:absolute; z-index:40; left:18px; top:50%; transform:translateY(-50%);
+      width:82px; border-radius:22px; padding:10px 8px 12px; display:flex; flex-direction:column; align-items:center;
+    }
+    .toolbox-title { width:100%; text-align:center; padding:5px 0 9px; font-size:9px; letter-spacing:.18em; color:#7f879c; }
+    .component-btn {
+      width:64px; min-height:58px; border:1px solid transparent; background:transparent; color:#8f98ad;
+      border-radius:14px; cursor:grab; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+      transition:.18s ease; margin:1px 0; position:relative;
+    }
+    .component-btn span { font-size:10px; }
+    .component-btn:hover { color:#e7e9f3; background:rgba(255,255,255,.055); }
+    .component-btn.active {
+      color:#fff; background:linear-gradient(135deg,rgba(139,124,255,.26),rgba(85,215,255,.1));
+      border-color:rgba(149,135,255,.3); box-shadow:inset 0 1px rgba(255,255,255,.07),0 8px 20px rgba(0,0,0,.13);
+    }
+    .component-btn.active::before { content:""; position:absolute; left:-9px; width:3px; height:22px; border-radius:0 4px 4px 0; background:#9d8fff; box-shadow:0 0 12px #8473ff; }
+    .component-btn:active { cursor:grabbing; transform:scale(.97); }
+    .toolbox-sep { width:42px; height:1px; margin:7px 0; background:var(--line); }
+
+    /* 属性面板 */
+    .properties {
+      position:absolute; z-index:45; right:18px; top:94px; bottom:94px; width:300px; border-radius:22px;
+      display:flex; flex-direction:column; transition:width .26s cubic-bezier(.2,.8,.2,1), transform .26s;
+    }
+    .properties.collapsed { width:54px; }
+    .properties.collapsed .property-content, .properties.collapsed .panel-heading > div { opacity:0; pointer-events:none; }
+    .properties.collapsed .panel-heading { justify-content:center; padding:12px 8px; }
+    .panel-heading { height:60px; display:flex; align-items:center; justify-content:space-between; padding:12px 12px 12px 17px; border-bottom:1px solid var(--line); flex:none; }
+    .panel-heading strong { display:block; font-size:13px; }
+    .panel-heading span { display:block; font-size:10px; color:var(--muted); margin-top:3px; white-space:nowrap; }
+    .icon-btn { width:34px; height:34px; color:#9da5b9; flex:none; }
+    .properties.collapsed #collapseIcon { transform:rotate(180deg); }
+    .property-content { overflow:auto; padding:15px; transition:opacity .14s; scrollbar-width:none; }
+    .property-content::-webkit-scrollbar { display:none; }
+    .section { padding-bottom:15px; margin-bottom:15px; border-bottom:1px solid var(--line); }
+    .section:last-child { border:0; margin:0; }
+    .section-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-size:10px; letter-spacing:.1em; color:#858da1; text-transform:uppercase; }
+    .section-title button { border:0; background:none; color:#737b90; cursor:pointer; }
+    .field { margin-bottom:11px; }
+    .field:last-child { margin:0; }
+    .label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; color:#b8bfd0; }
+    .label-row output { color:#7f88a0; font-size:10px; }
+    .text-field, .select-field {
+      width:100%; height:35px; border-radius:9px; border:1px solid var(--line); outline:0;
+      color:#e5e8f2; background:rgba(5,8,16,.34); padding:0 10px; font-size:11px;
+      transition:border .18s, box-shadow .18s;
+    }
+    .text-field:focus, .select-field:focus { border-color:rgba(143,127,255,.6); box-shadow:0 0 0 3px rgba(139,124,255,.1); }
+    .select-field { appearance:none; background-image:linear-gradient(45deg,transparent 50%,#7f879b 50%),linear-gradient(135deg,#7f879b 50%,transparent 50%); background-position:calc(100% - 14px) 14px,calc(100% - 10px) 14px; background-size:4px 4px; background-repeat:no-repeat; }
+    .pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .mini-input { position:relative; }
+    .mini-input em { position:absolute; left:9px; top:50%; transform:translateY(-50%); font-style:normal; font-size:9px; color:#737c93; }
+    .mini-input input { padding-left:24px; }
+    input[type="range"] { width:100%; height:3px; appearance:none; border-radius:3px; outline:0; background:linear-gradient(90deg,var(--accent) 0 45%,rgba(255,255,255,.11) 45%); }
+    input[type="range"]::-webkit-slider-thumb { appearance:none; width:13px; height:13px; border-radius:50%; background:#fff; border:3px solid var(--accent); box-shadow:0 2px 7px #0008; cursor:pointer; }
+    .color-row { display:flex; gap:7px; }
+    .color-field { flex:1; height:35px; border:1px solid var(--line); border-radius:9px; display:flex; align-items:center; padding:0 9px; gap:8px; background:rgba(5,8,16,.34); font-size:10px; color:#b6bdce; }
+    .color-swatch { width:16px; height:16px; border-radius:5px; background:#292d3b; border:1px solid rgba(255,255,255,.14); box-shadow:inset 0 0 0 2px rgba(0,0,0,.12); }
+    .align-group { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .align-group button { height:34px; border:0; border-right:1px solid var(--line); background:rgba(5,8,16,.3); color:#7f889d; cursor:pointer; display:grid; place-items:center; }
+    .align-group button:last-child { border:0; }
+    .align-group button.active { background:rgba(139,124,255,.18); color:#c7beff; }
+    .switch-row { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:#b8bfd0; }
+    .switch { width:32px; height:18px; border:0; border-radius:20px; padding:2px; background:#343a4c; cursor:pointer; transition:.2s; }
+    .switch::after { content:""; display:block; width:14px; height:14px; border-radius:50%; background:#aeb5c6; transition:.2s; }
+    .switch.on { background:#7767e5; }
+    .switch.on::after { transform:translateX(14px); background:#fff; }
+
+    /* 中央预览 */
+    .stage-label { position:absolute; top:100px; left:50%; transform:translateX(-50%); font-size:10px; color:#677087; letter-spacing:.12em; display:flex; align-items:center; gap:9px; pointer-events:none; }
+    .stage-label::before, .stage-label::after { content:""; width:34px; height:1px; background:linear-gradient(90deg,transparent,var(--line-strong)); }
+    .stage-label::after { transform:rotate(180deg); }
+    .keyboard-wrap {
+      position:absolute; left:50%; top:53%; z-index:10; width:var(--device-width);
+      transform:translate(calc(-50% + var(--pan-x)),calc(-50% + var(--pan-y))) scale(var(--zoom)); transform-origin:center;
+      transition:transform .24s cubic-bezier(.2,.7,.2,1); cursor:move;
+    }
+    .keyboard-wrap.dragging { transition:none; cursor:grabbing; }
+    .device-bar { height:26px; display:flex; align-items:center; justify-content:center; }
+    .drag-handle { width:56px; height:5px; border-radius:5px; background:rgba(255,255,255,.15); box-shadow:0 1px rgba(255,255,255,.05); }
+    .keyboard-shell {
+      position:relative; min-height:var(--device-height); padding:14px 15px 15px; border-radius:27px;
+      background:linear-gradient(155deg,rgba(42,47,65,.96),rgba(20,24,35,.98));
+      border:1px solid rgba(255,255,255,.12); box-shadow:0 35px 90px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.11), inset 0 -1px 1px #0008;
+    }
+    .keyboard-shell::after { content:""; position:absolute; inset:1px; border-radius:26px; pointer-events:none; background:linear-gradient(130deg,rgba(255,255,255,.045),transparent 27%); }
+    .suggestion-row { height:39px; display:grid; grid-template-columns:42px 1fr 1fr 1fr 42px; gap:7px; padding:0 2px 9px; }
+    .suggestion { display:flex; align-items:center; justify-content:center; font-size:13px; color:#bbc1d0; border-radius:9px; transition:.16s; }
+    .suggestion.word:hover { background:rgba(255,255,255,.04); color:#fff; }
+    .suggestion.word + .word { border-left:1px solid rgba(255,255,255,.06); border-radius:0 9px 9px 0; }
+    .suggestion svg { color:#858da1; }
+    .key-row { display:flex; gap:7px; margin-bottom:7px; }
+    .key-row:last-child { margin-bottom:0; }
+    .key {
+      position:relative; flex:1; height:55px; min-width:0; border:1px solid rgba(255,255,255,.07); border-bottom-color:rgba(0,0,0,.5);
+      border-radius:11px; background:linear-gradient(180deg,#383d4c,#2c303d); color:#f3f4f9;
+      box-shadow:0 4px 0 #20232e,0 5px 7px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.09);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; outline:0;
+      transition:transform .1s, filter .1s, border .15s, box-shadow .15s; overflow:hidden;
+    }
+    .key:hover { filter:brightness(1.13); }
+    .key:active { transform:translateY(3px); box-shadow:0 1px 0 #20232e,0 2px 3px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.08); }
+    .key.selected { border-color:#a797ff; box-shadow:0 4px 0 #393153,0 0 0 2px rgba(151,133,255,.28),0 0 24px rgba(129,106,255,.25),inset 0 1px rgba(255,255,255,.12); background:linear-gradient(180deg,#514b70,#3a3651); }
+    .key .main { font-size:19px; line-height:1; font-weight:460; }
+    .key .sub { position:absolute; right:7px; top:5px; font-size:8px; color:#81899c; }
+    .key .hint { font-size:8px; color:#9299aa; margin-top:3px; }
+    .key.special { flex:1.25; background:linear-gradient(180deg,#323745,#282c37); color:#b7bdcb; }
+    .key.special .main { font-size:12px; }
+    .key.special svg { width:19px; height:19px; }
+    .key.accent { background:linear-gradient(145deg,#8373ed,#6959d0); color:white; box-shadow:0 4px 0 #463a9c,0 5px 8px #0006,inset 0 1px rgba(255,255,255,.2); }
+    .key.space { flex:4.9; }
+    .key.space .main { width:56px; height:4px; border-radius:5px; background:#858d9f; }
+    .key.wide { flex:1.65; }
+    .key.extra-wide { flex:2; }
+    .keyboard-meta { position:absolute; left:18px; top:-21px; display:flex; gap:7px; }
+    .meta-pill { height:24px; padding:0 9px; border:1px solid var(--line); background:rgba(16,20,31,.72); backdrop-filter:blur(10px); border-radius:7px; color:#757e93; display:flex; align-items:center; gap:5px; font-size:9px; }
+    .meta-pill .live { width:5px; height:5px; background:var(--success); border-radius:50%; box-shadow:0 0 7px var(--success); }
+    .selection-tag { position:absolute; right:13px; top:-29px; height:23px; padding:0 8px; display:flex; align-items:center; border-radius:6px 6px 0 0; background:#8170e7; font-size:9px; color:#fff; opacity:0; transform:translateY(4px); transition:.18s; }
+    .keyboard-wrap.has-selection .selection-tag { opacity:1; transform:translateY(0); }
+
+    /* 画布标尺与辅助线 */
+    .guide-v { position:absolute; z-index:3; left:50%; top:82px; bottom:68px; width:1px; background:linear-gradient(transparent,rgba(139,124,255,.2) 15%,rgba(139,124,255,.2) 85%,transparent); pointer-events:none; }
+    .guide-v::before { content:""; position:absolute; top:50%; left:-3px; width:7px; height:7px; border-radius:50%; background:#8b7cff; box-shadow:0 0 13px #8b7cff; }
+    .ruler { position:absolute; z-index:2; left:112px; right:330px; top:84px; height:14px; opacity:.5; pointer-events:none; background:repeating-linear-gradient(90deg,transparent 0 19px,rgba(255,255,255,.15) 19px 20px); mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent); }
+
+    /* 底部状态与缩放 */
+    .statusbar { position:absolute; z-index:40; bottom:18px; left:50%; transform:translateX(-50%); height:42px; border-radius:13px; padding:0 6px 0 13px; display:flex; align-items:center; gap:10px; }
+    .status-text { display:flex; align-items:center; gap:7px; font-size:10px; color:#8d95a9; padding-right:4px; white-space:nowrap; }
+    .status-text .dot { width:6px; height:6px; border-radius:50%; background:var(--success); }
+    .zoom-controls { display:flex; align-items:center; background:rgba(4,7,13,.3); border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .zoom-controls button { width:32px; height:30px; border:0; background:transparent; color:#a4acbf; cursor:pointer; display:grid; place-items:center; }
+    .zoom-controls button:hover { color:#fff; background:rgba(255,255,255,.06); }
+    .zoom-value { width:48px; text-align:center; font-size:10px; color:#d2d6e2; border-left:1px solid var(--line); border-right:1px solid var(--line); }
+    .fit-btn { width:auto !important; padding:0 9px; font-size:9px; border-left:1px solid var(--line)!important; }
+    .coords { position:absolute; z-index:30; bottom:24px; left:125px; font:9px ui-monospace,monospace; color:#566074; }
+    .canvas-tools { position:absolute; z-index:35; left:50%; top:82px; transform:translateX(-50%); display:flex; align-items:center; gap:4px; padding:4px; border-radius:11px; }
+    .canvas-tool { border:0; background:transparent; color:#858da1; height:30px; padding:0 10px; border-radius:8px; font-size:10px; cursor:pointer; }
+    .canvas-tool:hover { color:#fff; background:rgba(255,255,255,.06); }
+    .canvas-tool.active { color:#e9e5ff; background:rgba(139,124,255,.2); }
+    .property-actions { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:11px; }
+    .property-action { height:32px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.035); color:#b8bfd0; cursor:pointer; font-size:10px; }
+    .property-action:hover { color:#fff; background:rgba(139,124,255,.14); border-color:rgba(139,124,255,.38); }
+    .empty-selection { display:none; position:absolute; inset:0; place-items:center; text-align:center; color:#7d879d; font-size:11px; pointer-events:none; }
+    .empty-selection strong { display:block; color:#c4ccdc; font-size:13px; margin-bottom:5px; }
+    .context-bar { position:absolute; z-index:38; left:50%; top:124px; transform:translateX(-50%) translateY(-8px); display:flex; align-items:center; gap:3px; padding:4px; border-radius:11px; opacity:0; pointer-events:none; transition:.18s; }
+    .keyboard-wrap.has-selection ~ .context-bar, .context-bar.visible { opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0); }
+    .context-btn { height:29px; min-width:29px; border:0; background:transparent; color:#8e97aa; border-radius:7px; padding:0 8px; font-size:10px; cursor:pointer; }
+    .context-btn:hover { background:rgba(255,255,255,.07); color:#fff; }
+    .context-btn.danger:hover { background:rgba(255,110,135,.15); color:#ff9baa; }
+    .context-sep { width:1px; height:18px; background:var(--line); margin:0 2px; }
+    .top-select { height:34px; border:1px solid var(--line); border-radius:9px; color:#c2c8d8; background:rgba(5,8,16,.3); padding:0 28px 0 9px; font-size:10px; outline:0; }
+    .preview-states { position:absolute; z-index:34; left:120px; top:94px; width:180px; border-radius:15px; padding:10px; }
+    .info-head { display:flex; justify-content:space-between; align-items:center; font-size:10px; color:#aeb6c8; margin-bottom:8px; }
+    .info-head small { color:#697287; }
+    .state-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+    .state-chip { height:27px; border:1px solid var(--line); border-radius:7px; background:rgba(5,8,16,.28); color:#7f899e; font-size:9px; cursor:pointer; }
+    .state-chip.active { color:#d9d3ff; border-color:rgba(139,124,255,.4); background:rgba(139,124,255,.16); }
+    .layout-stats { position:absolute; z-index:34; left:120px; bottom:76px; width:180px; border-radius:15px; padding:10px; }
+    .stat-row { display:flex; justify-content:space-between; padding:5px 0; font-size:9px; color:#778196; border-bottom:1px solid rgba(255,255,255,.045); }
+    .stat-row:last-child { border:0; }
+    .stat-row b { color:#c7cedc; font-weight:600; }
+    .property-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:3px; padding:8px 9px; border-bottom:1px solid var(--line); }
+    .property-tab { height:28px; border:0; border-radius:7px; background:transparent; color:#757e92; font-size:9px; cursor:pointer; }
+    .property-tab.active { color:#e3ddff; background:rgba(139,124,255,.16); }
+    .property-page { display:none; }
+    .property-page.active { display:block; }
+    .event-card { padding:9px; border:1px solid var(--line); border-radius:9px; background:rgba(5,8,16,.22); margin-bottom:7px; }
+    .event-card header { display:flex; justify-content:space-between; font-size:10px; color:#bac2d2; margin-bottom:7px; }
+    .event-card code { color:#9e91ff; font-size:9px; }
+    .resource-drop { height:70px; border:1px dashed rgba(139,124,255,.34); border-radius:10px; display:grid; place-items:center; text-align:center; color:#858fa3; font-size:9px; background:rgba(139,124,255,.04); cursor:pointer; }
+    .command-palette { position:absolute; z-index:120; left:50%; top:18%; transform:translateX(-50%) scale(.97); width:min(520px,calc(100% - 28px)); border-radius:17px; opacity:0; pointer-events:none; transition:.16s; overflow:hidden; }
+    .command-palette.open { opacity:1; pointer-events:auto; transform:translateX(-50%) scale(1); }
+    .command-search { width:100%; height:48px; border:0; border-bottom:1px solid var(--line); background:transparent; color:#f0f2f8; padding:0 16px; outline:0; font-size:12px; }
+    .command-list { padding:7px; max-height:260px; overflow:auto; }
+    .command-item { width:100%; height:38px; display:flex; align-items:center; gap:10px; border:0; border-radius:8px; background:transparent; color:#aeb6c7; text-align:left; padding:0 10px; cursor:pointer; font-size:10px; }
+    .command-item:hover,.command-item.focused { background:rgba(139,124,255,.14); color:#fff; }
+    .command-item kbd { margin-left:auto; color:#666f82; border:1px solid var(--line); padding:2px 5px; border-radius:5px; font:9px ui-monospace,monospace; }
+    .shortcut-help { position:absolute; z-index:110; right:330px; bottom:76px; width:230px; border-radius:14px; padding:10px; display:none; }
+    .shortcut-help.open { display:block; }
+    .shortcut-row { display:flex; justify-content:space-between; padding:5px; color:#8e97aa; font-size:9px; }
+    .shortcut-row kbd { color:#d7dce7; font:9px ui-monospace,monospace; }
+    .dimension-line { position:absolute; z-index:9; pointer-events:none; color:#68738a; font:9px ui-monospace,monospace; }
+    .dimension-line.horizontal { left:14px; right:14px; top:-9px; height:1px; border-top:1px solid rgba(139,124,255,.32); }
+    .dimension-line.vertical { top:30px; bottom:8px; right:-9px; width:1px; border-right:1px solid rgba(85,215,255,.28); }
+    .dimension-line span { position:absolute; padding:2px 5px; border:1px solid var(--line); border-radius:5px; background:#111522; white-space:nowrap; }
+    .dimension-line.horizontal span { left:50%; top:-10px; transform:translateX(-50%); }
+    .dimension-line.vertical span { top:50%; left:5px; transform:translateY(-50%) rotate(90deg); transform-origin:left center; }
+    .keyboard-wrap.landscape .keyboard-shell { padding:10px 13px 11px; }
+    .keyboard-wrap.landscape .key { height:42px; }
+    .keyboard-wrap.landscape .key-row { margin-bottom:5px; gap:6px; }
+    .keyboard-wrap.landscape .suggestion-row { height:32px; padding-bottom:6px; }
+    .keyboard-wrap.compact .key { height:48px; }
+    .key.overflow-warning { outline:2px solid var(--danger); outline-offset:-2px; }
+    .overflow-badge { position:absolute; cursor:pointer; z-index:20; right:12px; bottom:-26px; display:none; align-items:center; gap:5px; height:23px; padding:0 8px; border:1px solid rgba(255,110,135,.35); border-radius:7px; color:#ff9cab; background:rgba(45,21,29,.9); font-size:9px; }
+    .overflow-badge.show { display:flex; }
+    .density-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; margin-bottom:8px; }
+    .density-tab { height:25px; border:0; border-radius:6px; background:transparent; color:#707a90; font-size:9px; cursor:pointer; }
+    .density-tab.active { color:#ded8ff; background:rgba(139,124,255,.15); }
+    .density-page { display:none; }
+    .density-page.active { display:block; }
+    .layer-row,.history-row { display:flex; align-items:center; gap:6px; min-height:26px; padding:0 5px; border-radius:6px; color:#8d97aa; font-size:9px; cursor:pointer; }
+    .layer-row:hover,.layer-row.active { background:rgba(255,255,255,.05); color:#e2e6ee; }
+    .layer-row .eye { margin-left:auto; color:#626c80; }
+    .history-row time { margin-left:auto; color:#5f687b; }
+    .history-row.current { color:var(--success); }
+    .stepper { display:grid; grid-template-columns:27px 1fr 27px; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .stepper button { border:0; background:rgba(255,255,255,.03); color:#8490a5; cursor:pointer; }
+    .stepper input { width:100%; height:33px; border:0; border-left:1px solid var(--line); border-right:1px solid var(--line); background:rgba(5,8,16,.3); color:#e7eaf2; text-align:center; outline:0; font-size:10px; }
+    .resource-item { display:grid; grid-template-columns:34px 1fr auto; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .resource-thumb { width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,#343a49,#202532); border:1px solid var(--line); display:grid; place-items:center; color:#8993a8; font-size:10px; }
+    .resource-copy b { display:block; color:#c9cfdb; font-size:9px; font-weight:600; }
+    .resource-copy span { color:#667085; font-size:8px; }
+    .resource-size { color:#697387; font-size:8px; }
+    .dirty .project-name .dot { background:var(--warn,#ffcf70); box-shadow:0 0 10px #ffcf70; }
+
+    .toast {
+      position:absolute; z-index:100; left:50%; bottom:76px; transform:translate(-50%,12px); opacity:0; pointer-events:none;
+      background:rgba(27,33,49,.92); border:1px solid var(--line-strong); box-shadow:0 12px 35px #0007;
+      color:#dfe3ee; padding:9px 13px; border-radius:10px; font-size:11px; transition:.22s;
+    }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    .drop-hint { position:absolute; z-index:6; inset:105px 330px 80px 112px; border:1px dashed transparent; border-radius:30px; pointer-events:none; transition:.2s; }
+    .canvas.drag-over .drop-hint { border-color:rgba(139,124,255,.48); background:rgba(139,124,255,.045); box-shadow:inset 0 0 50px rgba(139,124,255,.035); }
+    .canvas.drag-over .drop-hint::after { content:"释放以添加组件"; position:absolute; left:50%; top:32px; transform:translateX(-50%); color:#aa9fff; background:#171928; border:1px solid rgba(139,124,255,.3); border-radius:8px; padding:7px 11px; font-size:10px; }
+
+    @media (max-width: 1180px) {
+      .topbar { left:112px; right:18px; transform:none; width:auto; min-width:0; }
+      .properties { right:14px; width:270px; }
+      .ruler { right:295px; }
+      .top-select { max-width:110px; }
+      .preview-states,.layout-stats { left:104px; width:165px; }
+    }
+    @media (max-width: 900px) {
+      .topbar { left:12px; right:12px; top:12px; }
+      .brand-copy, .project-name, .top-select, .toolbar-divider:first-of-type { display:none; }
+      .brand { min-width:auto; }
+      .toolbox { left:12px; top:auto; bottom:78px; transform:none; width:auto; height:58px; flex-direction:row; padding:6px 8px; overflow-x:auto; max-width:calc(100% - 24px); }
+      .toolbox-title, .toolbox-sep { display:none; }
+      .component-btn { min-width:57px; width:57px; min-height:52px; }
+      .component-btn.active::before { left:50%; top:-7px; width:22px; height:3px; transform:translateX(-50%); border-radius:0 0 4px 4px; }
+      .properties { top:82px; bottom:145px; right:12px; transform:translateX(calc(100% + 20px)); width:280px; }
+      .properties.mobile-open { transform:translateX(0); }
+      .properties.collapsed { width:280px; transform:translateX(calc(100% + 20px)); }
+      .mobile-props { display:grid!important; }
+      .stage-label { top:88px; }
+      .ruler,.coords { display:none; }
+      .drop-hint { inset:90px 15px 140px; }
+      .statusbar { bottom:12px; }
+      .preview-states,.layout-stats,.context-bar { display:none; }
+      .shortcut-help { right:12px; bottom:62px; }
+    }
+    @media (max-width: 620px) {
+      .topbar { height:52px; padding:0 7px; }
+      .tool-btn { width:32px; height:32px; }
+      .toolbar-actions .hide-mobile { display:none; }
+      .primary-btn { padding:0 10px; }
+      .primary-btn span { display:none; }
+      .keyboard-wrap { top:46%; }
+      .key { height:52px; }
+      .suggestion-row { height:36px; }
+      .status-text { display:none; }
+      .statusbar { height:40px; }
+      .stage-label { display:none; }
+    }
+    .mobile-props { display:none; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <main class="canvas" id="canvas" aria-label="主题设计画布">
+    <div class="ruler"></div><div class="guide-v"></div><div class="drop-hint"></div>
+    <div class="stage-label">主键盘 · 竖屏布局</div>
+    <div class="canvas-tools glass" aria-label="画布工具">
+      <button class="canvas-tool active" data-mode="select">选择</button>
+      <button class="canvas-tool" data-mode="pan">移动画布</button>
+      <button class="canvas-tool active" data-mode="grid">网格</button>
+      <button class="canvas-tool" data-mode="preview">播放预览</button>
+    </div>
+
+    <section class="keyboard-wrap" id="keyboardWrap" aria-label="键盘预览">
+      <div class="keyboard-meta"><div class="meta-pill"><span class="live"></span>实时预览</div><div class="meta-pill" id="deviceMeta">1080 × 438 · 竖屏</div><div class="meta-pill" id="densityMeta">3.0× 密度</div></div>
+      <div class="dimension-line horizontal"><span id="widthMeasure">1080 px</span></div><div class="dimension-line vertical"><span id="heightMeasure">438 px</span></div>
+      <div class="selection-tag" id="selectionTag">按键 / Q</div>
+      <div class="device-bar"><div class="drag-handle"></div></div>
+      <div class="keyboard-shell">
+        <div class="suggestion-row">
+          <div class="suggestion"><svg class="icon"><path d="M4 12h16M12 4v16"/></svg></div>
+          <div class="suggestion word">你好</div><div class="suggestion word">今天</div><div class="suggestion word">输入法</div>
+          <div class="suggestion"><svg class="icon"><circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M9.5 15c1.5 1 3.5 1 5 0"/></svg></div>
+        </div>
+        <div class="key-row">
+          <button class="key" data-code="Q"><span class="sub">1</span><span class="main">Q</span><span class="hint">手</span></button>
+          <button class="key" data-code="W"><span class="sub">2</span><span class="main">W</span><span class="hint">田</span></button>
+          <button class="key" data-code="E"><span class="sub">3</span><span class="main">E</span><span class="hint">水</span></button>
+          <button class="key" data-code="R"><span class="sub">4</span><span class="main">R</span><span class="hint">口</span></button>
+          <button class="key" data-code="T"><span class="sub">5</span><span class="main">T</span><span class="hint">廿</span></button>
+          <button class="key" data-code="Y"><span class="sub">6</span><span class="main">Y</span><span class="hint">卜</span></button>
+          <button class="key" data-code="U"><span class="sub">7</span><span class="main">U</span><span class="hint">山</span></button>
+          <button class="key" data-code="I"><span class="sub">8</span><span class="main">I</span><span class="hint">戈</span></button>
+          <button class="key" data-code="O"><span class="sub">9</span><span class="main">O</span><span class="hint">人</span></button>
+          <button class="key" data-code="P"><span class="sub">0</span><span class="main">P</span><span class="hint">心</span></button>
+        </div>
+        <div class="key-row" style="padding:0 24px">
+          <button class="key" data-code="A"><span class="main">A</span><span class="hint">日</span></button>
+          <button class="key" data-code="S"><span class="main">S</span><span class="hint">尸</span></button>
+          <button class="key" data-code="D"><span class="main">D</span><span class="hint">木</span></button>
+          <button class="key" data-code="F"><span class="main">F</span><span class="hint">火</span></button>
+          <button class="key" data-code="G"><span class="main">G</span><span class="hint">土</span></button>
+          <button class="key" data-code="H"><span class="main">H</span><span class="hint">竹</span></button>
+          <button class="key" data-code="J"><span class="main">J</span><span class="hint">十</span></button>
+          <button class="key" data-code="K"><span class="main">K</span><span class="hint">大</span></button>
+          <button class="key" data-code="L"><span class="main">L</span><span class="hint">中</span></button>
+        </div>
+        <div class="key-row">
+          <button class="key special wide" data-code="SHIFT"><svg class="icon"><path d="m5 11 7-7 7 7h-4v8H9v-8z"/></svg></button>
+          <button class="key" data-code="Z"><span class="main">Z</span><span class="hint">重</span></button>
+          <button class="key" data-code="X"><span class="main">X</span><span class="hint">难</span></button>
+          <button class="key" data-code="C"><span class="main">C</span><span class="hint">金</span></button>
+          <button class="key" data-code="V"><span class="main">V</span><span class="hint">女</span></button>
+          <button class="key" data-code="B"><span class="main">B</span><span class="hint">月</span></button>
+          <button class="key" data-code="N"><span class="main">N</span><span class="hint">弓</span></button>
+          <button class="key" data-code="M"><span class="main">M</span><span class="hint">一</span></button>
+          <button class="key special wide" data-code="BACKSPACE"><svg class="icon"><path d="m9 7-5 5 5 5h10a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM13 10l4 4m0-4-4 4"/></svg></button>
+        </div>
+        <div class="key-row">
+          <button class="key special" data-code="SYMBOL"><span class="main">符</span></button>
+          <button class="key special" data-code="LANG"><span class="main">中 / En</span></button>
+          <button class="key special" data-code="COMMA"><span class="main">,</span></button>
+          <button class="key space" data-code="SPACE"><span class="main"></span><span class="hint">Trime2</span></button>
+          <button class="key special" data-code="PERIOD"><span class="main">。</span></button>
+          <button class="key special" data-code="VOICE"><svg class="icon"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button>
+          <button class="key accent extra-wide" data-code="ENTER"><span class="main">回车</span></button>
+        </div>
+      </div>
+      <div class="overflow-badge" id="overflowBadge">△ <span id="overflowText">0 个按键溢出</span></div>
+    </section>
+    <div class="context-bar glass" id="contextBar" aria-label="选中对象快捷操作">
+      <button class="context-btn" data-action="duplicate">复制</button><button class="context-btn" data-action="move-left">←</button><button class="context-btn" data-action="move-right">→</button><div class="context-sep"></div><button class="context-btn" data-action="style">应用样式</button><button class="context-btn danger" data-action="delete">删除</button>
+    </div>
+    <aside class="preview-states glass"><div class="info-head"><span>预览状态</span><small>STATE</small></div><div class="state-grid"><button class="state-chip active" data-state="中文">中文</button><button class="state-chip" data-state="ASCII">ASCII</button><button class="state-chip" data-state="组字中">组字中</button><button class="state-chip" data-state="翻页">翻页</button><button class="state-chip" data-state="长按">长按</button><button class="state-chip" data-state="按下态">按下态</button></div></aside>
+    <aside class="layout-stats glass"><div class="info-head"><span>结构信息</span><small id="structureMode">ROWS</small></div><div class="density-tabs"><button class="density-tab active" data-density-page="stats">统计</button><button class="density-tab" data-density-page="layers">图层</button><button class="density-tab" data-density-page="history">历史</button></div><div class="density-page active" data-density-content="stats"><div class="stat-row"><span>布局模式</span><b>rows</b></div><div class="stat-row"><span>按键数量</span><b id="keyCount">33</b></div><div class="stat-row"><span>键盘高度</span><b id="keyboardHeightStat">240 sp</b></div><div class="stat-row"><span>资源引用</span><b>17</b></div><div class="stat-row"><span>溢出检查</span><b id="overflowStat" style="color:var(--success)">通过</b></div></div><div class="density-page" data-density-content="layers"><div class="layer-row" data-layer="candidate">▤ 候选栏 <span class="eye">◉</span></div><div class="layer-row active" data-layer="keyboard">▦ 主键盘 <span class="eye">◉</span></div><div class="layer-row" data-layer="row1">↳ 第一行 <span class="eye">◉</span></div><div class="layer-row" data-layer="row2">↳ 第二行 <span class="eye">◉</span></div><div class="layer-row" data-layer="row3">↳ 第三行 <span class="eye">◉</span></div><div class="layer-row" data-layer="row4">↳ 功能行 <span class="eye">◉</span></div></div><div class="density-page" data-density-content="history"><div id="historyList"><div class="history-row current"><span>当前状态</span><time>现在</time></div><div class="history-row"><span>调整圆角</span><time>10:42</time></div><div class="history-row"><span>选择按键 Q</span><time>10:41</time></div><div class="history-row"><span>打开主题</span><time>10:40</time></div></div></div></aside>
+    <div class="coords" id="coords">X 0 · Y 0</div>
+  </main>
+
+  <header class="topbar glass">
+    <div class="brand"><div class="brand-mark">T2</div><div class="brand-copy"><strong>Trime2 Studio</strong><span>主题画布编辑器</span></div></div>
+    <div class="toolbar-divider"></div>
+    <div class="project-name"><span class="dot"></span>暮光键盘 · 未发布</div>
+    <select class="top-select hide-mobile" id="keyboardSelect" aria-label="当前键盘"><option>qwerty26</option><option>number</option><option>symbols</option><option>editor</option></select>
+    <select class="top-select hide-mobile" id="deviceSelect" aria-label="预览设备"><option value="portrait">竖屏 · 1080×2400</option><option value="landscape">横屏 · 2400×1080</option><option value="compact">小屏 · 720×1600</option><option value="tablet">平板 · 1600×2560</option></select>
+    <div class="toolbar-actions">
+      <button class="tool-btn hide-mobile" data-tip="撤销" id="undoBtn"><svg class="icon"><path d="m9 7-5 5 5 5"/><path d="M20 17a8 8 0 0 0-8-8H4"/></svg></button>
+      <button class="tool-btn hide-mobile" data-tip="重做" id="redoBtn"><svg class="icon"><path d="m15 7 5 5-5 5"/><path d="M4 17a8 8 0 0 1 8-8h8"/></svg></button>
+      <div class="toolbar-divider hide-mobile"></div>
+      <button class="tool-btn" data-tip="命令面板 Ctrl+K" id="commandBtn"><svg class="icon"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+      <button class="tool-btn" data-tip="预览"><svg class="icon"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button>
+      <button class="tool-btn mobile-props" data-tip="属性" id="mobileProps"><svg class="icon"><path d="M4 6h16M7 12h10M9 18h6"/></svg></button>
+      <button class="primary-btn" id="saveBtn"><svg class="icon" style="width:15px"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg><span>保存主题</span></button>
+    </div>
+  </header>
+
+  <aside class="toolbox glass" aria-label="组件工具箱">
+    <div class="toolbox-title">组件</div>
+    <button class="component-btn active" draggable="true" data-component="选择工具"><svg class="icon"><path d="m5 3 14 9-6 2-3 6z"/></svg><span>选择</span></button>
+    <button class="component-btn" draggable="true" data-component="按键"><svg class="icon"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M8 10h8M8 14h5"/></svg><span>按键</span></button>
+    <button class="component-btn" draggable="true" data-component="文本"><svg class="icon"><path d="M5 5h14M12 5v14M8 19h8"/></svg><span>文本</span></button>
+    <button class="component-btn" draggable="true" data-component="图标"><svg class="icon"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5 11 12l2 2 2.5-3 2.5 3.5M9 9h.01"/></svg><span>图标</span></button>
+    <div class="toolbox-sep"></div>
+    <button class="component-btn" draggable="true" data-component="候选栏"><svg class="icon"><path d="M3 6h18v12H3zM8 6v12M16 6v12"/></svg><span>候选栏</span></button>
+    <button class="component-btn" draggable="true" data-component="键盘行"><svg class="icon"><path d="M3 8h18v8H3zM7 8v8M12 8v8M17 8v8"/></svg><span>键盘行</span></button>
+    <button class="component-btn" draggable="true" data-component="背景"><svg class="icon"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg><span>背景</span></button>
+  </aside>
+
+  <aside class="properties glass" id="properties">
+    <div class="panel-heading"><div><strong id="panelTitle">按键属性</strong><span id="panelSubtitle">尚未选择具体按键</span></div><button class="icon-btn" id="collapseBtn" aria-label="折叠属性面板"><svg class="icon" id="collapseIcon"><path d="m15 18-6-6 6-6"/></svg></button></div>
+    <div class="property-tabs"><button class="property-tab active" data-page="basic">基础</button><button class="property-tab" data-page="event">事件</button><button class="property-tab" data-page="state">状态</button><button class="property-tab" data-page="resource">资源</button></div>
+    <div class="property-content">
+      <div class="property-page active" data-property-page="basic">
+      <section class="section">
+        <div class="section-title"><span>基本信息</span><button>重置</button></div>
+        <div class="field"><div class="label-row"><label for="keyLabel">显示内容</label></div><input class="text-field" id="keyLabel" value="Q" /></div>
+        <div class="field"><div class="label-row"><label>按键行为</label></div><select class="select-field"><option>输入字符</option><option>执行命令</option><option>切换键盘</option></select></div>
+        <div class="property-actions"><button class="property-action" id="duplicateKey">复制按键</button><button class="property-action" id="deleteKey">删除按键</button></div>
+      </section>
+      <section class="section">
+        <div class="section-title"><span>位置与尺寸</span><button>⌁</button></div>
+        <div class="pair field"><div class="mini-input"><em>X</em><input class="text-field" id="keyX" value="24" /></div><div class="mini-input"><em>Y</em><input class="text-field" id="keyY" value="82" /></div></div>
+        <div class="pair"><div><div class="label-row"><label>宽度 %</label></div><div class="stepper"><button data-step="keyWidth" data-delta="-1">−</button><input id="keyWidth" value="10"><button data-step="keyWidth" data-delta="1">+</button></div></div><div><div class="label-row"><label>高度 px</label></div><div class="stepper"><button data-step="keyHeight" data-delta="-1">−</button><input id="keyHeight" value="55"><button data-step="keyHeight" data-delta="1">+</button></div></div></div>
+      </section>
+      <section class="section">
+        <div class="section-title"><span>外观</span><button>⌁</button></div>
+        <div class="field"><div class="label-row"><label>背景颜色</label></div><div class="color-row"><div class="color-field"><span class="color-swatch"></span>#383D4C</div><div class="color-field" style="flex:.55"><span class="color-swatch" style="background:#f3f4f9"></span>文字</div></div></div>
+        <div class="field"><div class="label-row"><label for="radius">圆角</label><output id="radiusOut">11 px</output></div><input type="range" id="radius" min="2" max="26" value="11" /></div>
+        <div class="field"><div class="label-row"><label for="opacity">透明度</label><output id="opacityOut">100%</output></div><input type="range" id="opacity" min="30" max="100" value="100" /></div>
+        <div class="switch-row"><span>按键阴影</span><button class="switch on" aria-label="切换按键阴影"></button></div>
+      </section>
+      <section class="section">
+        <div class="section-title"><span>文字排版</span><button>⌁</button></div>
+        <div class="pair field"><select class="select-field"><option>系统字体</option><option>等宽字体</option></select><div class="mini-input"><em>字号</em><input class="text-field" value="19" style="padding-left:36px" /></div></div>
+        <div class="align-group"><button class="active">≡</button><button>≣</button><button>≡</button><button>↕</button></div>
+      </section>
+      </div>
+      <div class="property-page" data-property-page="event"><div class="event-card"><header><span>点击</span><code>click</code></header><input class="text-field" value="q"></div><div class="event-card"><header><span>长按</span><code>long_click</code></header><input class="text-field" value="Q"></div><div class="event-card"><header><span>上滑</span><code>swipe_up</code></header><input class="text-field" value="Up"></div><div class="event-card"><header><span>下滑</span><code>swipe_down</code></header><input class="text-field" placeholder="未设置"></div><button class="property-action" style="width:100%">+ 添加事件</button></div>
+      <div class="property-page" data-property-page="state"><section class="section"><div class="section-title"><span>状态替代</span><button>清除</button></div><div class="field"><div class="label-row"><label>ASCII</label><output>ascii</output></div><input class="text-field" value="q"></div><div class="field"><div class="label-row"><label>组字中</label><output>composing</output></div><input class="text-field" placeholder="继承 click"></div><div class="field"><div class="label-row"><label>翻页</label><output>paging</output></div><input class="text-field" placeholder="继承 click"></div><div class="switch-row"><span>send_bindings</span><button class="switch"></button></div></section></div>
+      <div class="property-page" data-property-page="resource"><section class="section"><div class="section-title"><span>按键图片</span><button>清除</button></div><div class="resource-drop" id="resourceDrop">点击或拖入 PNG<br><span>label 同名图片自动染色</span></div></section><section class="section"><div class="section-title"><span>资源引用</span><button>定位</button></div><div class="resource-item"><div class="resource-thumb">PNG</div><div class="resource-copy"><b>key_dark.png</b><span>背景 · images/</span></div><span class="resource-size">18 KB</span></div><div class="resource-item"><div class="resource-thumb">Aa</div><div class="resource-copy"><b>MiSans.ttf</b><span>字体 · fonts/</span></div><span class="resource-size">4.2 MB</span></div><div class="resource-item"><div class="resource-thumb">♪</div><div class="resource-copy"><b>tap.ogg</b><span>按键音 · sounds/</span></div><span class="resource-size">6 KB</span></div></section></div>
+    </div>
+  </aside>
+
+  <div class="statusbar glass">
+    <div class="status-text"><span class="dot"></span>所有更改已保存</div><div class="status-text hide-mobile">rows · 4 行 · <span id="statusKeyCount">33 键</span></div><div class="status-text hide-mobile">0 错误 · 2 警告</div><button class="context-btn" id="shortcutBtn">快捷键 ?</button>
+    <div class="zoom-controls"><button id="zoomOut" aria-label="缩小">−</button><span class="zoom-value" id="zoomValue">100%</span><button id="zoomIn" aria-label="放大">+</button><button class="fit-btn" id="zoomFit">适应</button></div>
+  </div>
+  <div class="shortcut-help glass" id="shortcutHelp"><div class="info-head"><span>键盘快捷键</span><small>?</small></div><div class="shortcut-row"><span>保存主题</span><kbd>Ctrl S</kbd></div><div class="shortcut-row"><span>撤销 / 重做</span><kbd>Ctrl Z / Y</kbd></div><div class="shortcut-row"><span>命令面板</span><kbd>Ctrl K</kbd></div><div class="shortcut-row"><span>复制按键</span><kbd>Ctrl D</kbd></div><div class="shortcut-row"><span>删除按键</span><kbd>Delete</kbd></div><div class="shortcut-row"><span>适应画布</span><kbd>F</kbd></div><div class="shortcut-row"><span>关闭面板</span><kbd>Esc</kbd></div></div>
+  <div class="command-palette glass" id="commandPalette"><input class="command-search" id="commandSearch" placeholder="输入命令,例如:添加按键、切换键盘、导出..."><div class="command-list"><button class="command-item" data-command="添加按键">增加一个按键<kbd>A</kbd></button><button class="command-item" data-command="复制按键">复制当前按键<kbd>Ctrl D</kbd></button><button class="command-item" data-command="选择背景图片">选择键盘背景图片</button><button class="command-item" data-command="切换到数字键盘">切换到 number 键盘</button><button class="command-item" data-command="运行兼容性检查">运行兼容性检查</button><button class="command-item" data-command="导出主题">导出主题 ZIP<kbd>Ctrl E</kbd></button></div></div>
+  <div class="toast" id="toast">已保存</div>
+</div>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const canvas = document.getElementById('canvas');
+  const keyboard = document.getElementById('keyboardWrap');
+  const properties = document.getElementById('properties');
+  const panelTitle = document.getElementById('panelTitle');
+  const panelSubtitle = document.getElementById('panelSubtitle');
+  const selectionTag = document.getElementById('selectionTag');
+  const keyLabel = document.getElementById('keyLabel');
+  const zoomValue = document.getElementById('zoomValue');
+  const coords = document.getElementById('coords');
+  const toast = document.getElementById('toast');
+  const commandPalette = document.getElementById('commandPalette');
+  const commandSearch = document.getElementById('commandSearch');
+  const shortcutHelp = document.getElementById('shortcutHelp');
+  const keyCount = document.getElementById('keyCount');
+  const statusKeyCount = document.getElementById('statusKeyCount');
+  const deviceSelect = document.getElementById('deviceSelect');
+  const deviceMeta = document.getElementById('deviceMeta');
+  const densityMeta = document.getElementById('densityMeta');
+  const widthMeasure = document.getElementById('widthMeasure');
+  const heightMeasure = document.getElementById('heightMeasure');
+  const overflowBadge = document.getElementById('overflowBadge');
+  const overflowText = document.getElementById('overflowText');
+  const overflowStat = document.getElementById('overflowStat');
+  const historyList = document.getElementById('historyList');
+  const deviceProfiles = {
+    portrait: { label:'竖屏', width:1080, height:438, cssWidth:928, cssHeight:336, density:'3.0×', className:'' },
+    landscape: { label:'横屏', width:2400, height:360, cssWidth:1120, cssHeight:250, density:'3.0×', className:'landscape' },
+    compact: { label:'小屏', width:720, height:390, cssWidth:700, cssHeight:318, density:'2.0×', className:'compact' },
+    tablet: { label:'平板', width:1600, height:480, cssWidth:1020, cssHeight:350, density:'2.5×', className:'' }
+  };
+  let currentDevice = deviceProfiles.portrait;
+  let zoom = 1;
+  let selectedKey = null;
+  let toastTimer;
+  let historySequence = 0;
+  const undoStack = [];
+  const redoStack = [];
+  let rangeSnapshotTaken = false;
+
+  function notify(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+  function snapshotKeyboard() {
+    return keyboard.querySelector('.keyboard-shell').innerHTML;
+  }
+  function pushUndo() {
+    undoStack.push(snapshotKeyboard());
+    if (undoStack.length > 30) undoStack.shift();
+    redoStack.length = 0;
+  }
+  function restoreKeyboard(html) {
+    keyboard.querySelector('.keyboard-shell').innerHTML = html;
+    selectedKey = null;
+    keyboard.classList.remove('has-selection');
+    panelSubtitle.textContent = '尚未选择具体按键';
+    updateStats();
+  }
+  function undo() {
+    if (!undoStack.length) return notify('没有可撤销的操作');
+    redoStack.push(snapshotKeyboard());
+    restoreKeyboard(undoStack.pop());
+    markDirty('撤销操作'); notify('已撤销上一步操作');
+  }
+  function redo() {
+    if (!redoStack.length) return notify('没有可重做的操作');
+    undoStack.push(snapshotKeyboard());
+    restoreKeyboard(redoStack.pop());
+    markDirty('重做操作'); notify('已重做操作');
+  }
+  function markDirty(action) {
+    document.querySelector('.app').classList.add('dirty');
+    document.querySelector('.status-text').innerHTML = '<span class="dot"></span>有未保存更改';
+    if (!action) return;
+    historySequence += 1;
+    const row = document.createElement('div');
+    row.className = 'history-row current';
+    row.innerHTML = `<span>${action}</span><time>#${historySequence}</time>`;
+    historyList.querySelectorAll('.history-row').forEach(item => item.classList.remove('current'));
+    historyList.prepend(row);
+    while (historyList.children.length > 7) historyList.lastElementChild.remove();
+  }
+  function updateStats() {
+    const count = keyboard.querySelectorAll('.key').length;
+    keyCount.textContent = count;
+    statusKeyCount.textContent = `${count} 键`;
+    requestAnimationFrame(checkOverflow);
+  }
+  function checkOverflow() {
+    const warnings = [];
+    keyboard.querySelectorAll('.key').forEach(key => {
+      key.classList.remove('overflow-warning');
+      if (key.offsetParent === null) return;
+      const main = key.querySelector('.main');
+      const tooNarrow = main && main.textContent.trim() && main.scrollWidth > key.clientWidth - 8;
+      if (tooNarrow || key.clientWidth < 28) {
+        key.classList.add('overflow-warning'); warnings.push(key.dataset.code);
+      }
+    });
+    overflowBadge.classList.toggle('show', warnings.length > 0);
+    overflowText.textContent = `${warnings.length} 个按键溢出`;
+    overflowStat.textContent = warnings.length ? `${warnings.length} 项` : '通过';
+    overflowStat.style.color = warnings.length ? 'var(--danger)' : 'var(--success)';
+  }
+  function fitDevice() {
+    const sideSpace = innerWidth > 900 ? 450 : 24;
+    const verticalSpace = innerWidth > 900 ? 210 : 220;
+    const availableWidth = Math.max(280, innerWidth - sideSpace);
+    const availableHeight = Math.max(220, innerHeight - verticalSpace);
+    setZoom(Math.min(1, availableWidth / currentDevice.cssWidth, availableHeight / (currentDevice.cssHeight + 35)));
+    root.style.setProperty('--pan-x', '0px'); root.style.setProperty('--pan-y', '0px');
+    coords.textContent = 'X 0 · Y 0';
+  }
+  function applyDevice(profileName, announce = true) {
+    currentDevice = deviceProfiles[profileName] || deviceProfiles.portrait;
+    root.style.setProperty('--device-width', `${currentDevice.cssWidth}px`);
+    root.style.setProperty('--device-height', `${currentDevice.cssHeight}px`);
+    keyboard.classList.remove('landscape','compact');
+    if (currentDevice.className) keyboard.classList.add(currentDevice.className);
+    deviceMeta.textContent = `${currentDevice.width} × ${currentDevice.height} · ${currentDevice.label}`;
+    densityMeta.textContent = `${currentDevice.density} 密度`;
+    widthMeasure.textContent = `${currentDevice.width} px`;
+    heightMeasure.textContent = `${currentDevice.height} px`;
+    document.querySelector('.stage-label').textContent = `主键盘 · ${currentDevice.label}布局`;
+    document.getElementById('keyboardHeightStat').textContent = `${currentDevice.height} px`;
+    fitDevice();
+    requestAnimationFrame(checkOverflow);
+    if (announce) notify(`已切换为${currentDevice.label}预览 · ${currentDevice.width}×${currentDevice.height}`);
+  }
+  function openCommands() {
+    commandPalette.classList.add('open');
+    commandSearch.value = '';
+    document.querySelectorAll('.command-item').forEach(item => item.hidden = false);
+    setTimeout(() => commandSearch.focus(), 30);
+  }
+  function closeOverlays() {
+    commandPalette.classList.remove('open');
+    shortcutHelp.classList.remove('open');
+    properties.classList.remove('mobile-open');
+  }
+
+  // 按键选择及属性同步
+  function selectKey(key) {
+    document.querySelectorAll('.key.selected').forEach(k => k.classList.remove('selected'));
+    key.classList.add('selected');
+    selectedKey = key;
+    const code = key.dataset.code;
+    const main = key.querySelector('.main');
+    const content = main?.textContent.trim() || code;
+    keyboard.classList.add('has-selection');
+    selectionTag.textContent = `按键 / ${code}`;
+    panelTitle.textContent = '按键属性';
+    panelSubtitle.textContent = `${code} · 主键盘布局`;
+    keyLabel.value = content;
+    document.getElementById('keyWidth').value = Math.round((key.getBoundingClientRect().width / key.parentElement.getBoundingClientRect().width) * 100);
+    document.getElementById('keyHeight').value = Math.round(key.getBoundingClientRect().height / zoom);
+    if (window.innerWidth <= 900) properties.classList.add('mobile-open');
+  }
+  keyboard.addEventListener('click', event => {
+    const key = event.target.closest('.key');
+    if (!key) return;
+    event.stopPropagation();
+    selectKey(key);
+  });
+  keyLabel.addEventListener('focus', pushUndo, { once:false });
+  keyLabel.addEventListener('input', () => {
+    if (!selectedKey) return;
+    const main = selectedKey.querySelector('.main');
+    if (main && !['SPACE','SHIFT','BACKSPACE','VOICE'].includes(selectedKey.dataset.code)) main.textContent = keyLabel.value;
+    document.querySelector('.status-text').innerHTML = '<span class="dot"></span>有未保存更改';
+    document.querySelector('.app').classList.add('dirty');
+    checkOverflow();
+  });
+  keyLabel.addEventListener('change', () => { if (selectedKey) markDirty(`修改 ${selectedKey.dataset.code} 标签`); });
+
+  canvas.addEventListener('click', event => {
+    if (event.target === canvas || event.target.classList.contains('drop-hint')) {
+      document.querySelectorAll('.key.selected').forEach(k => k.classList.remove('selected'));
+      selectedKey = null;
+      keyboard.classList.remove('has-selection');
+      panelSubtitle.textContent = '尚未选择具体按键';
+    }
+  });
+
+  // 工具箱激活、拖放
+  document.querySelectorAll('.component-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.component-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (btn.dataset.component === '按键') {
+        pushUndo();
+        const row = keyboard.querySelector('.key-row:last-child');
+        const added = document.createElement('button');
+        added.className = 'key';
+        added.dataset.code = 'NEW';
+        added.innerHTML = '<span class="main">新</span><span class="hint">按键</span>';
+        row.insertBefore(added, row.querySelector('[data-code="ENTER"]'));
+        selectKey(added); updateStats(); markDirty('增加按键');
+        notify('已添加新按键');
+        return;
+      }
+      notify(`已切换:${btn.dataset.component}`);
+    });
+    btn.addEventListener('dragstart', event => {
+      event.dataTransfer.setData('text/plain', btn.dataset.component);
+      event.dataTransfer.effectAllowed = 'copy';
+    });
+  });
+  canvas.addEventListener('dragover', event => { event.preventDefault(); canvas.classList.add('drag-over'); });
+  canvas.addEventListener('dragleave', event => { if (!canvas.contains(event.relatedTarget)) canvas.classList.remove('drag-over'); });
+  canvas.addEventListener('drop', event => {
+    event.preventDefault(); canvas.classList.remove('drag-over');
+    const type = event.dataTransfer.getData('text/plain');
+    if (type) notify(`${type}组件已放入画布`);
+  });
+
+  // 键盘整体拖拽:使用 pan 变量保持中心定位,缩放后仍然稳定
+  let drag = null;
+  keyboard.addEventListener('pointerdown', event => {
+    if (event.target.closest('.key') || document.querySelector('.canvas-tool.active')?.dataset.mode !== 'pan') return;
+    drag = { x: event.clientX, y: event.clientY, panX: parseFloat(getComputedStyle(root).getPropertyValue('--pan-x')) || 0, panY: parseFloat(getComputedStyle(root).getPropertyValue('--pan-y')) || 0 };
+    keyboard.classList.add('dragging');
+    keyboard.setPointerCapture(event.pointerId);
+  });
+  keyboard.addEventListener('pointermove', event => {
+    if (!drag) return;
+    const x = drag.panX + event.clientX - drag.x;
+    const y = drag.panY + event.clientY - drag.y;
+    root.style.setProperty('--pan-x', `${Math.round(x)}px`);
+    root.style.setProperty('--pan-y', `${Math.round(y)}px`);
+    coords.textContent = `X ${Math.round(x)} · Y ${Math.round(y)}`;
+  });
+  function endDrag(event) {
+    if (!drag) return;
+    drag = null; keyboard.classList.remove('dragging');
+    try { keyboard.releasePointerCapture(event.pointerId); } catch (_) {}
+  }
+  keyboard.addEventListener('pointerup', endDrag);
+  keyboard.addEventListener('pointercancel', endDrag);
+
+  // 缩放控制
+  function setZoom(next) {
+    zoom = Math.min(1.35, Math.max(.25, Math.round(next * 20) / 20));
+    root.style.setProperty('--zoom', zoom);
+    zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+  }
+  document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + .1));
+  document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - .1));
+  document.getElementById('zoomFit').addEventListener('click', fitDevice);
+  canvas.addEventListener('wheel', event => {
+    if (!(event.ctrlKey || event.metaKey)) return;
+    event.preventDefault(); setZoom(zoom + (event.deltaY < 0 ? .05 : -.05));
+  }, { passive:false });
+
+  // 属性折叠及移动端抽屉
+  document.getElementById('collapseBtn').addEventListener('click', () => {
+    if (innerWidth <= 900) properties.classList.remove('mobile-open');
+    else properties.classList.toggle('collapsed');
+  });
+  document.getElementById('mobileProps').addEventListener('click', () => properties.classList.toggle('mobile-open'));
+
+  // 属性控件演示
+  document.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', () => sw.classList.toggle('on')));
+  document.querySelectorAll('.align-group button').forEach(btn => btn.addEventListener('click', () => {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  }));
+  const radius = document.getElementById('radius');
+  radius.addEventListener('pointerdown', () => { if (selectedKey) pushUndo(); });
+  radius.addEventListener('input', () => {
+    document.getElementById('radiusOut').textContent = `${radius.value} px`;
+    if (selectedKey) { selectedKey.style.borderRadius = `${radius.value}px`; markDirty(); }
+  });
+  const opacity = document.getElementById('opacity');
+  opacity.addEventListener('pointerdown', () => { if (selectedKey) pushUndo(); });
+  opacity.addEventListener('input', () => {
+    document.getElementById('opacityOut').textContent = `${opacity.value}%`;
+    if (selectedKey) { selectedKey.style.opacity = opacity.value / 100; markDirty(); }
+  });
+  document.getElementById('saveBtn').addEventListener('click', () => { document.querySelector('.app').classList.remove('dirty'); document.querySelector('.status-text').innerHTML = '<span class="dot"></span>刚刚保存'; notify('主题已保存到本地草稿'); });
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+
+  // 画布模式、网格和播放预览
+  document.querySelectorAll('.canvas-tool').forEach(tool => tool.addEventListener('click', () => {
+    const mode = tool.dataset.mode;
+    if (mode === 'grid') {
+      const hidden = canvas.classList.toggle('grid-hidden');
+      tool.classList.toggle('active', !hidden);
+      notify(hidden ? '网格已隐藏' : '网格已显示');
+      return;
+    }
+    document.querySelectorAll('.canvas-tool:not([data-mode="grid"])').forEach(item => item.classList.remove('active'));
+    tool.classList.add('active');
+    canvas.classList.remove('grid-hidden');
+    canvas.classList.toggle('pan-mode', mode === 'pan');
+    canvas.classList.toggle('preview-mode', mode === 'preview');
+    if (mode === 'preview') notify('实时播放预览已开启');
+    if (mode === 'pan') notify('拖动画布模式已开启');
+    if (mode === 'select') notify('选择工具已开启');
+  }));
+  document.getElementById('duplicateKey').addEventListener('click', () => {
+    if (!selectedKey) return notify('请先选择一个按键');
+    pushUndo();
+    const clone = selectedKey.cloneNode(true);
+    clone.classList.remove('selected');
+    clone.dataset.code = `${selectedKey.dataset.code}_COPY`;
+    selectedKey.after(clone); selectKey(clone); updateStats(); markDirty('复制按键');
+    notify(`已复制按键 ${selectedKey.dataset.code}`);
+  });
+  document.getElementById('deleteKey').addEventListener('click', () => {
+    if (!selectedKey) return notify('请先选择一个按键');
+    const code = selectedKey.dataset.code;
+    pushUndo();
+    selectedKey.remove(); selectedKey = null; keyboard.classList.remove('has-selection'); panelSubtitle.textContent = '尚未选择具体按键'; updateStats(); markDirty(`删除按键 ${code}`);
+    notify(`已移除按键 ${code}`);
+  });
+  // 尺寸步进器和直接输入
+  function applyKeySize() {
+    if (!selectedKey) return notify('请先选择一个按键');
+    const width = Math.max(4, Math.min(80, Number(document.getElementById('keyWidth').value) || 10));
+    const height = Math.max(28, Math.min(100, Number(document.getElementById('keyHeight').value) || 55));
+    pushUndo();
+    selectedKey.style.flex = `0 0 ${width}%`;
+    selectedKey.style.height = `${height}px`;
+    markDirty(`调整 ${selectedKey.dataset.code} 尺寸`);
+    checkOverflow();
+  }
+  document.querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => {
+    const input = document.getElementById(button.dataset.step);
+    input.value = Number(input.value || 0) + Number(button.dataset.delta);
+    applyKeySize();
+  }));
+  document.getElementById('keyWidth').addEventListener('change', applyKeySize);
+  document.getElementById('keyHeight').addEventListener('change', applyKeySize);
+  // 左下统计、图层、历史
+  document.querySelectorAll('.density-tab').forEach(tab => tab.addEventListener('click', () => {
+    document.querySelectorAll('.density-tab').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.density-page').forEach(page => page.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`[data-density-content="${tab.dataset.densityPage}"]`).classList.add('active');
+  }));
+  document.querySelectorAll('.layer-row').forEach(layer => layer.addEventListener('click', event => {
+    document.querySelectorAll('.layer-row').forEach(item => item.classList.remove('active'));
+    layer.classList.add('active');
+    const id = layer.dataset.layer;
+    if (event.target.classList.contains('eye')) {
+      const index = { row1:0,row2:1,row3:2,row4:3 }[id];
+      const target = id === 'candidate' ? keyboard.querySelector('.suggestion-row') : id === 'keyboard' ? keyboard.querySelector('.keyboard-shell') : keyboard.querySelectorAll('.key-row')[index];
+      if (target) { target.hidden = !target.hidden; event.target.textContent = target.hidden ? '○' : '◉'; checkOverflow(); }
+      return;
+    }
+    if (id.startsWith('row')) {
+      const index = Number(id.slice(-1)) - 1;
+      const first = keyboard.querySelectorAll('.key-row')[index]?.querySelector('.key');
+      if (first) selectKey(first);
+    }
+    notify(`已定位图层:${layer.textContent.trim()}`);
+  }));
+  // 资源拖放演示
+  const resourceDrop = document.getElementById('resourceDrop');
+  resourceDrop.addEventListener('dragover', event => { event.preventDefault(); resourceDrop.style.borderColor = 'var(--accent)'; });
+  resourceDrop.addEventListener('dragleave', () => resourceDrop.style.borderColor = '');
+  resourceDrop.addEventListener('drop', event => {
+    event.preventDefault(); resourceDrop.style.borderColor = '';
+    const file = event.dataTransfer.files[0];
+    resourceDrop.innerHTML = file ? `${file.name}<br><span>已关联到当前按键</span>` : '未检测到文件';
+    markDirty('关联按键图片'); notify('图片资源已关联');
+  });
+  resourceDrop.addEventListener('click', () => notify('打开图片资源选择器'));
+  overflowBadge.addEventListener('click', () => {
+    const first = keyboard.querySelector('.key.overflow-warning');
+    if (first) { selectKey(first); notify(`已定位溢出按键:${first.dataset.code}`); }
+  });
+
+  // 属性分类
+  document.querySelectorAll('.property-tab').forEach(tab => tab.addEventListener('click', () => {
+    document.querySelectorAll('.property-tab').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.property-page').forEach(page => page.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`[data-property-page="${tab.dataset.page}"]`).classList.add('active');
+  }));
+  // 预览状态和顶部选择
+  document.querySelectorAll('.state-chip').forEach(chip => chip.addEventListener('click', () => {
+    chip.classList.toggle('active');
+    const states = [...document.querySelectorAll('.state-chip.active')].map(item => item.dataset.state);
+    keyboard.querySelector('.meta-pill:first-child').innerHTML = `<span class="live"></span>${states.join(' + ') || '普通状态'}`;
+    notify(`${chip.dataset.state}状态${chip.classList.contains('active') ? '开启' : '关闭'}`);
+  }));
+  document.getElementById('keyboardSelect').addEventListener('change', event => notify(`已切换键盘:${event.target.value}`));
+  deviceSelect.addEventListener('change', event => applyDevice(event.target.value));
+  // 选中对象快捷条
+  document.getElementById('contextBar').addEventListener('click', event => {
+    const action = event.target.closest('[data-action]')?.dataset.action;
+    if (!action) return;
+    if (action === 'duplicate') document.getElementById('duplicateKey').click();
+    if (action === 'delete') document.getElementById('deleteKey').click();
+    if (action === 'style') notify('已打开样式选择器');
+    if ((action === 'move-left' || action === 'move-right') && selectedKey) {
+      const sibling = action === 'move-left' ? selectedKey.previousElementSibling : selectedKey.nextElementSibling;
+      if (sibling) { pushUndo(); selectedKey.parentElement.insertBefore(selectedKey, action === 'move-left' ? sibling : sibling.nextElementSibling); }
+      markDirty('调整按键顺序'); notify('按键顺序已调整');
+    }
+  });
+  // 命令面板及快捷键帮助
+  document.getElementById('commandBtn').addEventListener('click', openCommands);
+  document.getElementById('shortcutBtn').addEventListener('click', () => shortcutHelp.classList.toggle('open'));
+  commandSearch.addEventListener('input', () => {
+    const query = commandSearch.value.trim();
+    document.querySelectorAll('.command-item').forEach(item => item.hidden = query && !item.textContent.includes(query));
+  });
+  document.querySelectorAll('.command-item').forEach(item => item.addEventListener('click', () => {
+    const command = item.dataset.command;
+    commandPalette.classList.remove('open');
+    if (command === '添加按键') document.querySelector('[data-component="按键"]').click();
+    else if (command === '复制按键') document.getElementById('duplicateKey').click();
+    else notify(`执行命令:${command}`);
+  }));
+
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) { event.preventDefault(); undo(); }
+    if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) { event.preventDefault(); redo(); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openCommands(); }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); document.getElementById('duplicateKey').click(); }
+    if (event.key.toLowerCase() === 'f' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) document.getElementById('zoomFit').click();
+    if (event.key === 'Escape') closeOverlays();
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault(); document.getElementById('saveBtn').click();
+    }
+    if (event.key === 'Delete' && selectedKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+      document.getElementById('deleteKey').click();
+    }
+  });
+
+  // 初始化自适应缩放
+  function initialFit() { applyDevice(deviceSelect.value, false); }
+  window.addEventListener('resize', fitDevice);
+  updateStats();
+  initialFit();
+})();
+</script>
+</body>
+</html>

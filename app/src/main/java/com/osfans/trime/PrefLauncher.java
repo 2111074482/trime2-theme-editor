@@ -113,6 +113,7 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0,1,0,"部署").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
         menu.add(0,2,0,"工具").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        menu.add(0,3,0,"主题编辑器").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_NEVER);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -128,6 +129,9 @@ public class PrefLauncher extends Activity implements AdapterView.OnItemClickLis
                 break;
             case 2:
                 startActivity(new Intent(this,ToolActivity.class));
+                break;
+            case 3:
+                startActivity(new Intent(this, com.osfans.trime.editor.ui.ThemeEditorActivity.class));
                 break;
         }
 

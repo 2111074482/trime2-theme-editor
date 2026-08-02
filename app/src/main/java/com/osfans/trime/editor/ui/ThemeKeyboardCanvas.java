@@ -63,7 +63,7 @@ public final class ThemeKeyboardCanvas extends View {
             case MotionEvent.ACTION_DOWN:
                 downX = event.getX(); downY = event.getY(); selected = hit(downX, downY);
                 if (selected != null) { startX = selected.x; startY = selected.y; moved = false; invalidate(); if (listener != null) listener.onKeySelected(selected); return true; }
-                return true;
+                invalidate(); if (listener != null) listener.onKeySelected(null); return true;
             case MotionEvent.ACTION_MOVE:
                 if (selected != null) {
                     if (!moved && listener != null) listener.onKeyMoveStarted();

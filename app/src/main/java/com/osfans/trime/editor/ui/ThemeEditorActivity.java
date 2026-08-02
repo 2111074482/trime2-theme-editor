@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.lifecycle.SavedStateViewModelFactory;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.osfans.trime.editor.core.ThemeEditor;
 import com.osfans.trime.editor.core.ThemeValue;
@@ -20,8 +22,7 @@ import com.osfans.trime.editor.project.ThemeProjectRepository;
 import com.osfans.trime.editor.project.UriThemeProjectRepository;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
 
 /** Native entry point for the first integrated theme editor milestone. */
@@ -32,24 +33,47 @@ public class ThemeEditorActivity extends Activity {
 
     private ThemeEditorWorkspace workspace;
     private ThemeEditor editor;
+    private ThemeEditorViewModel viewModel;
     private ThemeProjectRepository repository;
     private Uri currentUri;
     private boolean layoutEditable;
 
     @Override public void onCreate(@Nullable Bundle state) {
         super.onCreate(state);
+        viewModel = new ViewModelProvider(
+                this,
+                new SavedStateViewModelFactory(getApplication(), this, state)
+        ).get(ThemeEditorViewModel.class);
         workspace = new ThemeEditorWorkspace(this);
         setContentView(workspace);
         workspace.setCallbacks(new ThemeEditorCallbacks() {
             @Override public void onSave(ThemeEditorModel model) { saveModel(model); }
-            @Override public void onUndo(ThemeEditorModel model) { }
-            @Override public void onRedo(ThemeEditorModel model) { }
+            @Override public void onModelChanged(ThemeEditorModel model) { syncModel(model); viewModel.setDirty(true); }
+            @Override public void onUndo(ThemeEditorModel model) { syncModel(model); viewModel.setDirty(true); }
+            @Override public void onRedo(ThemeEditorModel model) { syncModel(model); viewModel.setDirty(true); }
             @Override public void onSelectionChanged(ThemeEditorModel.Key key) { }
         });
         Uri data = getIntent().getData();
         if (data != null) loadUri(data);
+        else if (viewModel.getCurrentUri() != null) loadUri(viewModel.getCurrentUri());
         else if (getIntent().hasExtra(EXTRA_THEME)) loadFile(new File(getIntent().getStringExtra(EXTRA_THEME)));
-        else editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
+        else {
+            editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
+            workspace.setModel(toUiModel(editor.getDocument()));
+        }
+    }
+
+    @Override public void onBackPressed() {
+        if (viewModel.getDirty()) {
+            new android.app.AlertDialog.Builder(this)
+                    .setMessage("Unsaved theme changes")
+                    .setPositiveButton("Save", (dialog, which) -> saveModel(workspace.getModel()))
+                    .setNegativeButton("Discard", (dialog, which) -> finish())
+                    .setNeutralButton("Cancel", null)
+                    .show();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override public boolean onCreateOptionsMenu(android.view.Menu menu) {
@@ -60,7 +84,7 @@ public class ThemeEditorActivity extends Activity {
     @Override public boolean onOptionsItemSelected(android.view.MenuItem item) {
         if ("Open Lua".contentEquals(item.getTitle())) {
             startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
-                    .setType("text/*").addCategory(Intent.CATEGORY_OPENABLE), REQUEST_OPEN);
+                    .setType("*/*").addCategory(Intent.CATEGORY_OPENABLE), REQUEST_OPEN);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -70,6 +94,7 @@ public class ThemeEditorActivity extends Activity {
         if (file == null || !file.isFile()) return;
         repository = new FileThemeProjectRepository(file);
         currentUri = Uri.fromFile(file);
+        viewModel.setCurrentUri(currentUri);
         loadRepository();
     }
 
@@ -78,11 +103,50 @@ public class ThemeEditorActivity extends Activity {
             getContentResolver().takePersistableUriPermission(uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         } catch (SecurityException ignored) { }
+        String name = String.valueOf(uri).toLowerCase(java.util.Locale.ROOT);
+        if (name.endsWith(".zip")) {
+            loadZip(uri);
+            return;
+        }
         currentUri = uri;
+        viewModel.setCurrentUri(uri);
         repository = new UriThemeProjectRepository(uri,
                 getContentResolver()::openInputStream,
                 getContentResolver()::openOutputStream);
         loadRepository();
+    }
+
+    private void loadZip(Uri uri) {
+        try {
+            File root = new File(getCacheDir(), "theme-editor-import-" + System.nanoTime());
+            root.mkdirs();
+            try (InputStream input = getContentResolver().openInputStream(uri)) {
+                if (input == null) throw new IOException("Cannot open ZIP");
+                com.osfans.trime.editor.project.ThemeProjectArchive.extractZip(input, root);
+            }
+            File main = findMainLua(root);
+            if (main == null) throw new IOException("ZIP does not contain main.lua");
+            loadFile(main);
+            workspace.setStatus("Imported ZIP: " + main.getParentFile());
+        } catch (Exception error) {
+            workspace.setStatus("ZIP import failed: " + error.getMessage());
+            Toast.makeText(this, "Unable to import ZIP", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private static File findMainLua(File root) {
+        File direct = new File(root, "main.lua");
+        if (direct.isFile()) return direct;
+        File[] children = root.listFiles();
+        if (children == null) return null;
+        for (File child : children) {
+            if (child.isFile() && child.getName().equals("main.lua")) return child;
+            if (child.isDirectory()) {
+                File nested = findMainLua(child);
+                if (nested != null) return nested;
+            }
+        }
+        return null;
     }
 
     private void loadRepository() {
@@ -98,6 +162,16 @@ public class ThemeEditorActivity extends Activity {
         }
     }
 
+    private void syncModel(ThemeEditorModel model) {
+        if (editor == null) return;
+        com.osfans.trime.editor.core.ThemeValue current = editor.getDocument().get("rows");
+        if (current instanceof com.osfans.trime.editor.core.ThemeValue.RawLuaNode) {
+            workspace.setStatus("Rows uses dynamic Lua; edit it in the Lua source");
+            return;
+        }
+        editor.set("rows", rowsValue(model));
+    }
+
     private void saveModel(ThemeEditorModel model) {
         if (repository == null) {
             startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
@@ -106,13 +180,18 @@ public class ThemeEditorActivity extends Activity {
         }
         try {
             if (editor == null) editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
-            if (!layoutEditable || editor.getDocument().get("rows") == null) {
-                workspace.setStatus("Main theme metadata is read-only; open a keyboard Lua file");
+            if (editor.getDocument().get("rows") == null) {
+                editor.set("rows", rowsValue(model));
+                layoutEditable = true;
+            }
+            if (!layoutEditable) {
+                workspace.setStatus("This Lua file has no editable rows layout");
                 Toast.makeText(this, "Open a keyboard Lua file before editing", Toast.LENGTH_LONG).show();
                 return;
             }
-            editor.set("rows", new ThemeValue.RawLuaNode(rowsSource(model), 0));
+            syncModel(model);
             editor.save(repository);
+            viewModel.setDirty(false);
             workspace.setStatus("Saved");
         } catch (Exception error) {
             workspace.setStatus("Save failed: " + error.getMessage());
@@ -160,16 +239,56 @@ public class ThemeEditorActivity extends Activity {
                 ? (float) ((com.osfans.trime.editor.core.ThemeValue.LuaNumber) value).getValue() : fallback;
     }
 
-    private String rowsSource(ThemeEditorModel model) {
-        StringBuilder out = new StringBuilder("{\n");
+    private ThemeValue rowsValue(ThemeEditorModel model) {
+        java.util.LinkedHashMap<String, ThemeValue> rows = new java.util.LinkedHashMap<>();
+        com.osfans.trime.editor.core.ThemeValue existingRows = editor == null ? null : editor.getDocument().get("rows");
+        com.osfans.trime.editor.core.ThemeValue.LuaTable existing = existingRows instanceof com.osfans.trime.editor.core.ThemeValue.LuaTable
+                ? (com.osfans.trime.editor.core.ThemeValue.LuaTable) existingRows : null;
+        java.util.LinkedHashMap<Integer, java.util.LinkedHashMap<String, ThemeValue>> grouped = new java.util.LinkedHashMap<>();
         for (ThemeEditorModel.Key key : model.keys) {
-            out.append("  { click = ").append(luaString(key.label))
-                    .append(", x = ").append(trim(key.x))
-                    .append(", y = ").append(trim(key.y))
-                    .append(", width = ").append(trim(key.width))
-                    .append(", height = ").append(trim(key.height)).append(" },\n");
+            int rowIndex = indexPart(key.id, "row_");
+            if (rowIndex < 0) rowIndex = 0;
+            java.util.LinkedHashMap<String, ThemeValue> rowKeys = grouped.get(rowIndex);
+            if (rowKeys == null) { rowKeys = new java.util.LinkedHashMap<>(); grouped.put(rowIndex, rowKeys); }
+            int column = indexPart(key.id, "_key_");
+            ThemeValue originalKey = null;
+            if (existing != null && rowIndex >= 0) {
+                ThemeValue originalRow = existing.getFields().get("#" + (rowIndex + 1));
+                if (originalRow instanceof ThemeValue.LuaTable) {
+                    ThemeValue originalKeys = ((ThemeValue.LuaTable) originalRow).getFields().get("keys");
+                    if (originalKeys instanceof ThemeValue.LuaTable && column >= 0) {
+                        originalKey = ((ThemeValue.LuaTable) originalKeys).getFields().get("#" + (column + 1));
+                    }
+                }
+            }
+            java.util.LinkedHashMap<String, ThemeValue> keyFields = new java.util.LinkedHashMap<>();
+            if (originalKey instanceof ThemeValue.LuaTable) keyFields.putAll(((ThemeValue.LuaTable) originalKey).getFields());
+            String labelField = keyFields.containsKey("label") ? "label" : "click";
+            keyFields.put(labelField, new ThemeValue.LuaString(key.label));
+            keyFields.put("width", new ThemeValue.LuaNumber(key.width));
+            keyFields.put("height", new ThemeValue.LuaNumber(key.height));
+            rowKeys.put("#" + (rowKeys.size() + 1), new ThemeValue.LuaTable(keyFields));
         }
-        return out.append("}").toString();
+        for (java.util.Map.Entry<Integer, java.util.LinkedHashMap<String, ThemeValue>> entry : grouped.entrySet()) {
+            java.util.LinkedHashMap<String, ThemeValue> rowFields = new java.util.LinkedHashMap<>();
+            int rowIndex = entry.getKey();
+            if (existing != null) {
+                ThemeValue oldRow = existing.getFields().get("#" + (rowIndex + 1));
+                if (oldRow instanceof ThemeValue.LuaTable) rowFields.putAll(((ThemeValue.LuaTable) oldRow).getFields());
+            }
+            rowFields.put("keys", new ThemeValue.LuaTable(entry.getValue()));
+            rows.put("#" + (rows.size() + 1), new ThemeValue.LuaTable(rowFields));
+        }
+        return new ThemeValue.LuaTable(rows);
+    }
+
+    private static int indexPart(String id, String prefix) {
+        int start = id.indexOf(prefix);
+        if (start < 0) return -1;
+        start += prefix.length();
+        int end = id.indexOf('_', start);
+        String value = end < 0 ? id.substring(start) : id.substring(start, end);
+        try { return Integer.parseInt(value); } catch (NumberFormatException ignored) { return -1; }
     }
 
     private static String trim(float value) {
@@ -178,6 +297,11 @@ public class ThemeEditorActivity extends Activity {
 
     private static String luaString(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        if (currentUri != null) viewModel.setCurrentUri(currentUri);
+        super.onSaveInstanceState(outState);
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {

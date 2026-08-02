@@ -34,7 +34,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install native build tools
-        run: sdkmanager --install "cmake;3.31.6"
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "cmake;3.31.6" "ndk;28.0.13004108"
 
       - name: Calculate native cache hash
         id: native-hash
@@ -46,6 +46,14 @@ jobs:
         with:
           path: app/prebuilt
           key: ubuntu-24.04-trime-editor-${{ steps.native-hash.outputs.native-cache-hash }}
+
+      - name: Verify source hygiene
+        run: |
+          test -z "$(git diff --check)"
+          if grep -RInE 'API_KEY=|API_ID=|storePassword=|keyPassword=' app/src/main; then
+            echo "Potential secret assignment found in tracked source"
+            exit 1
+          fi
 
       - name: Build and test editor
         run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace

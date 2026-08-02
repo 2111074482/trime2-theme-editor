@@ -20,12 +20,11 @@ class ThemeLuaParserTest : StringSpec({
         val row = rows.fields["#1"] as ThemeValue.LuaTable
         val keys = row.fields["keys"] as ThemeValue.LuaTable
         keys.fields.keys shouldContain "#1"
-        ThemeLuaWriter.write(result.document) shouldContain "click = "a""
+        ThemeLuaWriter.write(result.document) shouldContain "click = \"a\""
     }
 
     "keeps unsupported expressions as raw nodes" {
-        val result = ThemeLuaParser().parse("keyboard = get_keyboard(id, alphabet)
-")
+        val result = ThemeLuaParser().parse("keyboard = get_keyboard(id, alphabet)\n")
         result.document.get("keyboard") shouldBe ThemeValue.RawLuaNode("get_keyboard(id, alphabet)", 1)
     }
 

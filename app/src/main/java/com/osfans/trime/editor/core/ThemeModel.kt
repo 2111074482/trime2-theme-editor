@@ -34,6 +34,9 @@ data class ThemeDocument(
         require(parts.isNotEmpty()) { "path must not be empty" }
         val roots = nodes.toMutableList()
         val rootIndex = roots.indexOfFirst { it.source == parts.first() }
+        if (rootIndex >= 0 && roots[rootIndex].value is ThemeValue.RawLuaNode) {
+            return this
+        }
         val root = if (rootIndex >= 0) roots[rootIndex].value else ThemeValue.LuaTable()
         val updated = setNested(root, parts.drop(1), value)
         if (rootIndex >= 0) roots[rootIndex] = roots[rootIndex].copy(value = updated)
@@ -60,7 +63,7 @@ object ThemeLuaWriter {
     }
 
     private fun value(value: ThemeValue, depth: Int): String = when (value) {
-        is ThemeValue.LuaString -> '"' + value.value.replace("\\", "\\\\").replace("\"", "\\\"") + '"'
+        is ThemeValue.LuaString -> "\"" + value.value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
         is ThemeValue.LuaNumber -> if (value.value % 1.0 == 0.0) value.value.toLong().toString() else value.value.toString()
         is ThemeValue.LuaBoolean -> value.value.toString()
         ThemeValue.LuaNil -> "nil"
@@ -70,8 +73,11 @@ object ThemeLuaWriter {
             val pad = "  ".repeat(depth + 1)
             val close = "  ".repeat(depth)
             "{\n" + value.fields.entries.joinToString(",\n") { (key, child) ->
-                if (key.startsWith("#")) "$pad${value(child, depth + 1)}" else "$pad$key = ${value(child, depth + 1)}"
+                if (key.startsWith("#")) "$pad${value(child, depth + 1)}"
+                else "$pad${writeKey(key)} = ${value(child, depth + 1)}"
             } + "\n$close}"
         }
     }
+
+    private fun writeKey(key: String): String = if (key.matches(Regex("^[A-Za-z_][A-Za-z0-9_]*$"))) key else "[\"${key.replace("\"", "\\\"")}\"]"
 }

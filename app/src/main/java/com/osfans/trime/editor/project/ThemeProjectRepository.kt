@@ -88,18 +88,22 @@ object ThemeProjectArchive {
             var entry = zip.nextEntry
             while (entry != null) {
                 val name = entry.name.replace('\\', '/')
-                require(!entry.isDirectory && name.isNotEmpty() && !name.startsWith('/') && name.split('/').none { it == ".." })
+                require(name.isNotEmpty() && !name.startsWith('/') && name.split('/').none { it == ".." })
                 require(++files <= maxFiles)
                 val target = File(destination, name)
                 require(target.canonicalPath.startsWith(destination.canonicalPath + File.separator))
-                target.parentFile?.mkdirs()
-                target.outputStream().use { output ->
-                    val buffer = ByteArray(8192)
-                    var count: Int
-                    while (zip.read(buffer).also { count = it } >= 0) {
-                        bytes += count
-                        require(bytes <= maxBytes)
-                        output.write(buffer, 0, count)
+                if (entry.isDirectory) {
+                    target.mkdirs()
+                } else {
+                    target.parentFile?.mkdirs()
+                    target.outputStream().use { output ->
+                        val buffer = ByteArray(8192)
+                        var count: Int
+                        while (zip.read(buffer).also { count = it } >= 0) {
+                            bytes += count
+                            require(bytes <= maxBytes)
+                            output.write(buffer, 0, count)
+                        }
                     }
                 }
                 zip.closeEntry()

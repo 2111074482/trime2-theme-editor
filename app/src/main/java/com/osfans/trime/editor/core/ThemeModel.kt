@@ -159,8 +159,9 @@ object ThemeLuaWriter {
         is ThemeValue.LuaBoolean -> value.value.toString()
         ThemeValue.LuaNil -> "nil"
         is ThemeValue.RawLuaNode -> value.source
-        is ThemeValue.LuaTable -> {
-            if (value.fields.isEmpty()) return "{}"
+        is ThemeValue.LuaTable -> if (value.fields.isEmpty()) {
+            "{}"
+        } else {
             val pad = "  ".repeat(depth + 1)
             val close = "  ".repeat(depth)
             "{\n" + value.fields.entries.joinToString(",\n") { (key, child) ->

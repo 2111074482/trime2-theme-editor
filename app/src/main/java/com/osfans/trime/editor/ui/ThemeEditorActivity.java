@@ -68,6 +68,38 @@ public class ThemeEditorActivity extends ComponentActivity {
     private static final int MENU_KEYBOARD_BASE = 3000;
     private static final java.util.HashMap<String, String> ACTIVE_WRITE_SESSIONS = new java.util.HashMap<>();
 
+    private ThemeEditorWorkspace workspace;
+    private ThemeEditor editor;
+    private ThemeEditorViewModel viewModel;
+    private ThemeProjectRepository repository;
+    private ThemeProject project;
+    private ThemeProjectSnapshot projectSnapshot;
+    private ThemeSourceFingerprint openedFingerprint;
+    private String openedSourceFingerprint;
+    private final ThemeSaveCoordinator saveCoordinator = new ThemeSaveCoordinator();
+    private File pendingExport;
+    private String pendingSaveSource;
+    private ThemeProjectCreator.Spec pendingCreateSpec;
+    private String pendingResourceFolder;
+    private DocumentFile lastInstallTarget;
+    private DocumentFile lastInstallBackup;
+    private java.util.Map<String, Long> lastBackupManifest;
+    private Uri currentUri;
+    private boolean layoutEditable;
+    private boolean recoveryPrompted;
+    private boolean readOnlySession;
+    private String sessionKey;
+    private Uri importedProjectUri;
+    private Uri importedProjectTreeUri;
+    private String importedProjectTreePrefix;
+    private String projectDisplayName;
+    private String openedImportedFingerprint;
+    private com.osfans.trime.editor.core.ThemeDocument migrationUndoDocument;
+    private com.osfans.trime.editor.core.ThemeDocument migrationRedoDocument;
+    private ThemeEditorModel.LayoutMode migrationSourceMode;
+    private ThemeEditorModel.LayoutMode migrationTargetMode;
+    private boolean applyingMigration;
+
     private final ActivityResultLauncher<Intent> openLuaLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         Intent data = result.getData(); if (result.getResultCode() == RESULT_OK && data != null && data.getData() != null) loadUri(data.getData());
     });
@@ -102,38 +134,6 @@ public class ThemeEditorActivity extends ComponentActivity {
         }
         if (pendingExport != null) pendingExport.delete(); pendingExport = null;
     });
-
-    private ThemeEditorWorkspace workspace;
-    private ThemeEditor editor;
-    private ThemeEditorViewModel viewModel;
-    private ThemeProjectRepository repository;
-    private ThemeProject project;
-    private ThemeProjectSnapshot projectSnapshot;
-    private ThemeSourceFingerprint openedFingerprint;
-    private String openedSourceFingerprint;
-    private final ThemeSaveCoordinator saveCoordinator = new ThemeSaveCoordinator();
-    private File pendingExport;
-    private String pendingSaveSource;
-    private ThemeProjectCreator.Spec pendingCreateSpec;
-    private String pendingResourceFolder;
-    private DocumentFile lastInstallTarget;
-    private DocumentFile lastInstallBackup;
-    private java.util.Map<String, Long> lastBackupManifest;
-    private Uri currentUri;
-    private boolean layoutEditable;
-    private boolean recoveryPrompted;
-    private boolean readOnlySession;
-    private String sessionKey;
-    private Uri importedProjectUri;
-    private Uri importedProjectTreeUri;
-    private String importedProjectTreePrefix;
-    private String projectDisplayName;
-    private String openedImportedFingerprint;
-    private com.osfans.trime.editor.core.ThemeDocument migrationUndoDocument;
-    private com.osfans.trime.editor.core.ThemeDocument migrationRedoDocument;
-    private ThemeEditorModel.LayoutMode migrationSourceMode;
-    private ThemeEditorModel.LayoutMode migrationTargetMode;
-    private boolean applyingMigration;
 
     @Override public void onCreate(@Nullable Bundle state) {
         super.onCreate(state);
@@ -2110,7 +2110,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             }
             Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", zip);
             Intent intent = new Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, contentUri)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).setClipData(android.content.ClipData.newRawUri("theme", contentUri));
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setClipData(android.content.ClipData.newRawUri("theme", contentUri));
             startActivity(Intent.createChooser(intent, "Share theme ZIP"));
             workspace.setStatus("Ready to share " + zip.getName());
         } catch (Exception error) {

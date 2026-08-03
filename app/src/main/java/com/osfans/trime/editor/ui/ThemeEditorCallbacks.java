@@ -11,4 +11,8 @@ public interface ThemeEditorCallbacks {
     void onUndo(ThemeEditorModel model);
     void onRedo(ThemeEditorModel model);
     void onSelectionChanged(ThemeEditorModel.Key key);
+    void onBatchStyleEntities(java.util.List<ThemeEditorModel.Key> keys, String background, String textColor);
+    void onCopyStyleEntity(ThemeEditorModel.Key key);
+    void onPasteStyleEntity(java.util.List<ThemeEditorModel.Key> keys);
+    void onManageKeyEvents(ThemeEditorModel.Key key);
 }

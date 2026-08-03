@@ -15,11 +15,23 @@ sealed class ThemeValue {
     data class RawLuaNode(val source: String, val line: Int = 0) : ThemeValue()
 }
 
-data class ThemeNode(val source: String, val line: Int, val value: ThemeValue)
+data class ThemeNode(val source: String, val line: Int, val value: ThemeValue, val assignment: Boolean = true)
+
+data class ThemeSourceStatement(
+    val root: String?,
+    val path: String?,
+    val text: String,
+    val separator: String,
+)
+
+enum class ThemeWriteMode { PRESERVE, HYBRID, STRUCTURED }
 
 data class ThemeDocument(
     val nodes: List<ThemeNode>,
     val trailingNewline: Boolean = true,
+    val originalSource: String? = null,
+    val originalNodes: List<ThemeNode> = emptyList(),
+    val sourceStatements: List<ThemeSourceStatement> = emptyList(),
 ) {
     fun get(path: String): ThemeValue? {
         val parts = path.split('.').filter { it.isNotBlank() }
@@ -44,6 +56,30 @@ data class ThemeDocument(
         return copy(nodes = roots)
     }
 
+    fun remove(path: String): ThemeDocument {
+        val parts = path.split('.').filter { it.isNotBlank() }
+        if (parts.isEmpty()) return this
+        val roots = nodes.toMutableList()
+        val rootIndex = roots.indexOfFirst { it.source == parts.first() }
+        if (rootIndex < 0 || roots[rootIndex].value is ThemeValue.RawLuaNode) return this
+        if (parts.size == 1) {
+            roots.removeAt(rootIndex)
+            return copy(nodes = roots)
+        }
+        val updated = removeNested(roots[rootIndex].value, parts.drop(1))
+        roots[rootIndex] = roots[rootIndex].copy(value = updated)
+        return copy(nodes = roots)
+    }
+
+    private fun removeNested(current: ThemeValue, path: List<String>): ThemeValue {
+        if (path.isEmpty()) return current
+        val currentTable = current as? ThemeValue.LuaTable ?: return current
+        val table = LinkedHashMap(currentTable.fields)
+        if (path.size == 1) table.remove(path.first())
+        else table[path.first()]?.let { table[path.first()] = removeNested(it, path.drop(1)) }
+        return ThemeValue.LuaTable(table)
+    }
+
     private fun setNested(current: ThemeValue, path: List<String>, value: ThemeValue): ThemeValue {
         if (path.isEmpty()) return value
         val table = (current as? ThemeValue.LuaTable)?.fields?.let { LinkedHashMap(it) } ?: LinkedHashMap()
@@ -53,13 +89,68 @@ data class ThemeDocument(
 }
 
 object ThemeLuaWriter {
-    fun write(document: ThemeDocument): String = buildString {
+    fun write(document: ThemeDocument, mode: ThemeWriteMode = ThemeWriteMode.HYBRID): String = when (mode) {
+        ThemeWriteMode.PRESERVE -> preserve(document)
+        ThemeWriteMode.HYBRID -> hybrid(document)
+        ThemeWriteMode.STRUCTURED -> structured(document)
+    }
+
+    private fun preserve(document: ThemeDocument): String {
+        val source = document.originalSource
+        require(source != null && document.nodes == document.originalNodes) {
+            "Preserve mode cannot write a structurally modified document"
+        }
+        return source
+    }
+
+    private fun hybrid(document: ThemeDocument): String {
+        val source = document.originalSource ?: return structured(document)
+        if (document.nodes == document.originalNodes) return source
+        if (document.sourceStatements.isEmpty()) return structured(document)
+        val changed = changedRoots(document)
+        val duplicateChanged = document.sourceStatements.mapNotNull { it.path }.groupingBy { it }.eachCount()
+            .filter { (path, count) -> count > 1 && path.substringBefore('.') in changed }.keys
+        require(duplicateChanged.isEmpty()) { "Hybrid mode cannot safely rewrite duplicate assignments: ${duplicateChanged.joinToString()}" }
+        val current = document.nodes.associateBy { it.source }
+        val emitted = HashSet<String>()
+        val result = buildString {
+            document.sourceStatements.forEach { statement ->
+                val root = statement.root
+                if (root == null || root !in changed) {
+                    append(statement.text).append(statement.separator)
+                } else {
+                    if (emitted.add(root)) current[root]?.let { appendNode(it) }
+                    append(statement.separator.ifEmpty { if (document.trailingNewline) "\n" else "" })
+                }
+            }
+            document.nodes.filter { node ->
+                node.source !in document.originalNodes.map { it.source }.toSet() && emitted.add(node.source)
+            }.forEachIndexed { index, node ->
+                if (isNotEmpty() && last() != '\n') append('\n')
+                appendNode(node)
+                if (document.trailingNewline || index < document.nodes.lastIndex) append('\n')
+            }
+        }
+        return result
+    }
+
+    private fun changedRoots(document: ThemeDocument): Set<String> {
+        val original = document.originalNodes.associateBy { it.source }
+        val current = document.nodes.associateBy { it.source }
+        return (original.keys + current.keys).filterTo(LinkedHashSet()) { original[it]?.value != current[it]?.value }
+    }
+
+    private fun structured(document: ThemeDocument): String = buildString {
         document.nodes.forEachIndexed { index, node ->
             if (index > 0) append('\n')
-            if (node.value is ThemeValue.RawLuaNode) append(node.value.source)
-            else append(node.source).append(" = ").append(value(node.value, 0))
+            appendNode(node)
         }
         if (document.trailingNewline) append('\n')
+    }
+
+    private fun StringBuilder.appendNode(node: ThemeNode) {
+        if (!node.assignment && node.value is ThemeValue.RawLuaNode) append(node.value.source)
+        else append(node.source).append(" = ").append(value(node.value, 0))
     }
 
     private fun value(value: ThemeValue, depth: Int): String = when (value) {

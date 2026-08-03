@@ -5,6 +5,7 @@
 
 package com.osfans.trime.editor.project
 
+import android.content.ContentResolver
 import android.net.Uri
 import com.osfans.trime.editor.core.ParseResult
 import com.osfans.trime.editor.core.ThemeDocument
@@ -12,10 +13,8 @@ import com.osfans.trime.editor.core.ThemeLuaParser
 import com.osfans.trime.editor.core.ThemeLuaWriter
 import java.io.File
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -32,32 +31,73 @@ interface ThemeProjectRepository {
 
 class FileThemeProjectRepository(private val file: File) : ThemeProjectRepository {
     override fun read(): String = file.readText(Charsets.UTF_8)
-    override fun write(source: String) {
-        file.parentFile?.mkdirs()
-        val temporary = File(file.parentFile, ".${file.name}.editor-${System.nanoTime()}.tmp")
-        temporary.writeText(source, Charsets.UTF_8)
-        try {
-            Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-        } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
-            Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        } finally {
-            if (temporary.exists()) temporary.delete()
-        }
-    }
+    override fun write(source: String) = writeTextTransaction(file, source)
 }
 
 /** Adapter for SAF or other URI providers. The caller owns stream lifetime. */
 class UriThemeProjectRepository(
+    private val resolver: ContentResolver,
     private val uri: Uri,
-    private val input: (Uri) -> InputStream,
-    private val output: (Uri) -> OutputStream,
 ) : ThemeProjectRepository {
-    override fun read(): String = input(uri).use { it.reader(Charsets.UTF_8).readText() }
-    override fun write(source: String) = output(uri).use { it.writer(Charsets.UTF_8).use { writer -> writer.write(source) } }
+    override fun read(): String = (resolver.openInputStream(uri) ?: throw IOException("Cannot open theme source")).use { it.reader(Charsets.UTF_8).readText() }
+    override fun write(source: String) = (resolver.openOutputStream(uri, "wt") ?: throw IOException("Cannot write theme source")).use { it.writer(Charsets.UTF_8).use { writer -> writer.write(source) } }
 }
 
 
+internal fun writeTextTransaction(destination: File, source: String) {
+    destination.parentFile?.let { parent ->
+        if (!parent.exists() && !parent.mkdirs()) throw IOException("Cannot create ${parent.absolutePath}")
+    }
+    val temporary = File(destination.parentFile, ".${destination.name}.editor-${System.nanoTime()}.tmp")
+    try {
+        FileOutputStream(temporary).use { output ->
+            output.write(source.toByteArray(Charsets.UTF_8))
+            output.fd.sync()
+        }
+        replaceFileTransaction(temporary, destination)
+    } finally {
+        if (temporary.exists()) temporary.delete()
+    }
+}
+
+internal fun replaceFileTransaction(temporary: File, destination: File) {
+    require(temporary.isFile) { "Replacement source must be a file" }
+    val backup = File(destination.parentFile, ".${destination.name}.backup-${System.nanoTime()}")
+    var backedUp = false
+    try {
+        if (destination.exists()) {
+            if (!destination.isFile || !destination.renameTo(backup)) throw IOException("Cannot back up ${destination.name}")
+            backedUp = true
+        }
+        if (!temporary.renameTo(destination)) {
+            FileInputStream(temporary).use { input ->
+                FileOutputStream(destination).use { output ->
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                    }
+                    output.fd.sync()
+                }
+            }
+            if (destination.length() != temporary.length()) throw IOException("Replacement verification failed for ${destination.name}")
+            temporary.delete()
+        }
+        if (backedUp && backup.exists() && !backup.delete()) throw IOException("Cannot remove backup for ${destination.name}")
+    } catch (error: Exception) {
+        if (destination.exists()) destination.delete()
+        if (backedUp && backup.exists() && !backup.renameTo(destination)) {
+            throw IOException("File replacement failed and backup restoration failed for ${destination.name}", error)
+        }
+        throw IOException("File replacement failed for ${destination.name}", error)
+    } finally {
+        if (temporary.exists()) temporary.delete()
+    }
+}
+
 object ThemeProjectArchive {
+    @JvmStatic
     fun exportDirectory(source: File, destination: File) {
         require(source.isDirectory) { "Theme source must be a directory" }
         destination.parentFile?.mkdirs()
@@ -71,15 +111,11 @@ object ThemeProjectArchive {
                 zip.closeEntry()
             }
         }
-        try {
-            Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-        } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
-            Files.move(temporary.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
-        } finally {
-            if (temporary.exists()) temporary.delete()
-        }
+        replaceFileTransaction(temporary, destination)
     }
 
+    @JvmStatic
+    @JvmOverloads
     fun extractZip(input: java.io.InputStream, destination: File, maxFiles: Int = 500, maxBytes: Long = 64L * 1024 * 1024) {
         destination.mkdirs()
         var files = 0

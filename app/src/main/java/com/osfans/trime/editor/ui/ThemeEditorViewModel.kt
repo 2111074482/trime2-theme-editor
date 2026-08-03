@@ -26,10 +26,14 @@ class ThemeEditorViewModel(private val state: SavedStateHandle) : ViewModel() {
         get() = state[ZOOM_KEY] ?: 1f
         set(value) { state[ZOOM_KEY] = value.coerceIn(0.5f, 4f) }
 
+    val sessionToken: String
+        get() = state.get<String>(SESSION_TOKEN_KEY) ?: java.util.UUID.randomUUID().toString().also { state[SESSION_TOKEN_KEY] = it }
+
     companion object {
         private const val URI_KEY = "theme_editor.uri"
         private const val DIRTY_KEY = "theme_editor.dirty"
         private const val SELECTED_KEY = "theme_editor.selected"
         private const val ZOOM_KEY = "theme_editor.zoom"
+        private const val SESSION_TOKEN_KEY = "theme_editor.session_token"
     }
 }

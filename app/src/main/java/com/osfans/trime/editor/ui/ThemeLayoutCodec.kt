@@ -313,7 +313,11 @@ object ThemeLayoutCodec {
         val yChanged = key.y != key.sourceY
         if (original is ThemeValue.LuaString && !eventChanged && !widthChanged && !heightChanged && (!absolute || (!xChanged && !yChanged))) {
             if (!labelChanged) return original
-            if (key.ownerId.startsWith("key_map_")) return ThemeValue.LuaString(key.label)
+            val sourceCodePoints = original.value.codePointCount(0, original.value.length)
+            val labelCodePoints = key.label.codePointCount(0, key.label.length)
+            if (key.ownerId.startsWith("key_map_") && sourceCodePoints == 1 && labelCodePoints == 1) {
+                return ThemeValue.LuaString(key.label)
+            }
         }
         val fields = LinkedHashMap((original as? ThemeValue.LuaTable)?.fields ?: emptyMap())
         if (original is ThemeValue.LuaString) fields["click"] = ThemeValue.LuaString(key.click.ifEmpty { original.value })

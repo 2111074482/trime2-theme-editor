@@ -99,19 +99,21 @@ object ThemeProjectMutator {
         if (selected.any { it is ThemeValue.LuaString && it.value == id }) return true
         if (selected.any { it is ThemeValue.RawLuaNode }) return null
         val event = "Keyboard_$id"
-        fun inspect(value: ThemeValue): Boolean? = when (value) {
-            is ThemeValue.LuaString -> value.value == event
-            is ThemeValue.LuaTable -> {
-                var uncertain = false
-                for (child in value.fields.values) when (inspect(child)) {
-                    true -> return true
-                    null -> uncertain = true
-                    false -> Unit
+        fun inspect(value: ThemeValue): Boolean? {
+            return when (value) {
+                is ThemeValue.LuaString -> value.value == event
+                is ThemeValue.LuaTable -> {
+                    var uncertain = false
+                    for (child in value.fields.values) when (inspect(child)) {
+                        true -> return true
+                        null -> uncertain = true
+                        false -> Unit
+                    }
+                    if (uncertain) null else false
                 }
-                if (uncertain) null else false
+                is ThemeValue.RawLuaNode -> if (Regex("[\"']${Regex.escape(event)}[\"']").containsMatchIn(value.source)) true else null
+                else -> false
             }
-            is ThemeValue.RawLuaNode -> if (Regex("[\"']${Regex.escape(event)}[\"']").containsMatchIn(value.source)) true else null
-            else -> false
         }
         var uncertain = parsed.document.nodes.any { !it.assignment }
         for (node in parsed.document.nodes) when (inspect(node.value)) {

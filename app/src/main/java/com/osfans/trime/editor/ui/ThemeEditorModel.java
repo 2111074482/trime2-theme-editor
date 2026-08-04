@@ -40,6 +40,16 @@ public final class ThemeEditorModel {
         public int fillColor = opaqueRgb(245, 245, 245);
         public boolean editorLocked;
         public int textColor = opaqueRgb(30, 30, 30);
+        // --- R1: 对齐 Trime2 KeyView 渲染的样式字段 ---
+        public float strokeWidth;                 // key.stroke_width (px 语义,画布单位换算)
+        public int strokeColor = 0x00000000;      // key.stroke_color
+        public float elevation;                   // key.elevation (阴影高度)
+        public int shadowColor = 0x00000000;      // key.shadow_color
+        public String font = "";                  // key.font (字体文件名,空=系统默认)
+        public String gravity = "";               // key.gravity (center/top/bottom/left/right/start/end,可 | 组合)
+        public float paddingLeft, paddingTop, paddingRight, paddingBottom; // key.padding
+        public boolean show = true;               // key.show (文字层显示)
+        public String hintText;                   // key.hint (助记文字,渲染于底部)
 
         public Key(String id, String label, float x, float y, float width, float height) {
             this.id = id; this.label = label; this.sourceLabel = label; this.x = x; this.y = y;
@@ -54,7 +64,11 @@ public final class ThemeEditorModel {
             k.combo = combo; k.sourceCombo = sourceCombo; k.composing = composing; k.sourceComposing = sourceComposing; k.hasMenu = hasMenu; k.sourceHasMenu = sourceHasMenu; k.paging = paging; k.sourcePaging = sourcePaging; k.ascii = ascii; k.sourceAscii = sourceAscii;
             k.keyStyle = keyStyle; k.sourceKeyStyle = sourceKeyStyle; k.popup = popup; k.sourcePopup = sourcePopup; k.popupArray = popupArray; k.hasNonLiteralEventSource = hasNonLiteralEventSource;
             k.sourceX = sourceX; k.sourceY = sourceY; k.sourceWidth = sourceWidth; k.sourceHeight = sourceHeight;
-            k.fillColor = fillColor; k.editorLocked = editorLocked; k.textColor = textColor; return k;
+            k.fillColor = fillColor; k.editorLocked = editorLocked; k.textColor = textColor;
+            k.strokeWidth = strokeWidth; k.strokeColor = strokeColor; k.elevation = elevation; k.shadowColor = shadowColor;
+            k.font = font; k.gravity = gravity;
+            k.paddingLeft = paddingLeft; k.paddingTop = paddingTop; k.paddingRight = paddingRight; k.paddingBottom = paddingBottom;
+            k.show = show; k.hintText = hintText; return k;
         }
     }
 
@@ -315,6 +329,11 @@ public final class ThemeEditorModel {
     public float previewZoom = 1;
     public float previewPanX;
     public float previewPanY;
+    // --- R1: 键盘/候选渲染语义 ---
+    /** 键盘区域高度(画布 0~100 百分比语义,溢出判断依据)。 */
+    public float keyboardHeight = 100f;
+    /** 候选词预览内容(可配置,替代硬编码示意)。 */
+    public final java.util.List<String> candidateWords = new java.util.ArrayList<>();
 
     // Missing tab/tool heights use an explicit editor-only 48 dp preview default. The runtime may
     // inherit a component height; heightExplicit/sourceResolved keep that distinction visible.
@@ -414,6 +433,8 @@ public final class ThemeEditorModel {
         result.compositionPreviewWarning = compositionPreviewWarning == null ? "" : compositionPreviewWarning;
         result.candidateCount = candidateCount; result.candidateComments = candidateComments; result.previewPaging = previewPaging; result.previewHasMenu = previewHasMenu; result.editorActionLabel = editorActionLabel; result.schemaName = schemaName; result.previewPanel = previewPanel;
         result.previewWidth = previewWidth; result.previewHeight = previewHeight; result.previewZoom = previewZoom; result.previewPanX = previewPanX; result.previewPanY = previewPanY;
+        result.keyboardHeight = keyboardHeight;
+        result.candidateWords.addAll(candidateWords);
         result.candidateExpandedFilterBar.copyFrom(candidateExpandedFilterBar);
         result.candidateExpandedToolBar.copyFrom(candidateExpandedToolBar, "right", 40f, "hide", "page_up", "page_down", "char_filter");
         result.symbolTabBar.copyFrom(symbolTabBar, "top", 48f);

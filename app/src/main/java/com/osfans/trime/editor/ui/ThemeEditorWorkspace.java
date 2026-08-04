@@ -904,6 +904,9 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     /** Mirrors the mobile HTML prototype: the top-right property control toggles a right drawer. */
     public void togglePropertiesDrawer() { showProperties(!propertyPanelOpen); }
 
+    /** R2/⑨: 导出当前预览画布为位图(预览截图功能)。 */
+    public android.graphics.Bitmap capturePreviewBitmap() { return canvas.captureBitmap(); }
+
     /** Returns true when the mobile drawer consumed the back action. */
     public boolean closePropertiesDrawer() {
         if (wideLayout || !propertyPanelOpen) return false;

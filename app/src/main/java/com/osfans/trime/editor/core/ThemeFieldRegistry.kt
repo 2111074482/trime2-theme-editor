@@ -175,6 +175,7 @@ class ThemeFieldRegistry @JvmOverloads constructor(fields: Iterable<ThemeField> 
 
                 candidate("candidate")
                 candidate("candidate.expanded", expanded = true)
+                ThemeField("candidate.font", ThemeFieldType.LUA, editorSupport = EditorSupport.CODE_ONLY, previewSupport = PreviewSupport.DISABLED_WITH_REASON, writeSupport = WriteSupport.PRESERVE_RAW)
 
                 table("toolbar")
                 codeOnly("toolbar.height", ThemeFieldType.DIMENSION)
@@ -291,8 +292,22 @@ class ThemeFieldRegistry @JvmOverloads constructor(fields: Iterable<ThemeField> 
                 ThemeField("key.background", ThemeFieldType.COLOR),
                 ThemeField("key.corner_radius", ThemeFieldType.DIMENSION),
                 ThemeField("key.stroke_width", ThemeFieldType.DIMENSION),
+                ThemeField("key.stroke_color", ThemeFieldType.COLOR),
                 ThemeField("key.elevation", ThemeFieldType.DIMENSION),
+                ThemeField("key.shadow_color", ThemeFieldType.COLOR),
                 ThemeField("key.font", ThemeFieldType.TEXT),
+                ThemeField("key.gravity", ThemeFieldType.TEXT),
+                ThemeField("key.show", ThemeFieldType.BOOLEAN, defaultValue = ThemeValue.LuaBoolean(true)),
+                ThemeField("key.padding", ThemeFieldType.TABLE),
+                ThemeField("key.padding.left", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.padding.top", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.padding.right", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.padding.bottom", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.margins", ThemeFieldType.TABLE),
+                ThemeField("key.margins.left", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.margins.top", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.margins.right", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
+                ThemeField("key.margins.bottom", ThemeFieldType.DIMENSION, defaultValue = ThemeValue.LuaNumber(0.0)),
                 ThemeField("key.hint", ThemeFieldType.TABLE),
                 ThemeField("key.hint.text_color", ThemeFieldType.COLOR),
                 ThemeField("key.hint.text_size", ThemeFieldType.DIMENSION),

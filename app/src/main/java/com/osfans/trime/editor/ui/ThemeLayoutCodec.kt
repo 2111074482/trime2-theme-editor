@@ -54,7 +54,8 @@ object ThemeLayoutCodec {
         val inheritedHeight = (document.get("key_height") as? ThemeValue.LuaNumber)?.value?.toFloat()
             ?: if (rowValues.isEmpty()) 18f else 100f / rowValues.size
         val inheritedWidth = (document.get("key_width") as? ThemeValue.LuaNumber)?.value?.toFloat()
-        var y = 8f
+        // R1: 对齐 Trime2 RowKeyboardView 语义——行坐标从键盘顶部(0)开始累加。
+        var y = 0f
         rowValues.forEachIndexed { rowIndex, rowValue ->
             val row = rowValue as? ThemeValue.LuaTable ?: return@forEachIndexed
             val rowHeight = number(row, "height", inheritedHeight)
@@ -206,6 +207,7 @@ object ThemeLayoutCodec {
             key.hasMenu = string(fields?.get("has_menu")); key.sourceHasMenu = key.hasMenu
             key.paging = string(fields?.get("paging")); key.sourcePaging = key.paging
             key.ascii = string(fields?.get("ascii")); key.sourceAscii = key.ascii
+            key.hintText = string(fields?.get("hint")).ifEmpty { null }
             key.hasNonLiteralEventSource = listOf("click", "long_click", "swipe_left", "swipe_right", "swipe_up", "swipe_down", "combo", "composing", "has_menu", "paging", "ascii").any { name -> fields?.get(name)?.let { it !is ThemeValue.LuaString } == true }
             key.keyStyle = string(fields?.get("style")); key.sourceKeyStyle = key.keyStyle
             val popup = fields?.get("popup")

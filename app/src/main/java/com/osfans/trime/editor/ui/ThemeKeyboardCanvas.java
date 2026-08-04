@@ -46,6 +46,15 @@ public final class ThemeKeyboardCanvas extends View {
     public ThemeEditorModel.Key getSelectedKey() { return selected; }
     public void setSelectedKey(ThemeEditorModel.Key key) { selected = key; invalidate(); }
 
+    /** R2/⑨: 导出当前预览画面为位图(预览截图功能)。 */
+    public android.graphics.Bitmap captureBitmap() {
+        int width = Math.max(1, getWidth()), height = Math.max(1, getHeight());
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas snapshot = new android.graphics.Canvas(bitmap);
+        draw(snapshot);
+        return bitmap;
+    }
+
     /** Workspace-facing canvas controls. These affect only the viewport, never source structure. */
     public void setInteractionMode(InteractionMode mode) { interactionMode = mode == null ? InteractionMode.SELECT : mode; cancelGestureState(); invalidate(); }
     public void setInteractionMode(String mode) { setInteractionMode("pan".equalsIgnoreCase(mode) ? InteractionMode.PAN : InteractionMode.SELECT); }
@@ -256,7 +265,7 @@ public final class ThemeKeyboardCanvas extends View {
         int count = 0;
         for (ThemeEditorModel.Key key : model.keys) {
             String label = displayLabel(key);
-            boolean outside = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > 80f;
+            boolean outside = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > model.keyboardHeight;
             boolean cramped = key.width < 2.8f || (!label.isEmpty() && label.length() * Math.max(1.4f, model.keyTextSize * .52f) > key.width);
             if (outside || cramped) count++;
         }
@@ -273,6 +282,15 @@ public final class ThemeKeyboardCanvas extends View {
         return key.label == null ? "" : key.label;
     }
 
+    /** R1: 候选栏外壳预览词(取自 model.candidateWords,不足时用示例词补位)。 */
+    private String[] previewShellWords() {
+        java.util.List<String> words = model.candidateWords != null && !model.candidateWords.isEmpty()
+                ? model.candidateWords : java.util.Arrays.asList("⌘", "你好", "你", "输入", "⌄");
+        String[] result = new String[5];
+        for (int i = 0; i < 5; i++) result[i] = i < words.size() ? words.get(i) : "";
+        return result;
+    }
+
     private void drawShellCandidateBar(Canvas canvas) {
         RectF bar = new RectF(1f, -10f, 99f, -1.5f);
         paint.setStyle(Paint.Style.FILL);
@@ -286,8 +304,7 @@ public final class ThemeKeyboardCanvas extends View {
         paint.setColor(model.showCandidate ? model.candidateTextColor : 0xff747d91);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setTextSize(Math.max(2.1f, Math.min(3.5f, model.candidateTextSize / 7f)));
-        String[] words = model.showCandidate ? new String[]{"⌘", "你好", "你", "输入", "⌄"}
-                : new String[]{"", "", "候选栏已隐藏", "", ""};
+        String[] words = model.showCandidate ? previewShellWords() : new String[]{"", "", "候选栏已隐藏", "", ""};
         float[] centers = {6f, 25f, 48f, 72f, 94f};
         for (int i = 0; i < words.length; i++)
             canvas.drawText(words[i], centers[i], bar.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
@@ -301,38 +318,102 @@ public final class ThemeKeyboardCanvas extends View {
             RectF bounds = new RectF(key.x, key.y, key.x + key.width, key.y + key.height);
             boolean primary = key == selected;
             boolean pressed = key == pressedKey || (model.pressedPreview && primary);
-            boolean overflow = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > 80f;
+            boolean overflow = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > model.keyboardHeight;
             boolean inSelection = model.selectedIds.contains(key.id);
             float radius = Math.max(.7f, Math.min(model.keyCornerRadius, Math.min(key.width, key.height) / 2f));
+            // R1: elevation/shadow_color 阴影（对齐 KeyView 的 elevation 语义）
+            float shadowOffset = key.elevation > 0f ? Math.min(1.6f, key.elevation * .1f) : .8f;
+            int shadowColor = key.shadowColor != 0 ? key.shadowColor : 0x66000000;
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(0x66000000);
-            canvas.drawRoundRect(new RectF(bounds.left, bounds.top + .8f, bounds.right, bounds.bottom + .8f), radius, radius, paint);
+            paint.setColor(shadowColor);
+            canvas.drawRoundRect(new RectF(bounds.left, bounds.top + shadowOffset, bounds.right, bounds.bottom + shadowOffset), radius, radius, paint);
             paint.setColor(pressed ? model.pressedKeyBackgroundColor : key.fillColor);
             canvas.drawRoundRect(bounds, radius, radius, paint);
+            // R1: stroke_width/stroke_color 边框（对齐 KeyView 边框语义;编辑器辅助色仅在没有主题边框时用于选中/溢出提示）
+            boolean themedStroke = key.strokeWidth > 0f;
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(primary ? 1.05f : inSelection ? .7f : overflow ? .65f : .25f);
-            paint.setColor(primary ? 0xffa797ff : inSelection ? 0xff8170e7 : overflow ? 0xffff6e87 : 0x35ffffff);
+            if (themedStroke) {
+                paint.setStrokeWidth(Math.max(.15f, Math.min(1.2f, key.strokeWidth * .08f)));
+                paint.setColor(pressed && key.strokeColor == 0 ? 0xaa888888 : key.strokeColor);
+            } else {
+                paint.setStrokeWidth(primary ? 1.05f : inSelection ? .7f : overflow ? .65f : .25f);
+                paint.setColor(primary ? 0xffa797ff : inSelection ? 0xff8170e7 : overflow ? 0xffff6e87 : 0x35ffffff);
+            }
             canvas.drawRoundRect(bounds, radius, radius, paint);
             if (primary) {
                 paint.setStrokeWidth(.35f);
                 paint.setColor(0x889783ff);
                 canvas.drawRoundRect(new RectF(bounds.left - .6f, bounds.top - .6f, bounds.right + .6f, bounds.bottom + .6f), radius + .6f, radius + .6f, paint);
             }
+            // R1: 文字层渲染（对齐 KeyView:font/gravity/padding/show/hint 位置）
+            if (!key.show) continue;
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(pressed ? model.pressedKeyTextColor : key.textColor);
-            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextAlign(Paint.Align.LEFT);
             paint.setTextSize(Math.max(2f, Math.min(model.keyTextSize, key.height * .48f)));
+            android.graphics.Typeface face = typeface(key.font);
+            if (face != null) paint.setTypeface(face);
             String displayLabel = displayLabel(key);
+            float innerLeft = bounds.left + Math.min(key.width * .12f, key.paddingLeft > 0 ? key.paddingLeft * .06f : 0f);
+            float innerTop = bounds.top + Math.min(key.height * .08f, key.paddingTop > 0 ? key.paddingTop * .06f : 0f);
+            float innerRight = bounds.right - Math.min(key.width * .12f, key.paddingRight > 0 ? key.paddingRight * .06f : 0f);
+            float innerBottom = bounds.bottom - Math.min(key.height * .08f, key.paddingBottom > 0 ? key.paddingBottom * .06f : 0f);
+            float textWidth = paint.measureText(displayLabel);
+            float textCenterY = (innerTop + innerBottom) / 2f - (paint.ascent() + paint.descent()) / 2f;
+            float labelX = gravityX(innerLeft, innerRight, textWidth, key.gravity);
+            float labelY = gravityY(innerTop, innerBottom, paint, key.gravity, textCenterY);
             canvas.save();
             canvas.clipRect(bounds);
-            canvas.drawText(displayLabel, bounds.centerX(), bounds.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
-            String hint = !key.longClick.isEmpty() ? key.longClick : !key.swipeUp.isEmpty() ? key.swipeUp : "";
+            canvas.drawText(displayLabel, labelX, labelY, paint);
+            // hint: 底部居中（对齐 KeyView mHint 的 BOTTOM|CENTER）
+            String hint = key.hintText != null ? key.hintText : (!key.longClick.isEmpty() ? key.longClick : (!key.swipeUp.isEmpty() ? key.swipeUp : ""));
             if (!hint.isEmpty() && !hint.equals(displayLabel)) {
-                paint.setTextSize(Math.max(1.25f, Math.min(2.2f, key.height * .2f))); paint.setTextAlign(Paint.Align.RIGHT);
+                paint.setTextSize(Math.max(1.25f, Math.min(2.2f, key.height * .2f)));
                 paint.setColor(pressed ? model.pressedKeyTextColor : key.textColor);
-                canvas.drawText(hint, bounds.right - .8f, bounds.top + 2.2f, paint);
+                float hintY = innerBottom - .6f - (paint.ascent() + paint.descent()) / 2f;
+                canvas.drawText(hint, Math.max(innerLeft, (innerLeft + innerRight) / 2f - paint.measureText(hint) / 2f), hintY, paint);
+            }
+            // long_click 提示: 顶部居中（对齐 KeyView mLongClick 的 TOP|CENTER）
+            if (!key.longClick.isEmpty() && !key.longClick.equals(hint)) {
+                paint.setTextSize(Math.max(1.25f, Math.min(2.2f, key.height * .2f)));
+                paint.setColor(pressed ? model.pressedKeyTextColor : key.textColor);
+                float topY = innerTop + 1.2f - (paint.ascent() + paint.descent()) / 2f;
+                canvas.drawText(key.longClick, Math.max(innerLeft, (innerLeft + innerRight) / 2f - paint.measureText(key.longClick) / 2f), topY, paint);
             }
             canvas.restore();
+            if (face != null) paint.setTypeface(null);
+        }
+    }
+
+    /** R1: 水平对齐（gravity 支持 left/right/start/end/center_horizontal,默认居中）。 */
+    private static float gravityX(float left, float right, float textWidth, String gravity) {
+        if (gravity == null || gravity.isEmpty()) return left + (right - left - textWidth) / 2f;
+        if (gravity.contains("left") || gravity.contains("start")) return left;
+        if (gravity.contains("right") || gravity.contains("end")) return right - textWidth;
+        return left + (right - left - textWidth) / 2f;
+    }
+
+    /** R1: 垂直对齐（gravity 支持 top/bottom/center_vertical,默认居中）。 */
+    private static float gravityY(float top, float bottom, Paint paint, String gravity, float centerY) {
+        if (gravity == null || gravity.isEmpty()) return centerY;
+        if (gravity.contains("top")) return top - paint.ascent();
+        if (gravity.contains("bottom")) return bottom - paint.descent();
+        return centerY;
+    }
+
+    /** R1: 字体缓存（主题 font 文件名 → Typeface;assets 加载失败回退系统默认）。 */
+    private final java.util.Map<String, android.graphics.Typeface> typefaceCache = new java.util.HashMap<>();
+    private android.graphics.Typeface typeface(String font) {
+        if (font == null || font.isEmpty()) return null;
+        android.graphics.Typeface cached = typefaceCache.get(font);
+        if (cached != null) return cached == android.graphics.Typeface.DEFAULT ? null : cached;
+        try {
+            android.graphics.Typeface face = android.graphics.Typeface.createFromAsset(getContext().getAssets(), font);
+            typefaceCache.put(font, face);
+            return face;
+        } catch (Exception error) {
+            typefaceCache.put(font, android.graphics.Typeface.DEFAULT);
+            return null;
         }
     }
 
@@ -411,13 +492,17 @@ public final class ThemeKeyboardCanvas extends View {
     }
 
     private void drawCandidatePreview(Canvas canvas, float y) {
+        // R1: 候选词可配置(model.candidateWords),替代硬编码示意;缺省时回退内置示例。
+        java.util.List<String> words = model.candidateWords != null && !model.candidateWords.isEmpty()
+                ? model.candidateWords : java.util.Arrays.asList("你好", "你", "输入", "主题");
         StringBuilder candidates = new StringBuilder();
-        for (int i = 0; i < model.candidateCount; i++) {
+        int shown = Math.min(model.candidateCount, words.size());
+        for (int i = 0; i < shown; i++) {
             if (i > 0) candidates.append("   ");
-            candidates.append(i + 1).append(' ').append(i == 0 ? "你好" : i == 1 ? "你" : i == 2 ? "输入" : "主题");
+            candidates.append(i + 1).append(' ').append(words.get(i));
             if (model.candidateComments) candidates.append("·注");
         }
-        if (model.candidateCount == 0) candidates.append("无候选");
+        if (shown == 0) candidates.append("无候选");
         int background = model.pressedPreview ? model.pressedCandidateBackgroundColor : model.candidateBackgroundColor;
         int text = model.pressedPreview ? model.pressedCandidateTextColor : model.candidateTextColor;
         panel(canvas, 2, y, 96, model.candidateHeight, candidates.toString(), background, text,
@@ -593,12 +678,27 @@ public final class ThemeKeyboardCanvas extends View {
             textColor = model.pressedPreview ? model.clipboardItemPressedTextColor : model.clipboardItemTextColor;
         }
         paint.setColor(textColor); paint.setTextAlign(Paint.Align.LEFT); paint.setTextSize(2.8f);
+        // R1: 展开候选/符号/剪贴板面板示意内容取自可配置候选词,替代硬编码示例。
         String text = preview == ThemeEditorModel.PreviewPanel.CANDIDATE_EXPANDED
-                ? "你好·注   输入·说明   主题·样式"
+                ? panelCandidateText()
                 : preview == ThemeEditorModel.PreviewPanel.SYMBOL ? ",   。   ?   !   @   #" : "示例文本\n最近复制";
         String[] lines = text.split("\n", -1);
         float baseline = content.top + 4;
         for (String line : lines) { canvas.drawText(line, content.left + 2, baseline, paint); baseline += 5; }
+    }
+
+    /** R1: 展开候选面板内容(候选词+注释),缺省时回退示例。 */
+    private String panelCandidateText() {
+        java.util.List<String> words = model.candidateWords != null && !model.candidateWords.isEmpty()
+                ? model.candidateWords : java.util.Arrays.asList("你好", "你", "输入", "主题");
+        StringBuilder result = new StringBuilder();
+        int shown = Math.min(4, words.size());
+        for (int i = 0; i < shown; i++) {
+            if (i > 0) result.append("   ");
+            result.append(words.get(i));
+            if (model.candidateComments) result.append("·注");
+        }
+        return result.toString();
     }
 
     private static float previewBarThickness(float sourceHeight) {
@@ -768,7 +868,7 @@ public final class ThemeKeyboardCanvas extends View {
                     updateTransform(); float dx = screenDx / transformScaleX, dy = screenDy / transformScaleY;
                     for (ThemeEditorModel.Key key : model.keys) {
                         float[] start = dragStarts.get(key.id);
-                        if (start != null) { key.x = Math.max(0, Math.min(100 - key.width, start[0] + dx)); key.y = Math.max(0, Math.min(80 - key.height, start[1] + dy)); }
+                        if (start != null) { key.x = Math.max(0, Math.min(100 - key.width, start[0] + dx)); key.y = Math.max(0, Math.min(model.keyboardHeight - key.height, start[1] + dy)); }
                     }
                     moved = true; pressedKey = null; invalidate(); if (listener != null) listener.onKeyMoved();
                 }

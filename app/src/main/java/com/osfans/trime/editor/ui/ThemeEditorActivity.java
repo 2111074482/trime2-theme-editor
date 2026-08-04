@@ -74,6 +74,8 @@ public class ThemeEditorActivity extends ComponentActivity {
     private static final int MENU_EDITOR_PAGES = 23;
     private static final int MENU_STYLE_BASE = 2000;
     private static final int MENU_KEYBOARD_BASE = 3000;
+    /** R2/⑨: 导出预览截图。 */
+    private static final int MENU_PREVIEW_SNAPSHOT = 30;
     private static final java.util.HashMap<String, String> ACTIVE_WRITE_SESSIONS = new java.util.HashMap<>();
 
     private ThemeEditorWorkspace workspace;
@@ -341,6 +343,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         menu.add(0, MENU_COMPONENT_EDITOR, 27, "候选栏 / 工具栏 / 面板").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(0, MENU_COMPOSITION_EDITOR, 28, "预编辑 / 编码窗口").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(0, MENU_ROLLBACK_INSTALL, 29, "回滚上次安装").setEnabled(lastInstallBackup != null).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_PREVIEW_SNAPSHOT, 30, "导出预览截图").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         if (project != null) {
             android.view.Menu styles = menu.addSubMenu("样式");
             for (int i = 0; i < project.getStyles().size(); i++) {
@@ -375,6 +378,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         if (item.getItemId() == MENU_COMPONENT_EDITOR) { showVisualComponentStyleEditor(); return true; }
         if (item.getItemId() == MENU_COMPOSITION_EDITOR) { showCompositionStyleEditor(); return true; }
         if (item.getItemId() == MENU_ROLLBACK_INSTALL) { rollbackLastInstall(true); return true; }
+        if (item.getItemId() == MENU_PREVIEW_SNAPSHOT) { capturePreviewSnapshot(); return true; }
         if (project != null && item.getItemId() >= MENU_STYLE_BASE && item.getItemId() < MENU_KEYBOARD_BASE) {
             requestProjectFileSwitch(project.getStyles().get(item.getItemId() - MENU_STYLE_BASE));
             return true;
@@ -384,6 +388,31 @@ public class ThemeEditorActivity extends ComponentActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /** R2/⑨: 导出当前预览画布为 PNG 并保存到相册(图片/Trime2Editor)。 */
+    private void capturePreviewSnapshot() {
+        if (workspace == null) { Toast.makeText(this, "预览尚未就绪", Toast.LENGTH_LONG).show(); return; }
+        try {
+            android.graphics.Bitmap bitmap = workspace.capturePreviewBitmap();
+            if (bitmap == null) throw new IOException("无法获取预览画面");
+            String name = "trime2-preview-" + System.currentTimeMillis() + ".png";
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, name);
+            values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png");
+            values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/Trime2Editor");
+            android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) throw new IOException("无法创建媒体条目");
+            try (java.io.OutputStream output = getContentResolver().openOutputStream(uri)) {
+                if (output == null) throw new IOException("无法打开输出流");
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output);
+            }
+            workspace.setStatus("预览截图已保存:" + name);
+            Toast.makeText(this, "预览截图已保存到 图片/Trime2Editor", Toast.LENGTH_LONG).show();
+        } catch (Exception error) {
+            workspace.setStatus("截图失败:" + safeErrorMessage(error));
+            Toast.makeText(this, "截图失败", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void requestWorkspaceReplacement(String action, Runnable replacement) {
@@ -673,9 +702,9 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             com.osfans.trime.editor.core.ThemeDocument main = new ThemeLuaParser().parse(readSmallText(project.getMainFile(), 4 * 1024 * 1024)).getDocument();
             LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
-            EditText name = simpleField(fields, "主题名称", stringValue(main.get("name"), projectDisplayName)); EditText author = simpleField(fields, "作者", stringValue(main.get("author"), "作者"));
-            android.widget.Spinner style = new android.widget.Spinner(this); java.util.ArrayList<String> styles = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getStyles()) styles.add(file.getName()); style.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, styles)); style.setSelection(Math.max(0, styles.indexOf(stringValue(main.get("style"), "light")))); fields.addView(style);
-            android.widget.Spinner keyboard = new android.widget.Spinner(this); java.util.ArrayList<String> keyboards = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getKeyboards()) keyboards.add(file.getName()); keyboard.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, keyboards)); keyboard.setSelection(Math.max(0, keyboards.indexOf(stringValue(main.get("keyboard"), "qwerty26")))); fields.addView(keyboard);
+            EditText name = simpleField(fields, "主题名称", ThemePreviewStyles.stringValue(main.get("name"), projectDisplayName)); EditText author = simpleField(fields, "作者", ThemePreviewStyles.stringValue(main.get("author"), "作者"));
+            android.widget.Spinner style = new android.widget.Spinner(this); java.util.ArrayList<String> styles = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getStyles()) styles.add(file.getName()); style.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, styles)); style.setSelection(Math.max(0, styles.indexOf(ThemePreviewStyles.stringValue(main.get("style"), "light")))); fields.addView(style);
+            android.widget.Spinner keyboard = new android.widget.Spinner(this); java.util.ArrayList<String> keyboards = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getKeyboards()) keyboards.add(file.getName()); keyboard.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, keyboards)); keyboard.setSelection(Math.max(0, keyboards.indexOf(ThemePreviewStyles.stringValue(main.get("keyboard"), "qwerty26")))); fields.addView(keyboard);
             android.widget.Button actionLabels = new android.widget.Button(this); actionLabels.setText("编辑操作标签(action_labels)"); actionLabels.setOnClickListener(view -> showActionLabelsEditor()); fields.addView(actionLabels);
             android.widget.Button presetEvents = new android.widget.Button(this); presetEvents.setText("管理预设事件(preset_keys)"); presetEvents.setOnClickListener(view -> showPresetEventManager()); fields.addView(presetEvents);
             android.widget.Button toolbarKeys = new android.widget.Button(this); toolbarKeys.setText("管理所选样式的工具栏按键(toolbar.keys)"); toolbarKeys.setOnClickListener(view -> { ThemeProjectFile target = project.style((String) style.getSelectedItem()); if (target == null) workspace.setStatus("所选样式资源不可用"); else showToolbarKeyManager(target); }); fields.addView(toolbarKeys);
@@ -796,8 +825,6 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private String relativeProjectFile(File file) { try { return file.getCanonicalPath().substring(project.getRoot().getCanonicalPath().length() + 1).replace(File.separatorChar, '/'); } catch (Exception error) { return file.getName(); } }
-
-    private static String stringValue(ThemeValue value, String fallback) { return value instanceof ThemeValue.LuaString ? ((ThemeValue.LuaString) value).getValue() : fallback; }
 
     private boolean isCurrentProjectFile(ThemeProjectFile file) { return repository instanceof DirectoryThemeProjectRepository && ((DirectoryThemeProjectRepository) repository).getSelected().getFile().equals(file.getFile()); }
 
@@ -2133,34 +2160,8 @@ public class ThemeEditorActivity extends ComponentActivity {
         ThemeEditorModel model = ThemeEditorModel.sample();
         model.layoutMode = ThemeEditorModel.LayoutMode.NONE;
         if (isCurrentStyleFile() && editor != null) applyPreviewStyles(model);
-        else applyStyleDocument(model, style);
+        else ThemePreviewStyles.applyStyleDocument(model, style);
         return model;
-    }
-
-    private void applyStyleDocument(ThemeEditorModel model, com.osfans.trime.editor.core.ThemeDocument style) {
-        model.backgroundColor = colorValue(style.get("keyboard.background"), colorValue(style.get("background"), model.backgroundColor));
-        model.candidateBackgroundColor = colorValue(style.get("candidate.background"), model.candidateBackgroundColor);
-        model.candidateTextColor = colorValue(style.get("candidate.text_color"), model.candidateTextColor);
-        model.toolbarBackgroundColor = colorValue(style.get("toolbar.background"), model.candidateBackgroundColor);
-        model.toolbarTextColor = model.candidateTextColor;
-        model.preeditBackgroundColor = colorValue(style.get("preedit.background"), model.preeditBackgroundColor);
-        model.preeditTextColor = colorValue(style.get("preedit.text_color"), model.preeditTextColor);
-        model.compositionBackgroundColor = colorValue(style.get("composition.background"), model.compositionBackgroundColor);
-        model.compositionTextColor = colorValue(style.get("composition.text_color"), model.compositionTextColor);
-        model.symbolBackgroundColor = colorValue(style.get("symbol.background"), model.symbolBackgroundColor);
-        model.symbolTabTextColor = colorValue(style.get("symbol.key.text_color"), model.symbolTabTextColor);
-        model.symbolIndicatorColor = colorValue(style.get("symbol.tab_bar.indicator_color"), colorValue(style.get("symbol.indicator_color"), model.symbolIndicatorColor));
-        model.pressedKeyBackgroundColor = colorValue(style.get("key.pressed.background"), model.pressedKeyBackgroundColor);
-        model.pressedKeyTextColor = colorValue(style.get("key.pressed.text_color"), model.pressedKeyTextColor);
-        model.pressedCandidateBackgroundColor = colorValue(style.get("candidate.pressed.background"), model.pressedCandidateBackgroundColor);
-        model.pressedCandidateTextColor = colorValue(style.get("candidate.pressed.text_color"), model.pressedCandidateTextColor);
-        model.candidateHeight = numberValue(style.get("candidate.height"), 48f) / 5.3f;
-        model.toolbarHeight = model.candidateHeight;
-        model.keyTextSize = Math.max(2f, numberValue(style.get("key.text_size"), 22f) / 4f);
-        model.keyCornerRadius = Math.max(0f, numberValue(style.get("key.corner_radius"), 8f) / 5f);
-        int fill = colorValue(style.get("key.background"), 0xfff5f5f5);
-        int text = colorValue(style.get("key.text_color"), 0xff1e1e1e);
-        for (ThemeEditorModel.Key key : model.keys) { key.fillColor = fill; key.textColor = text; }
     }
 
     private static final class StyleInput {
@@ -2660,7 +2661,7 @@ public class ThemeEditorActivity extends ComponentActivity {
     private ThemeEditorModel luaStylePreviewModel(com.osfans.trime.editor.core.ThemeDocument style) {
         ThemeEditorModel model = ThemeEditorModel.sample();
         model.layoutMode = ThemeEditorModel.LayoutMode.NONE;
-        applyStyleDocument(model, style);
+        ThemePreviewStyles.applyStyleDocument(model, style);
         return model;
     }
 
@@ -2767,8 +2768,10 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (!expected.equals(installed) || !expectedHashes.equals(installedHashes)) throw new IOException("已安装文件数量、大小或 SHA-256 校验失败");
             validateInstalledDocumentProject(target); writeInstallJournal("COMPLETED", target, backupReady ? backup : null, null);
             lastInstallTarget = target; lastInstallBackup = backupReady ? backup : null; lastBackupManifest = backupReady ? backupManifest : null; lastBackupHashManifest = backupReady ? backupHashes : null; invalidateOptionsMenu();
-            workspace.setStatus("主题已安装并重新导入校验:" + themeName + ";请在 Trime2 中手动重新部署或切换主题刷新" + (backupReady ? ";备份 " + backup.getName() : ""));
-            new android.app.AlertDialog.Builder(this).setTitle("安装完成").setMessage("目标文件已按数量、大小和 SHA-256 回读校验,并重新静态验证主题入口。当前没有可靠公开刷新接口,请返回 Trime2 设置执行重新部署,或切换到其他主题后再切回。编辑器不会伪造刷新成功。").setPositiveButton("知道了", null).show();
+            workspace.setStatus("主题已安装并重新导入校验:" + themeName + ";已发送重新部署广播" + (backupReady ? ";备份 " + backup.getName() : ""));
+            // R1: 真机预览——向 Trime2 发送部署广播,使其立即重新部署并加载新主题(计划书 §5.4)
+            try { sendBroadcast(new Intent("com.osfans.trime.action.DEPLOY")); } catch (Exception ignored) { }
+            new android.app.AlertDialog.Builder(this).setTitle("安装完成").setMessage("目标文件已按数量、大小和 SHA-256 回读校验,并重新静态验证主题入口。已发送部署广播(com.osfans.trime.action.DEPLOY),Trime2 收到后将自动重新部署;若广播未生效,请在 Trime2 设置中手动重新部署或切换主题后再切回。").setPositiveButton("知道了", null).show();
         } catch (Exception error) {
             boolean recovered = false;
             boolean originalUntouched = targetExisted && !targetMutated;
@@ -3750,7 +3753,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                 else return;
             }
             workspace.setPanelPreviewSource(source);
-            applyStyleDocument(model, style);
+            ThemePreviewStyles.applyStyleDocument(model, style);
             java.util.ArrayList<String> entityIds = new java.util.ArrayList<>(); for (ThemeStyleEntities.Entry entry : ThemeStyleEntities.list(source)) entityIds.add(entry.getId());
             java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>(); for (ThemeEditorModel.Key key : model.keys) ids.add(ThemeKeyStyleBatch.effectiveStyleId(key, entityIds));
             ThemeKeyStyleBatch.PreviewColors colors = ThemeKeyStyleBatch.previewColors(source, ids);
@@ -3759,11 +3762,15 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private static float numberValue(ThemeValue value, float fallback) {
-        return value instanceof ThemeValue.LuaNumber ? (float) ((ThemeValue.LuaNumber) value).getValue() : fallback;
+        return ThemePreviewStyles.numberValue(value, fallback);
     }
 
     private static int colorValue(ThemeValue value, int fallback) {
-        return value instanceof ThemeValue.LuaNumber ? (int) ((ThemeValue.LuaNumber) value).getValue() : fallback;
+        return ThemePreviewStyles.colorValue(value, fallback);
+    }
+
+    private static boolean booleanValue(ThemeValue value, boolean fallback) {
+        return ThemePreviewStyles.booleanValue(value, fallback);
     }
 
     private static String trim(float value) {

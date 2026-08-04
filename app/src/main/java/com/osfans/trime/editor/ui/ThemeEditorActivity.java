@@ -68,6 +68,7 @@ public class ThemeEditorActivity extends ComponentActivity {
     private static final int MENU_STYLE_EDITOR = 20;
     private static final int MENU_COMPOSITION_EDITOR = 21;
     private static final int MENU_ROLLBACK_INSTALL = 22;
+    private static final int MENU_EDITOR_PAGES = 23;
     private static final int MENU_STYLE_BASE = 2000;
     private static final int MENU_KEYBOARD_BASE = 3000;
     private static final java.util.HashMap<String, String> ACTIVE_WRITE_SESSIONS = new java.util.HashMap<>();
@@ -304,6 +305,7 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     @Override public void onBackPressed() {
+        if (workspace != null && workspace.closePropertiesDrawer()) return;
         if (viewModel.getDirty()) {
             new android.app.AlertDialog.Builder(this)
                     .setMessage("主题有未保存的更改")
@@ -317,8 +319,9 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     @Override public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        menu.add(0, MENU_PAGES, 1, "编辑器页面").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        menu.add(0, MENU_OPEN_LUA, 2, "打开 Lua 文件").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_PAGES, 1, "属性").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, MENU_EDITOR_PAGES, 2, "编辑器页面").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_OPEN_LUA, 3, "打开 Lua 文件").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(0, MENU_OPEN_FOLDER, 3, "打开主题文件夹").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(0, MENU_EXPORT, 20, "导出 ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         menu.add(0, MENU_SHARE, 21, "分享 ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
@@ -344,7 +347,8 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     @Override public boolean onOptionsItemSelected(android.view.MenuItem item) {
-        if (item.getItemId() == MENU_PAGES) { showEditorPages(); return true; }
+        if (item.getItemId() == MENU_PAGES) { workspace.togglePropertiesDrawer(); return true; }
+        if (item.getItemId() == MENU_EDITOR_PAGES) { showEditorPages(); return true; }
         if (item.getItemId() == MENU_OPEN_LUA) {
             requestWorkspaceReplacement("打开其他 Lua 文件", () -> openLuaLauncher.launch(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)));
             return true;

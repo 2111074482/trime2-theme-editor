@@ -47,6 +47,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     private boolean appendSelection;
     private boolean gridVisible = true;
     private boolean canvasPreviewMode;
+    private boolean propertyPanelOpen;
     private boolean dirty;
     private String canvasMode = "select";
     private int structurePage;
@@ -71,14 +72,14 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         Button flexButton = action("弹性盒", "编辑所选弹性容器(flex)"); Button flexManageButton = action("弹性盒...", "管理弹性容器(flex)"); Button absoluteButton = action("按键...", "绝对定位按键工具");
         Button previewButton = action("预览", "预览设备设置"); Button stateButton = action("状态...", "详细预览状态"); Button eventButton = action("事件...", "管理所选按键事件"); Button modeButton = action("中文", "切换预览输入模式"); Button candidateButton = action("候选栏", "切换候选栏预览"); Button toolbarButton = action("工具栏", "切换工具栏预览"); Button compositionButton = action("组字", "切换组合窗预览"); Button pressedButton = action("按下", "切换按下状态预览");
         Button addButton = action("按键", "添加按键"); Button duplicateButton = action("复制", "复制所选按键"); Button deleteButton = action("删除", "删除所选按键");
-        Button undoButton = action("↶", "撤销上次更改"); Button redoButton = action("↷", "重做上次更改"); Button saveButton = action(wideLayout ? "保存主题" : "保存", "保存主题"); Button moreButton = action("⋯", "全部编辑操作");
+        Button undoButton = action("↶", "撤销上次更改"); Button redoButton = action("↷", "重做上次更改"); Button saveButton = action(wideLayout ? "保存主题" : "保存", "保存主题"); Button moreButton = action(wideLayout ? "⋯" : "属性", wideLayout ? "全部编辑操作" : "打开右侧属性抽屉;长按打开全部编辑操作");
 
         LinearLayout topBar = panel(HORIZONTAL, 17); topBar.setGravity(Gravity.CENTER_VERTICAL); topBar.setPadding(dp(12), 0, dp(8), 0);
         TextView mark = label("T2", 14); mark.setGravity(Gravity.CENTER); mark.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); mark.setBackground(roundedBackground("#8b7cff", 10)); topBar.addView(mark, new LayoutParams(dp(34), dp(34)));
         LinearLayout brand = new LinearLayout(context); brand.setOrientation(VERTICAL); brand.setGravity(Gravity.CENTER_VERTICAL); TextView brandName = label(wideLayout ? "Trime2 主题工作台" : "Trime2", 13); brandName.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView project = label(wideLayout ? "主题工作台 · ● 实时" : "● 实时", 9); project.setTextColor(Color.parseColor("#929bb3")); brand.addView(brandName); brand.addView(project); LayoutParams brandParams = new LayoutParams(0, -1, 1); brandParams.leftMargin = dp(10); topBar.addView(brand, brandParams);
         styleTopAction(undoButton, false); styleTopAction(redoButton, false); styleTopAction(previewButton, false); styleTopAction(saveButton, true); styleTopAction(moreButton, false);
         topBar.addView(undoButton, topActionParams()); topBar.addView(redoButton, topActionParams());
-        topBar.addView(previewButton, topActionParams()); topBar.addView(saveButton, new LayoutParams(dp(wideLayout ? 92 : 58), dp(38))); topBar.addView(moreButton, topActionParams());
+        topBar.addView(previewButton, topActionParams()); topBar.addView(moreButton, topActionParams()); topBar.addView(saveButton, new LayoutParams(dp(wideLayout ? 92 : 58), dp(38)));
         LayoutParams topParams = new LayoutParams(-1, dp(58)); topParams.setMargins(dp(wideLayout ? 104 : 10), dp(10), dp(wideLayout ? 332 : 10), dp(8)); addView(topBar, topParams);
 
         canvas = new ThemeKeyboardCanvas(context); canvas.setBackgroundColor(Color.parseColor("#080b13"));
@@ -93,7 +94,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         LinearLayout previewStates = panel(VERTICAL, 15); previewStates.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView stateTitle = label("预览状态", 9); stateTitle.setTextColor(Color.parseColor("#929bb3")); previewStates.addView(stateTitle, new LayoutParams(-1, dp(24))); LinearLayout stateRow1 = new LinearLayout(context), stateRow2 = new LinearLayout(context); Button chineseChip = chip("中文"), asciiChip = chip("ASCII"), composeChip = chip("组字"), pagingChip = chip("翻页"), pressedChip = chip("按下"), detailChip = chip("更多..."); for (Button b : new Button[]{chineseChip, asciiChip, composeChip}) stateRow1.addView(b, new LayoutParams(0, dp(30), 1)); for (Button b : new Button[]{pagingChip, pressedChip, detailChip}) stateRow2.addView(b, new LayoutParams(0, dp(30), 1)); previewStates.addView(stateRow1); previewStates.addView(stateRow2);
 
         LinearLayout structurePanel = panel(VERTICAL, 15); structurePanel.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView structureTitle = label("结构", 9); structureTitle.setTextColor(Color.parseColor("#929bb3")); structurePanel.addView(structureTitle, new LayoutParams(-1, dp(22))); LinearLayout tabs = new LinearLayout(context); statisticsTab = chip("统计"); layersTab = chip("图层"); historyTab = chip("历史"); tabs.addView(statisticsTab, new LayoutParams(0, dp(29), 1)); tabs.addView(layersTab, new LayoutParams(0, dp(29), 1)); tabs.addView(historyTab, new LayoutParams(0, dp(29), 1)); structurePanel.addView(tabs); structureContent = new LinearLayout(context); structureContent.setOrientation(VERTICAL); structurePanel.addView(structureContent, new LayoutParams(-1, -2));
-        if (!wideLayout) { propertyContainer.removeView(propertyScroll); propertyContainer.addView(previewStates, new LayoutParams(-1, dp(102))); propertyContainer.addView(structurePanel, new LayoutParams(-1, -2)); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); }
+        // The mobile HTML layout keeps preview/structure cards off-canvas; its drawer contains only the four property tabs.
 
         LinearLayout toolbox = panel(wideLayout ? VERTICAL : HORIZONTAL, 20); toolbox.setGravity(Gravity.CENTER); toolbox.setPadding(dp(6), dp(6), dp(6), dp(6)); TextView toolboxTitle = label(wideLayout ? "组件" : "", 8); toolboxTitle.setTextColor(Color.parseColor("#7f879c")); if (wideLayout) toolbox.addView(toolboxTitle, new LayoutParams(-1, dp(28))); Button propertiesButton = action("属性", "打开属性检查器"); for (Button b : new Button[]{appendSelectButton, addButton, rowButton, candidateButton, propertiesButton}) { styleCompactAction(b); toolbox.addView(b, wideLayout ? new LayoutParams(dp(68), dp(50)) : compactActionParams()); }
 
@@ -103,15 +104,17 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         if (wideLayout) { FrameLayout.LayoutParams previewParams = new FrameLayout.LayoutParams(dp(184), dp(102), Gravity.TOP | Gravity.START); previewParams.setMargins(dp(12), dp(62), 0, 0); stage.addView(previewStates, previewParams); FrameLayout.LayoutParams structureParams = new FrameLayout.LayoutParams(dp(200), -2, Gravity.BOTTOM | Gravity.START); structureParams.setMargins(dp(12), 0, 0, dp(12)); stage.addView(structurePanel, structureParams); }
 
         LinearLayout body = new LinearLayout(context); body.setOrientation(HORIZONTAL); body.setClipChildren(false);
-        if (wideLayout) { LayoutParams toolboxParams = new LayoutParams(dp(82), -1); toolboxParams.setMargins(dp(18), dp(8), dp(8), dp(8)); body.addView(toolbox, toolboxParams); body.addView(stage, new LayoutParams(0, -1, 1)); LayoutParams inspectorParams = new LayoutParams(dp(300), -1); inspectorParams.setMargins(dp(8), dp(8), dp(18), dp(8)); body.addView(propertyContainer, inspectorParams); }
-        else { propertyContainer.setVisibility(GONE); FrameLayout.LayoutParams drawer = new FrameLayout.LayoutParams(dp(300), -1, Gravity.END); drawer.setMargins(dp(12), dp(52), dp(10), dp(10)); stage.addView(propertyContainer, drawer); body.addView(stage, new LayoutParams(0, -1, 1)); }
+        if (wideLayout) { propertyPanelOpen = true; LayoutParams toolboxParams = new LayoutParams(dp(82), -1); toolboxParams.setMargins(dp(18), dp(8), dp(8), dp(8)); body.addView(toolbox, toolboxParams); body.addView(stage, new LayoutParams(0, -1, 1)); LayoutParams inspectorParams = new LayoutParams(dp(300), -1); inspectorParams.setMargins(dp(8), dp(8), dp(18), dp(8)); body.addView(propertyContainer, inspectorParams); }
+        else { propertyPanelOpen = false; propertyContainer.setVisibility(GONE); FrameLayout.LayoutParams drawer = new FrameLayout.LayoutParams(dp(280), -1, Gravity.END); drawer.setMargins(dp(12), dp(4), dp(10), dp(10)); stage.addView(propertyContainer, drawer); body.addView(stage, new LayoutParams(0, -1, 1)); }
         addView(body, new LayoutParams(-1, 0, 1));
         if (!wideLayout) { HorizontalScrollView bottomScroll = new HorizontalScrollView(context); bottomScroll.setHorizontalScrollBarEnabled(false); bottomScroll.addView(toolbox, new HorizontalScrollView.LayoutParams(-2, dp(62))); LayoutParams bottomTools = new LayoutParams(-1, dp(66)); bottomTools.setMargins(dp(10), dp(3), dp(10), dp(3)); addView(bottomScroll, bottomTools); }
 
         LinearLayout statusBar = panel(HORIZONTAL, 13); statusBar.setGravity(Gravity.CENTER_VERTICAL); statusBar.setPadding(dp(12), 0, dp(6), 0); status = label("所有更改已保存", 10); status.setTextColor(Color.parseColor("#8d95a9")); status.setSingleLine(true); status.setEllipsize(android.text.TextUtils.TruncateAt.END); statusBar.addView(status, new LayoutParams(0, -1, 1)); statusContext = label("", 9); statusContext.setTextColor(Color.parseColor("#697287")); if (wideLayout) statusBar.addView(statusContext, new LayoutParams(-2, -1)); Button zoomOut = action("−", "缩小"); Button zoomIn = action("+", "放大"); Button fit = action("适应", "使画布适应窗口"); zoomValue = label("100%", 10); zoomValue.setGravity(Gravity.CENTER); for (Button b : new Button[]{zoomOut, zoomIn, fit}) styleCanvasAction(b); statusBar.addView(zoomOut, new LayoutParams(dp(32), dp(30))); statusBar.addView(zoomValue, new LayoutParams(dp(48), dp(30))); statusBar.addView(zoomIn, new LayoutParams(dp(32), dp(30))); statusBar.addView(fit, new LayoutParams(dp(42), dp(30))); LayoutParams statusParams = new LayoutParams(-1, dp(42)); statusParams.setMargins(dp(wideLayout ? 120 : 10), dp(4), dp(wideLayout ? 340 : 10), dp(10)); addView(statusBar, statusParams);
 
         final Button[] selectionActions = {appendSelectButton, selectAllButton, invertButton, rowButton, batchButton}; final Button[] structureActions = {addButton, duplicateButton, deleteButton, rowManageButton, flexButton, flexManageButton, absoluteButton}; final Button[] pageActions = {previousPageButton, nextPageButton, pageAddButton, pageDeleteButton, pageManageButton}; final Button[] previewActions = {previewButton, stateButton, eventButton, modeButton, candidateButton, toolbarButton, compositionButton, pressedButton}; final Button[] dataActions = {clipboardButton};
-        moreButton.setOnClickListener(v -> showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions)); propertiesButton.setOnClickListener(v -> showProperties(true)); closeProperties.setOnClickListener(v -> showProperties(false));
+        moreButton.setOnClickListener(v -> { if (wideLayout) showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions); else togglePropertiesDrawer(); });
+        if (!wideLayout) moreButton.setOnLongClickListener(v -> { showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions); return true; });
+        propertiesButton.setOnClickListener(v -> showProperties(true)); closeProperties.setOnClickListener(v -> showProperties(false));
         appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ 多选" : "多选"); setStatus(appendSelection ? "已启用追加选择" : "已启用单选"); }); selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection()); rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
         previousPageButton.setOnClickListener(v -> switchKeyMapPage(-1)); nextPageButton.setOnClickListener(v -> switchKeyMapPage(1)); pageAddButton.setOnClickListener(v -> addKeyMapPage()); pageDeleteButton.setOnClickListener(v -> deleteKeyMapPage()); pageManageButton.setOnClickListener(v -> manageKeyMapPage()); flexButton.setOnClickListener(v -> editSelectedFlex()); flexManageButton.setOnClickListener(v -> manageFlexContainers()); absoluteButton.setOnClickListener(v -> manageAbsoluteKeys());
         previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("请先选择按键"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
@@ -869,7 +872,44 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         } else if (view instanceof android.view.ViewGroup) view.setBackgroundColor(Color.TRANSPARENT);
         if (view instanceof android.view.ViewGroup) { android.view.ViewGroup group = (android.view.ViewGroup) view; for (int i = 0; i < group.getChildCount(); i++) themePropertyEditor(group.getChildAt(i)); }
     }
-    private void showProperties(boolean visible) { propertyPanel.setVisibility(visible ? VISIBLE : GONE); if (visible) propertyPanel.bringToFront(); }
+    private void showProperties(boolean visible) {
+        boolean alreadyVisible = propertyPanelOpen && propertyPanel.getVisibility() == VISIBLE;
+        propertyPanel.animate().cancel();
+        propertyPanelOpen = visible;
+        if (wideLayout) {
+            propertyPanel.setTranslationX(0f);
+            propertyPanel.setVisibility(visible ? VISIBLE : GONE);
+            if (visible) propertyPanel.bringToFront();
+            return;
+        }
+        if (visible) {
+            if (alreadyVisible) { propertyPanel.bringToFront(); return; }
+            propertyPanel.setTranslationX(dp(300));
+            propertyPanel.setVisibility(VISIBLE);
+            propertyPanel.bringToFront();
+            propertyPanel.animate().translationX(0f).setDuration(260)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        } else if (propertyPanel.getVisibility() == VISIBLE) {
+            propertyPanel.animate().translationX(dp(300)).setDuration(220)
+                    .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                    .withEndAction(() -> {
+                        if (!propertyPanelOpen) {
+                            propertyPanel.setVisibility(GONE);
+                            propertyPanel.setTranslationX(0f);
+                        }
+                    }).start();
+        }
+    }
+
+    /** Mirrors the mobile HTML prototype: the top-right property control toggles a right drawer. */
+    public void togglePropertiesDrawer() { showProperties(!propertyPanelOpen); }
+
+    /** Returns true when the mobile drawer consumed the back action. */
+    public boolean closePropertiesDrawer() {
+        if (wideLayout || !propertyPanelOpen) return false;
+        showProperties(false);
+        return true;
+    }
     private void showActionGroups(Button[] selection, Button[] structure, Button[] pages, Button[] preview, Button[] data) { String[] groups = {"选择与批量", "按键与布局", "按键映射页(key_maps)", "预览与事件", "剪贴板"}; Button[][] actions = {selection, structure, pages, preview, data}; new android.app.AlertDialog.Builder(getContext()).setTitle("编辑操作").setItems(groups, (dialog, which) -> showActionList(groups[which], actions[which])).setNegativeButton("关闭", null).show(); }
     private void showActionList(String title, Button[] actions) { String[] labels = new String[actions.length]; for (int i = 0; i < actions.length; i++) labels[i] = actions[i].getText().toString(); new android.app.AlertDialog.Builder(getContext()).setTitle(title).setItems(labels, (dialog, which) -> actions[which].performClick()).setNegativeButton("关闭", null).show(); }
     public void setCallbacks(ThemeEditorCallbacks callbacks) { this.callbacks = callbacks; }

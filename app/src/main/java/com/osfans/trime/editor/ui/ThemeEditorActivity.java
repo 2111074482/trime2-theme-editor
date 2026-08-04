@@ -22,6 +22,8 @@ import androidx.documentfile.provider.DocumentFile;
 import androidx.lifecycle.SavedStateViewModelFactory;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.osfans.trime.Config;
+import com.osfans.trime.core.Rime;
 import com.osfans.trime.editor.core.ThemeEditor;
 import com.osfans.trime.editor.core.ThemeFieldRegistry;
 import com.osfans.trime.editor.core.ThemeFieldCoverage;
@@ -46,6 +48,7 @@ import com.osfans.trime.editor.project.ThemeResourceStats;
 import com.osfans.trime.editor.project.ThemeProjectCreator;
 import com.osfans.trime.editor.project.ThemeProjectMutator;
 import com.osfans.trime.editor.project.ResourceDeleteResult;
+import com.osfans.trime.util.Function;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -283,9 +286,14 @@ public class ThemeEditorActivity extends ComponentActivity {
         else if (!restoredProject && viewModel.getCurrentUri() != null) loadUri(viewModel.getCurrentUri());
         else if (!restoredProject && getIntent().hasExtra(EXTRA_THEME)) loadFile(new File(getIntent().getStringExtra(EXTRA_THEME)));
         else if (!restoredProject) {
-            editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
-            workspace.setModel(toUiModel(editor.getDocument()));
-            restoreWorkspaceState(); offerRecoveryDraft();
+            if (openInputThemeProject()) {
+                restoreWorkspaceState();
+            } else {
+                editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
+                workspace.setModel(toUiModel(editor.getDocument()));
+                restoreWorkspaceState();
+            }
+            offerRecoveryDraft();
         }
         if (state != null) restoreCurrentPageAfterRecreation();
         restoringDirtySession = false; restoringProjectFile = null;
@@ -1583,6 +1591,58 @@ public class ThemeEditorActivity extends ComponentActivity {
             workspace.setStatus("项目加载失败:" + safeErrorMessage(error));
             Toast.makeText(this, "无法加载主题项目", Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** Opens the theme currently selected in the input method, if its directory is statically readable. */
+    private boolean openInputThemeProject() {
+        try {
+            String theme = Config.getTheme();
+            if (theme == null || theme.trim().isEmpty()) return false;
+            File root = new File(Config.getThemeDir(), theme).getCanonicalFile();
+            if (!new File(root, "main.lua").isFile()) return false;
+            clearMigrationHistory();
+            project = ThemeProject.Companion.discover(root);
+            projectDisplayName = theme;
+            String explicitStyle = Config.getStyle();
+            String explicitKeyboard = activeKeyboardName(project);
+            projectSnapshot = ThemeProjectSnapshot.Companion.loadSelected(project, explicitStyle, explicitKeyboard, new ThemeLuaParser());
+            ThemeProjectFile selected = projectSnapshot.getKeyboardSource();
+            if (selected == null) selected = projectSnapshot.getStyleSource();
+            if (selected == null) selected = new ThemeProjectFile("main", project.getMainFile(), ThemeProjectFile.Kind.MAIN);
+            repository = new DirectoryThemeProjectRepository(project, selected);
+            currentUri = Uri.fromFile(selected.getFile());
+            viewModel.setCurrentUri(currentUri);
+            claimSession(sessionIdentity());
+            editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
+            com.osfans.trime.editor.core.ParseResult parsed = editor.load(repository);
+            openedSourceFingerprint = ThemeSaveCoordinator.Companion.fingerprint(repository.read());
+            layoutEditable = findLayoutRoot(editor.getDocument()) != null;
+            viewModel.markLoaded(recoveryIdentity(), openedSourceFingerprint);
+            viewModel.setCurrentFile(currentUri == null ? null : currentUri.toString());
+            workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel());
+            openedFingerprint = ThemeSourceFingerprint.Companion.capture(selected.getFile());
+            openedImportedFingerprint = null;
+            int diagnosticCount = ThemeProjectDiagnostics.INSTANCE.collect(projectSnapshot, new ThemeFieldRegistry()).size() + parsed.getDiagnostics().size();
+            workspace.setStatus("已加载输入法当前主题 " + theme + ":" + project.getStyles().size() + " 个样式," + project.getKeyboards().size() + " 个键盘," + diagnosticCount + " 条诊断" + (layoutEditable ? "" : ";当前键盘为动态或无静态布局,画布仅预览"));
+            invalidateOptionsMenu();
+            return true;
+        } catch (Exception error) {
+            project = null; projectSnapshot = null; repository = null; currentUri = null;
+            workspace.setStatus("无法打开输入法当前主题:" + safeErrorMessage(error));
+            return false;
+        }
+    }
+
+    /** Reads the input method's saved default keyboard id, accepting only files discovered in the project. */
+    private String activeKeyboardName(ThemeProject project) {
+        String schema = "";
+        try { schema = Rime.getCurrentRimeSchema(); } catch (Throwable ignored) { }
+        if (schema == null || schema.isEmpty() || ".default".equals(schema)) schema = Function.getPref(this).getString("select_schema_id", "");
+        if (schema == null || schema.isEmpty()) return null;
+        String saved = Function.loadString(this, Config.getTheme() + "_" + schema + "_keyboard", "");
+        if (saved == null || saved.trim().isEmpty()) return null;
+        String name = saved.trim();
+        return project.keyboard(name) != null ? name : null;
     }
 
     private void loadTree(Uri uri) {
@@ -3680,7 +3740,11 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             if (isCurrentStyleFile() && editor != null) { style = editor.getDocument(); source = editor.source(); }
             else {
-                ThemeProjectFile styleSource = project == null || editor == null ? null : resolvedStyleSource(editor.getDocument());
+                ThemeProjectFile styleSource = null;
+                if (project != null && editor != null) {
+                    if (projectSnapshot != null && projectSnapshot.getStyleSource() != null) styleSource = projectSnapshot.getStyleSource();
+                    else styleSource = resolvedStyleSource(editor.getDocument());
+                }
                 if (styleSource != null) { source = new String(readFileBytes(styleSource.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); style = new ThemeLuaParser().parse(source).getDocument(); }
                 else if (projectSnapshot != null && projectSnapshot.getStyle() != null && editor != null && !(editor.getDocument().get("style") instanceof ThemeValue.RawLuaNode)) { style = projectSnapshot.getStyle().getDocument(); source = projectSnapshot.getStyleSource() == null ? "" : new String(readFileBytes(projectSnapshot.getStyleSource().getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); }
                 else return;

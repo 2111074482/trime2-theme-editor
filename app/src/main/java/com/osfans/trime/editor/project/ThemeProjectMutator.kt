@@ -78,14 +78,48 @@ object ThemeProjectMutator {
         val selected = (main.get("keyboard") as? ThemeValue.LuaString)?.value
         require(selected != source.name) { "不能删除默认键盘" }
         require(project.keyboards.size > 1) { "主题至少需要一个键盘" }
-        val references = project.root.walkTopDown().filter { it.isFile && it.extension.equals("lua", true) && it != source.file }
-            .any { file -> runCatching { file.readText(Charsets.UTF_8) }.getOrDefault("").contains(Regex("['\"]${Regex.escape(source.name)}['\"]")) }
-        require(!references) { "键盘标识仍被其他 Lua 文件引用" }
+        val references = project.root.walkTopDown()
+            .filter { it.isFile && it.extension.equals("lua", true) && it != source.file }
+            .any { file -> keyboardReferenceState(file, source.name) != false }
+        require(!references) { "键盘标识仍被其他 Lua 文件引用,或动态 Lua 使引用无法确定" }
     }
 
     @JvmStatic fun deleteKeyboard(project: ThemeProject, source: ThemeProjectFile) {
         validateKeyboardDeletion(project, source)
         require(source.file.delete()) { "无法删除键盘" }
+    }
+
+    /** true=静态引用,false=无引用,null=动态来源导致无法安全确定。 */
+    private fun keyboardReferenceState(file: File, id: String): Boolean? {
+        val parsed = runCatching { ThemeLuaParser().parse(file.readText(Charsets.UTF_8)) }.getOrNull() ?: return null
+        if (parsed.diagnostics.any { it.severity.name == "ERROR" }) return null
+        val selected = parsed.document.sourceStatements.filter { it.path == "keyboard" }.mapNotNull { statement ->
+            ThemeLuaParser().parse(statement.text.trim()).document.get("keyboard")
+        }
+        if (selected.any { it is ThemeValue.LuaString && it.value == id }) return true
+        if (selected.any { it is ThemeValue.RawLuaNode }) return null
+        val event = "Keyboard_$id"
+        fun inspect(value: ThemeValue): Boolean? = when (value) {
+            is ThemeValue.LuaString -> value.value == event
+            is ThemeValue.LuaTable -> {
+                var uncertain = false
+                for (child in value.fields.values) when (inspect(child)) {
+                    true -> return true
+                    null -> uncertain = true
+                    false -> Unit
+                }
+                if (uncertain) null else false
+            }
+            is ThemeValue.RawLuaNode -> if (Regex("[\"']${Regex.escape(event)}[\"']").containsMatchIn(value.source)) true else null
+            else -> false
+        }
+        var uncertain = parsed.document.nodes.any { !it.assignment }
+        for (node in parsed.document.nodes) when (inspect(node.value)) {
+            true -> return true
+            null -> uncertain = true
+            false -> Unit
+        }
+        return if (uncertain) null else false
     }
 
     @JvmStatic fun setDefaultKeyboard(project: ThemeProject, id: String) {

@@ -137,7 +137,7 @@ class ThemeComponentStylesTest : StringSpec({
         ThemeComponentStyles.updateString(source, "preedit.inline", "preview") shouldContain "inline = \"preview\""
         ThemeComponentStyles.updatePreeditInline(source, null, true).let { updated ->
             updated shouldContain "inline = true"
-            ThemeComponentStyles.read(updated, "preedit.inline").compatibilityDiagnostic shouldContain "runtime previews it as none"
+            ThemeComponentStyles.read(updated, "preedit.inline").compatibilityDiagnostic shouldContain "按 none 预览"
         }
         shouldThrow<IllegalArgumentException> { ThemeComponentStyles.updateString(source, "composition.position", "middle") }
         shouldThrow<IllegalArgumentException> { ThemeComponentStyles.updateBoolean(source, "composition.movable", true) }
@@ -147,7 +147,7 @@ class ThemeComponentStylesTest : StringSpec({
         shouldThrow<IllegalArgumentException> { ThemeComponentStyles.updateNumber(source, "composition.text_size", 18.5) }
         ThemeComponentStyles.read("composition.text_size = 18.5\n", "composition.text_size").let {
             it.numberValue shouldBe 18.5
-            it.compatibilityDiagnostic shouldContain "runtime fallback"
+            it.compatibilityDiagnostic shouldContain "运行时回退值"
         }
         ThemeComponentStyles.updateNumber(source, "composition.max_entries", -1.0) shouldContain "max_entries = -1"
         ThemeComponentStyles.updateNumber(source, "composition.min_height", 0.0) shouldContain "min_height = 0"
@@ -178,7 +178,7 @@ class ThemeComponentStylesTest : StringSpec({
         val source = "composition = { line_spacing_multiplier = 0 }\n"
         ThemeComponentStyles.read(source, "composition.line_spacing_multiplier").let {
             it.numberValue shouldBe 0.0
-            it.compatibilityDiagnostic shouldContain "normalizes"
+            it.compatibilityDiagnostic shouldContain "归一为"
             it.compatibilityDiagnostic shouldContain "1"
         }
         ThemeComponentStyles.updateNumber(source, "composition.line_spacing_multiplier", 0.0)
@@ -188,12 +188,12 @@ class ThemeComponentStylesTest : StringSpec({
     "preserves unknown composition enums while normalizing preview semantics" {
         ThemeComponentStyles.read("composition.position = \"future\"\n", "composition.position").let {
             it.stringValue shouldBe "future"
-            it.compatibilityDiagnostic shouldBe "Unknown composition.position is preserved and previewed as fixed"
+            it.compatibilityDiagnostic shouldBe "未知编码窗口位置(composition.position)已保留,预览按 fixed 显示"
         }
         ThemeComponentStyles.read("composition.position = \"LEFT_UP\"\n", "composition.position").compatibilityDiagnostic shouldBe null
         ThemeComponentStyles.read("composition.movable = \"future\"\n", "composition.movable").let {
             it.stringValue shouldBe "future"
-            it.compatibilityDiagnostic shouldContain "runtime treats every string except false as movable true"
+            it.compatibilityDiagnostic shouldContain "除 false 外的字符串视为可移动"
         }
     }
 

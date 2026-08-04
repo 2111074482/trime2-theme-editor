@@ -18,8 +18,11 @@ class ThemeEditor @JvmOverloads constructor(
     fun set(path: String, value: ThemeValue): List<ThemeDiagnostic> {
         val parts = path.split('.').filter { it.isNotBlank() }
         val root = parts.firstOrNull().orEmpty()
-        if (document.sourceStatements.count { it.path == path } > 1) {
-            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "字段 '$path' 存在重复赋值,必须使用 Lua 源代码编辑器", path))
+        val duplicateOwner = parts.indices
+            .map { parts.take(it + 1).joinToString(".") }
+            .firstOrNull { owner -> document.sourceStatements.count { it.path == owner } > 1 }
+        if (duplicateOwner != null) {
+            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "字段 '$duplicateOwner' 存在重复赋值,必须使用 Lua 源代码编辑器", path))
         }
         val rawAncestor = parts.indices
             .map { parts.take(it + 1).joinToString(".") }

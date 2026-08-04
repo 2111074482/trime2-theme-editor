@@ -44,6 +44,8 @@ object ThemeProjectCreator {
     }
 
     @JvmStatic fun mainSource(spec: Spec): String = buildString {
+        append("editor_schema_version = ").append(EDITOR_SCHEMA_VERSION).append('\n')
+        append("editor_source = ").append(luaString(EDITOR_SOURCE)).append('\n')
         append("name = ").append(luaString(spec.themeName)).append('\n')
         append("author = ").append(luaString(spec.author)).append('\n')
         append("style = ").append(luaString(spec.styleName)).append('\n')

@@ -208,6 +208,7 @@ object ThemeLuaCommentFilter {
                 continue
             }
             if (quote == '-' && index + 1 < source.length && source[index + 1] == '-') {
+                while (result.isNotEmpty() && (result.last() == ' ' || result.last() == '\t')) result.setLength(result.length - 1)
                 val commentEquals = longBracketEquals(source, index + 2)
                 if (commentEquals >= 0) {
                     val close = findLongBracketEnd(source, index + 2, commentEquals)

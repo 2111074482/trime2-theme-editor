@@ -175,6 +175,7 @@ object ThemeStyleEntities {
         if (path == id || path?.startsWith("$id.") == true) return false
         if (path == null) return Regex("\\b${Regex.escape(id)}\\b").containsMatchIn(text)
         val value = parseAssignmentValue(text)
+        if (path.substringAfterLast('.') == "style" && value is ThemeValue.LuaString && value.value == id) return false
         if (value is ThemeValue.RawLuaNode) {
             val recognizedClone = clone.matchEntire(value.source.trim())?.groupValues?.get(1) == id
             return !recognizedClone && Regex("\\b${Regex.escape(id)}\\b").containsMatchIn(value.source)

@@ -91,11 +91,11 @@ class ThemeKeyEventsTest : StringSpec({
         val conditional = ThemeLuaParser().parse("keys = { { click = \"a\", composing = \"CommitRawInput\" } }\n").document
         val options = ThemeKeyEvents.options(conditional, "keys.#1")
         options.effectiveSendBindings shouldBe true
-        options.sendBindingsSource shouldBe "runtime default: conditional event present"
+        options.sendBindingsSource shouldBe "运行时默认值:存在条件事件"
         val empty = ThemeLuaParser().parse("keys = { { composing = \"\" } }\n").document
         ThemeKeyEvents.options(empty, "keys.#1").effectiveSendBindings shouldBe false
         val dynamic = ThemeLuaParser().parse("keys = { { composing = make_event() } }\n").document
-        ThemeKeyEvents.options(dynamic, "keys.#1").sendBindingsSource shouldBe "uncertain: conditional source is not a runtime string"
+        ThemeKeyEvents.options(dynamic, "keys.#1").sendBindingsSource shouldBe "无法确定:条件源不是运行时字符串"
     }
 
 })

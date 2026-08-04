@@ -11,6 +11,9 @@ import java.util.List;
 
 /** Minimal UI-owned theme contract; adapt core data at the integration boundary. */
 public final class ThemeEditorModel {
+    private static int opaqueRgb(int red, int green, int blue) {
+        return 0xff000000 | (red << 16) | (green << 8) | blue;
+    }
     public static final class Key {
         public String id;
         public String sourcePath = "";
@@ -34,9 +37,9 @@ public final class ThemeEditorModel {
         public boolean hasNonLiteralEventSource;
         public float x, y, width, height;
         public float sourceX, sourceY, sourceWidth, sourceHeight;
-        public int fillColor = Color.rgb(245, 245, 245);
+        public int fillColor = opaqueRgb(245, 245, 245);
         public boolean editorLocked;
-        public int textColor = Color.rgb(30, 30, 30);
+        public int textColor = opaqueRgb(30, 30, 30);
 
         public Key(String id, String label, float x, float y, float width, float height) {
             this.id = id; this.label = label; this.sourceLabel = label; this.x = x; this.y = y;
@@ -185,26 +188,26 @@ public final class ThemeEditorModel {
     public String selectedFlexContainerId;
     public final List<Key> keys = new ArrayList<>();
     public final java.util.LinkedHashSet<String> selectedIds = new java.util.LinkedHashSet<>();
-    public int backgroundColor = Color.rgb(224, 228, 232);
-    public int candidateBackgroundColor = Color.rgb(232, 237, 241);
-    public int candidateTextColor = Color.rgb(38, 50, 56);
-    public int toolbarBackgroundColor = Color.rgb(216, 229, 238);
-    public int toolbarTextColor = Color.rgb(38, 50, 56);
-    public int preeditBackgroundColor = Color.rgb(136, 136, 136);
-    public int preeditTextColor = Color.rgb(170, 170, 170);
+    public int backgroundColor = opaqueRgb(224, 228, 232);
+    public int candidateBackgroundColor = opaqueRgb(232, 237, 241);
+    public int candidateTextColor = opaqueRgb(38, 50, 56);
+    public int toolbarBackgroundColor = opaqueRgb(216, 229, 238);
+    public int toolbarTextColor = opaqueRgb(38, 50, 56);
+    public int preeditBackgroundColor = opaqueRgb(136, 136, 136);
+    public int preeditTextColor = opaqueRgb(170, 170, 170);
     public float preeditTextSize = 18f;
     public int compositionBackgroundColor = Color.TRANSPARENT;
     public int compositionTextColor = Color.BLACK;
-    public int symbolBackgroundColor = Color.rgb(217, 231, 255);
-    public int symbolTabTextColor = Color.rgb(38, 50, 56);
-    public int symbolIndicatorColor = Color.rgb(21, 101, 192);
-    public int pressedKeyBackgroundColor = Color.rgb(144, 202, 249);
-    public int pressedKeyTextColor = Color.rgb(30, 30, 30);
-    public int pressedCandidateBackgroundColor = Color.rgb(200, 210, 218);
-    public int pressedCandidateTextColor = Color.rgb(38, 50, 56);
+    public int symbolBackgroundColor = opaqueRgb(217, 231, 255);
+    public int symbolTabTextColor = opaqueRgb(38, 50, 56);
+    public int symbolIndicatorColor = opaqueRgb(21, 101, 192);
+    public int pressedKeyBackgroundColor = opaqueRgb(144, 202, 249);
+    public int pressedKeyTextColor = opaqueRgb(30, 30, 30);
+    public int pressedCandidateBackgroundColor = opaqueRgb(200, 210, 218);
+    public int pressedCandidateTextColor = opaqueRgb(38, 50, 56);
     public float candidateTextSize = 22f;
-    public int candidateCommentTextColor = Color.rgb(68, 68, 68);
-    public int candidatePressedCommentTextColor = Color.rgb(68, 68, 68);
+    public int candidateCommentTextColor = opaqueRgb(68, 68, 68);
+    public int candidatePressedCommentTextColor = opaqueRgb(68, 68, 68);
     public float candidateCommentTextSize = 12f;
     public int candidateKeyBackgroundColor = Color.WHITE;
     public int candidateKeyTextColor = Color.BLACK;
@@ -214,8 +217,8 @@ public final class ThemeEditorModel {
     public int expandedCandidateTextColor = Color.BLACK;
     public int expandedCandidatePressedBackgroundColor = Color.TRANSPARENT;
     public int expandedCandidatePressedTextColor = Color.BLACK;
-    public int expandedCandidateCommentTextColor = Color.rgb(68, 68, 68);
-    public int expandedCandidatePressedCommentTextColor = Color.rgb(68, 68, 68);
+    public int expandedCandidateCommentTextColor = opaqueRgb(68, 68, 68);
+    public int expandedCandidatePressedCommentTextColor = opaqueRgb(68, 68, 68);
     public float expandedCandidateTextSize = 22f;
     public float expandedCandidateCommentTextSize = 12f;
     public int expandedCandidateKeyBackgroundColor = Color.WHITE;
@@ -287,12 +290,12 @@ public final class ThemeEditorModel {
     public float compositionLineSpacing = 1f;
     public float compositionLineSpacingMultiplier = 1f;
     public float compositionTextSize = 18f;
-    public int compositionPressedBackgroundColor = Color.rgb(204, 204, 204);
-    public int compositionPressedTextColor = Color.rgb(38, 50, 56);
+    public int compositionPressedBackgroundColor = opaqueRgb(204, 204, 204);
+    public int compositionPressedTextColor = opaqueRgb(38, 50, 56);
     public int compositionKeyBackgroundColor = Color.WHITE;
     public int compositionKeyTextColor = Color.BLACK;
     public float compositionKeyTextSize = 18f;
-    public int compositionKeyPressedBackgroundColor = Color.rgb(144, 202, 249);
+    public int compositionKeyPressedBackgroundColor = opaqueRgb(144, 202, 249);
     public int compositionKeyPressedTextColor = Color.BLACK;
     public int compositionKeyHintTextColor = Color.BLACK;
     public float compositionKeyHintTextSize = 12f;

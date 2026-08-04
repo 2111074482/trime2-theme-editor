@@ -311,7 +311,8 @@ object ThemeComponentStyles {
         }
         if (winner >= 0 && statements[winner].path != path) {
             val owner = statementValue(statements[winner], statements[winner].path!!)
-            require(!owner.containsRaw()) { "所属表包含动态字段;请添加安全的点路径覆盖或使用 Lua 源代码页" }
+            val staticClone = owner is ThemeValue.RawLuaNode && cloneCall.matches(owner.source.trim())
+            require(staticClone || !owner.containsRaw()) { "所属表包含动态字段;请添加安全的点路径覆盖或使用 Lua 源代码页" }
         }
 
         // If a later literal ancestor shadows an old dotted assignment, update that winner. This

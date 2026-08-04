@@ -1842,16 +1842,18 @@ public class ThemeEditorActivity extends ComponentActivity {
             Toast.makeText(this, "编辑源代码前请先打开 Lua 文件", Toast.LENGTH_LONG).show();
             return;
         }
+        final String[] openedSource = {editor.source()};
+        final ThemeEditorModel[] openedModel = {workspace.getModel()};
         final EditText source = new EditText(this);
         source.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
         source.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         source.setSingleLine(false);
-        source.setText(editor.source());
+        source.setText(openedSource[0]);
         source.setSelection(source.length());
         int padding = (int) (16 * getResources().getDisplayMetrics().density);
         source.setPadding(padding, padding, padding, padding);
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("Lua 源代码")
+                .setTitle("Lua 源代码(字段名保留原名,说明见差异摘要)")
                 .setView(source)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("应用", null)
@@ -1863,18 +1865,108 @@ public class ThemeEditorActivity extends ComponentActivity {
                 if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) { hasErrors = true; break; }
             }
             if (hasErrors) {
-                Toast.makeText(this, "Lua 源代码有错误,未应用更改", Toast.LENGTH_LONG).show();
+                new android.app.AlertDialog.Builder(this).setTitle("Lua 代码无法应用")
+                        .setMessage(luaDiagnosticSummary(parsed.getDiagnostics())).setPositiveButton("返回代码", null).show();
                 return;
             }
-            editor.replaceDocument(parsed.getDocument());
-            layoutEditable = findLayoutRoot(editor.getDocument()) != null;
-            workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel());
-            viewModel.setDirty(true);
-            workspace.setStatus("Lua 源代码已应用;保存后生效");
-            dialog.dismiss();
+            if (luaSourceChanged(openedSource[0])) {
+                showLuaSourceConflict(dialog, source, openedSource, openedModel);
+                return;
+            }
+            com.osfans.trime.editor.core.ThemeDocument candidateDocument = parsed.getDocument();
+            String candidateRoot = findLayoutRoot(candidateDocument);
+            boolean candidateEditable = candidateRoot != null && !containsRawLua(candidateDocument.get(candidateRoot));
+            boolean candidateStructuredEditable = isCurrentStyleFile() || candidateEditable;
+            ThemeEditorModel candidateModel = isCurrentStyleFile() ? luaStylePreviewModel(candidateDocument) : candidateEditable ? toUiModel(candidateDocument) : new ThemeEditorModel();
+            String summary = luaDiffSummary(openedSource[0], source.getText().toString(), openedModel[0], candidateModel, candidateDocument, parsed.getDiagnostics(), candidateStructuredEditable, isCurrentStyleFile());
+            new android.app.AlertDialog.Builder(this).setTitle("确认 Lua 同步").setMessage(summary)
+                    .setNegativeButton("取消", null)
+                    .setNeutralButton("保留可视化模型", (d, w) -> { dialog.dismiss(); workspace.setStatus("已保留可视化模型,Lua 代码未应用"); })
+                    .setPositiveButton("应用代码", (d, w) -> {
+                        if (luaSourceChanged(openedSource[0])) {
+                            showLuaSourceConflict(dialog, source, openedSource, openedModel);
+                            return;
+                        }
+                        if (!workspace.replaceModelAsAtomic(candidateModel, "Lua 代码已应用到工作模型,保存后生效")) {
+                            workspace.setStatus("工作区拒绝替换,Lua 代码未应用");
+                            return;
+                        }
+                        editor.replaceDocument(candidateDocument);
+                        layoutEditable = candidateEditable;
+                        viewModel.setDirty(true);
+                        dialog.dismiss();
+                    }).show();
         }));
         dialog.show();
     }
+
+    private boolean luaSourceChanged(String openedSource) {
+        return !ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(editor.source()));
+    }
+
+    private void showLuaSourceConflict(android.app.AlertDialog codeDialog, EditText source, String[] openedSource, ThemeEditorModel[] openedModel) {
+        new android.app.AlertDialog.Builder(this).setTitle("源代码发生冲突")
+                .setMessage("打开代码编辑器后,当前结构化模型或源代码已经变化。请选择如何处理,系统不会静默覆盖。")
+                .setNegativeButton("取消", null)
+                .setNeutralButton("重新打开代码", (dialog, which) -> { openedSource[0] = editor.source(); openedModel[0] = workspace.getModel(); source.setText(openedSource[0]); source.setSelection(source.length()); })
+                .setPositiveButton("保留当前模型", (dialog, which) -> { codeDialog.dismiss(); workspace.setStatus("已保留当前可视化模型,代码未应用"); })
+                .show();
+    }
+
+    private ThemeEditorModel luaStylePreviewModel(com.osfans.trime.editor.core.ThemeDocument style) {
+        ThemeEditorModel model = ThemeEditorModel.sample();
+        model.layoutMode = ThemeEditorModel.LayoutMode.NONE;
+        applyStyleDocument(model, style);
+        return model;
+    }
+
+    private static String luaDiagnosticSummary(java.util.List<com.osfans.trime.editor.core.ThemeDiagnostic> diagnostics) {
+        if (diagnostics == null || diagnostics.isEmpty()) return "没有发现 Lua 诊断。";
+        StringBuilder text = new StringBuilder("Lua 诊断共 ").append(diagnostics.size()).append(" 条:");
+        int shown = 0;
+        for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : diagnostics) {
+            if (shown++ >= 8) { text.append("\n其余诊断已省略。"); break; }
+            String level = diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR ? "错误" : diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.WARNING ? "警告" : "提示";
+            text.append("\n第").append(diagnostic.getLine()).append("行").append(level).append(":").append(luaDiagnosticText(diagnostic.getMessage()));
+        }
+        return text.toString();
+    }
+
+    private static String luaDiagnosticText(String message) {
+        if (message == null || message.isEmpty()) return "Lua 代码无法解析";
+        if (message.contains("Unclosed Lua long bracket")) return "长括号字符串未闭合";
+        if (message.contains("Unterminated Lua string")) return "字符串未闭合";
+        if (message.contains("Unmatched")) return "括号不匹配";
+        if (message.contains("Unclosed")) return "括号未闭合";
+        if (message.contains("Unsupported")) return "不支持的 Lua 表达式,将按原始代码保留";
+        return "Lua 语法或字段内容异常";
+    }
+
+    private static String luaDiffSummary(String before, String after, ThemeEditorModel oldModel, ThemeEditorModel next, com.osfans.trime.editor.core.ThemeDocument document, java.util.List<com.osfans.trime.editor.core.ThemeDiagnostic> diagnostics, boolean editable, boolean styleDocument) {
+        com.osfans.trime.editor.core.ParseResult oldParsed = new ThemeLuaParser().parse(before);
+        String oldRoot = findLayoutRoot(oldParsed.getDocument());
+        String newRoot = findLayoutRoot(document);
+        StringBuilder text = new StringBuilder();
+        text.append("字符数:").append(before.length()).append(" → ").append(after.length()).append(";行数:").append(lineCount(before)).append(" → ").append(lineCount(after));
+        text.append("\n诊断数量:").append(oldParsed.getDiagnostics().size()).append(" → ").append(diagnostics == null ? 0 : diagnostics.size());
+        text.append("\nRawLuaNode 数量(动态或未建模 Lua):").append(rawLuaCount(oldParsed.getDocument())).append(" → ").append(rawLuaCount(document));
+        text.append("\n布局根:").append(luaField(oldRoot, "无")).append(" → ").append(luaField(newRoot, "无"));
+        text.append(";布局模式:").append(layoutModeText(oldModel == null ? ThemeEditorModel.LayoutMode.NONE : oldModel.layoutMode)).append(" → ").append(layoutModeText(next.layoutMode));
+        text.append("\n按键数量:").append(count(oldModel, 0)).append(" → ").append(count(next, 0));
+        text.append(";行数量:").append(count(oldModel, 1)).append(" → ").append(count(next, 1));
+        text.append(";Flex 容器数量:").append(count(oldModel, 2)).append(" → ").append(count(next, 2));
+        text.append(";分页数量:").append(count(oldModel, 3)).append(" → ").append(count(next, 3));
+        boolean wasEditable = styleDocument || oldRoot != null && !containsRawLua(oldParsed.getDocument().get(oldRoot));
+        text.append("\n结构化编辑能力:").append(editable ? "可用" : wasEditable ? "将失去(动态 Lua 仍不会执行,请使用 Lua 源代码编辑)" : "仍不可用(动态 Lua 仍不会执行)");
+        return text.toString();
+    }
+
+    private static int lineCount(String text) { return text == null || text.isEmpty() ? 0 : text.split("\\n", -1).length; }
+    private static String luaField(String value, String fallback) { return value == null ? fallback : value + "(布局根字段 " + value + ")"; }
+    private static String layoutModeText(ThemeEditorModel.LayoutMode mode) { if (mode == ThemeEditorModel.LayoutMode.ROWS) return "行布局(rows)"; if (mode == ThemeEditorModel.LayoutMode.FLEX_BOX) return "弹性盒布局(flex_box)"; if (mode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) return "绝对键布局(keys)"; if (mode == ThemeEditorModel.LayoutMode.KEY_MAPS) return "分页键映射(key_maps)"; return "无"; }
+    private static int count(ThemeEditorModel model, int kind) { if (model == null) return 0; if (kind == 0) return model.keys.size(); if (kind == 1) return model.rows.size(); if (kind == 2) return model.flexContainers.size(); return model.keyMapPages.size(); }
+    private static int rawLuaCount(ThemeValue value) { if (value instanceof ThemeValue.RawLuaNode) return 1; if (value instanceof ThemeValue.LuaTable) { int total = 0; for (ThemeValue child : ((ThemeValue.LuaTable) value).getFields().values()) total += rawLuaCount(child); return total; } return 0; }
+    private static int rawLuaCount(com.osfans.trime.editor.core.ThemeDocument document) { int total = 0; for (com.osfans.trime.editor.core.ThemeNode node : document.getNodes()) total += rawLuaCount(node.getValue()); return total; }
 
     private void chooseInstallTarget() {
         if (!ensureWritable()) return;

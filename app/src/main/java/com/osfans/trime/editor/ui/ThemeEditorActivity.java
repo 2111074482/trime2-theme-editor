@@ -156,6 +156,10 @@ public class ThemeEditorActivity extends ComponentActivity {
             @Override public void onCopyStyleEntity(ThemeEditorModel.Key key) { copyStyleEntity(key); }
             @Override public void onPasteStyleEntity(java.util.List<ThemeEditorModel.Key> keys) { promptPasteStyleEntity(keys); }
             @Override public void onManageKeyEvents(ThemeEditorModel.Key key) { showKeyEventManager(key); }
+            @Override public void onOpenStyleProperties(ThemeEditorModel.Key key) { showStyleEditor(); }
+            @Override public void onOpenKeyEvents(ThemeEditorModel.Key key) { showKeyEventManager(key); }
+            @Override public void onOpenResources(ThemeEditorModel.Key key) { showResources(); }
+            @Override public void onOpenLuaSource() { showCodeEditor(); }
         });
         Uri data = getIntent().getData();
         if (data != null) loadUri(data);

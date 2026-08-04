@@ -24,7 +24,14 @@ import java.util.Set;
 
 /** Compact, native property inspector for the selected keyboard key(s). */
 public final class ThemePropertyEditor extends LinearLayout {
-    public interface Listener { default void onPropertyChangeStarted() {} void onPropertyChanged(); }
+    public interface Listener {
+        default void onPropertyChangeStarted() {}
+        void onPropertyChanged();
+        default void onOpenStyleProperties(ThemeEditorModel.Key key) {}
+        default void onOpenKeyEvents(ThemeEditorModel.Key key) {}
+        default void onOpenResources(ThemeEditorModel.Key key) {}
+        default void onOpenLuaSource() {}
+    }
 
     private static final int SURFACE = 0xff121726;
     private static final int PANEL = 0xff0d111d;
@@ -44,6 +51,10 @@ public final class ThemePropertyEditor extends LinearLayout {
     private final TextView title;
     private final Button[] tabs = new Button[4];
     private final LinearLayout[] pages = new LinearLayout[4];
+    private final Button stylePropertiesEntry;
+    private final Button keyEventsEntry;
+    private final Button resourcesEntry;
+    private final Button luaSourceEntry;
     private final TextView eventGuidance;
     private final TextView stateGuidance;
     private final TextView resourceReference;
@@ -93,6 +104,9 @@ public final class ThemePropertyEditor extends LinearLayout {
         LinearLayout size = pair(pages[0]);
         width = field(size, "宽度", "width", true); height = field(size, "高度", "height", true);
         section(pages[0], "外观", "由样式提供的值仍由源文件管理");
+        stylePropertiesEntry = advancedEntry(pages[0], "打开样式属性", v -> {
+            if (listener != null && key != null) listener.onOpenStyleProperties(key);
+        });
         keyStyle = field(pages[0], "按键样式引用", "key_style", false);
         fill = field(pages[0], "解析后的填充颜色", "background", false);
         section(pages[0], "文字样式", "此处预览解析后的文字颜色;请通过引用的样式编辑");
@@ -101,6 +115,9 @@ public final class ThemePropertyEditor extends LinearLayout {
 
         section(pages[1], "按键事件", "可在此安全编辑字面量事件值");
         eventGuidance = guidance(pages[1], "点击、长按与滑动绑定均为字面量值。");
+        keyEventsEntry = advancedEntry(pages[1], "打开事件源编辑", v -> {
+            if (listener != null && key != null) listener.onOpenKeyEvents(key);
+        });
         click = eventField(pages[1], "点击", "click");
         longClick = eventField(pages[1], "长按", "long_click");
         swipeLeft = eventField(pages[1], "向左滑动", "swipe_left");
@@ -110,6 +127,9 @@ public final class ThemePropertyEditor extends LinearLayout {
 
         section(pages[2], "状态覆盖", "各状态下的按键行为");
         stateGuidance = guidance(pages[2], "可编辑字面量状态覆盖;继承值或代码生成值仍由源文件管理。");
+        luaSourceEntry = advancedEntry(pages[2], "打开源码(Lua)", v -> {
+            if (listener != null) listener.onOpenLuaSource();
+        });
         ascii = field(pages[2], "美国信息交换标准代码 ASCII 模式覆盖", "ascii", false);
         composing = field(pages[2], "组字状态覆盖", "composing", false);
         paging = field(pages[2], "翻页状态覆盖", "paging", false);
@@ -119,6 +139,9 @@ public final class ThemePropertyEditor extends LinearLayout {
 
         section(pages[3], "资源引用", "当前按键样式与解析后的资源");
         resourceReference = guidance(pages[3], "未选择按键。");
+        resourcesEntry = advancedEntry(pages[3], "打开资源管理", v -> {
+            if (listener != null && key != null) listener.onOpenResources(key);
+        });
         guidance(pages[3], "图片、字体和声音由主题资源/源文件工作流管理。可通过引用的按键样式定位高级外观资源;本检查器不会导入或改写资源文件。");
 
         showPage(0);
@@ -143,6 +166,14 @@ public final class ThemePropertyEditor extends LinearLayout {
     private TextView guidance(LinearLayout parent, String value) {
         TextView view = makeText(value, 10, MUTED); view.setPadding(dp(10), dp(8), dp(10), dp(8));
         view.setBackground(background(0xff161c2b, 8, LINE)); parent.addView(view, spaced(-1, -2, 6)); return view;
+    }
+    private Button advancedEntry(LinearLayout parent, String label, View.OnClickListener clickListener) {
+        Button button = new Button(getContext());
+        button.setText(label); button.setAllCaps(false); button.setTextSize(11); button.setTextColor(TEXT);
+        button.setGravity(Gravity.CENTER_VERTICAL); button.setPadding(dp(12), 0, dp(12), 0);
+        button.setBackground(background(0xff20283a, 8, LINE)); button.setOnClickListener(clickListener);
+        button.setContentDescription(label); parent.addView(button, spaced(-1, dp(42), 6));
+        return button;
     }
     private LinearLayout pair(LinearLayout parent) {
         LinearLayout row = new LinearLayout(getContext()); row.setOrientation(HORIZONTAL); parent.addView(row, new LayoutParams(-1, -2)); return row;
@@ -233,6 +264,10 @@ public final class ThemePropertyEditor extends LinearLayout {
     private void updateApplicability() {
         boolean enabled = isEnabled() && !keys.isEmpty() && !readOnly;
         boolean single = enabled && keys.size() == 1;
+        stylePropertiesEntry.setEnabled(isEnabled() && key != null);
+        keyEventsEntry.setEnabled(isEnabled() && key != null);
+        resourcesEntry.setEnabled(isEnabled() && key != null);
+        luaSourceEntry.setEnabled(isEnabled());
         for (EditText field : fields) field.setEnabled(single);
         boolean coordinates = single && layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS;
         x.setEnabled(coordinates); y.setEnabled(coordinates);

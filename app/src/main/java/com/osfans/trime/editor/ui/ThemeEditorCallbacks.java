@@ -15,4 +15,20 @@ public interface ThemeEditorCallbacks {
     void onCopyStyleEntity(ThemeEditorModel.Key key);
     void onPasteStyleEntity(java.util.List<ThemeEditorModel.Key> keys);
     void onManageKeyEvents(ThemeEditorModel.Key key);
+
+    /**
+     * Opens the style properties page for the selected property.
+     *
+     * <p>The default implementation keeps existing callback implementations source-compatible.
+     */
+    default void onOpenStyleProperties(ThemeEditorModel.Key key) {}
+
+    /** Opens the key event configuration page for the selected property. */
+    default void onOpenKeyEvents(ThemeEditorModel.Key key) {}
+
+    /** Opens the resource browser for the selected property. */
+    default void onOpenResources(ThemeEditorModel.Key key) {}
+
+    /** Opens the Lua source editor from the advanced page. */
+    default void onOpenLuaSource() {}
 }

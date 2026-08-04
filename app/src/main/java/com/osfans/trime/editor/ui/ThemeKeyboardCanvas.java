@@ -17,7 +17,7 @@ import android.view.View;
 public final class ThemeKeyboardCanvas extends View {
     public enum InteractionMode { SELECT, PAN }
 
-    public interface Listener { void onKeySelected(ThemeEditorModel.Key key); void onKeyMoveStarted(); void onKeyMoved(); void onKeyMoveFinished(ThemeEditorModel.Key key); }
+    public interface Listener { void onKeySelected(ThemeEditorModel.Key key); void onKeyMoveStarted(); void onKeyMoved(); void onKeyMoveFinished(ThemeEditorModel.Key key); default void onViewportChanged() {} }
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int touchSlop;
     private ThemeEditorModel model = new ThemeEditorModel();
@@ -34,7 +34,7 @@ public final class ThemeKeyboardCanvas extends View {
     private ThemeEditorModel.Key pressedKey;
     private float panStartX, panStartY;
     private float pinchStartDistance, pinchStartZoom;
-    private boolean panning, pinching;
+    private boolean panning, pinching, viewportChanged;
     private final java.util.HashMap<String, float[]> dragStarts = new java.util.HashMap<>();
     private float transformScaleX, transformScaleY, transformLeft, transformTop;
 
@@ -705,7 +705,7 @@ public final class ThemeKeyboardCanvas extends View {
     }
 
     private void cancelGestureState() {
-        dragStarts.clear(); removeSelectionOnTap = false; moved = false; panning = false; pinching = false; pressedKey = null;
+        dragStarts.clear(); removeSelectionOnTap = false; moved = false; panning = false; pinching = false; viewportChanged = false; pressedKey = null;
     }
 
     private static float pointerDistance(MotionEvent event) {
@@ -727,7 +727,7 @@ public final class ThemeKeyboardCanvas extends View {
             return true;
         }
         if (action == MotionEvent.ACTION_MOVE && pinching && event.getPointerCount() >= 2) {
-            setZoom(pinchStartZoom * pointerDistance(event) / pinchStartDistance);
+            setZoom(pinchStartZoom * pointerDistance(event) / pinchStartDistance); viewportChanged = true;
             return true;
         }
         if (action == MotionEvent.ACTION_POINTER_UP && pinching) {
@@ -759,7 +759,7 @@ public final class ThemeKeyboardCanvas extends View {
                 if (panning) {
                     float dx = event.getX() - downX, dy = event.getY() - downY;
                     if (!moved && dx * dx + dy * dy < touchSlop * touchSlop) return true;
-                    model.previewPanX = panStartX + dx; model.previewPanY = panStartY + dy; moved = true; invalidate(); return true;
+                    model.previewPanX = panStartX + dx; model.previewPanY = panStartY + dy; moved = true; viewportChanged = true; invalidate(); return true;
                 }
                 if (selected != null && !readOnly && !previewOnly && interactionMode == InteractionMode.SELECT && !dragStarts.isEmpty()) {
                     float screenDx = event.getX() - downX, screenDy = event.getY() - downY;
@@ -779,10 +779,12 @@ public final class ThemeKeyboardCanvas extends View {
                 else if (!panning && removeSelectionOnTap && selected != null) {
                     model.selectedIds.remove(selected.id); selected = lastSelectedKey(); if (listener != null) listener.onKeySelected(selected);
                 }
+                if (viewportChanged && listener != null) listener.onViewportChanged();
                 cancelGestureState(); invalidate(); return true;
             case MotionEvent.ACTION_CANCEL:
                 pressedKey = null;
                 if (!panning && moved && selected != null && listener != null) listener.onKeyMoveFinished(selected);
+                if (viewportChanged && listener != null) listener.onViewportChanged();
                 cancelGestureState(); invalidate(); return true;
             default: return true;
         }

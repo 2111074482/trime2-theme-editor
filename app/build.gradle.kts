@@ -186,6 +186,7 @@ dependencies {
     implementation(libs.androidx.autofill)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.androidx.paging.runtime.ktx)

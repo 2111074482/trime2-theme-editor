@@ -22,7 +22,34 @@ class ThemeSaveCoordinatorTest : StringSpec({
         val coordinator = ThemeSaveCoordinator()
         val expected = ThemeSaveCoordinator.fingerprint(source)
         source = "style = \"external\"\n"
-        coordinator.save("project", repository, document, expected) is SaveResult.ExternalConflict shouldBe true
+        (coordinator.save("project", repository, document, expected) is SaveResult.ExternalConflict) shouldBe true
         source shouldBe "style = \"external\"\n"
+    }
+
+    "validates generated Lua before writing" {
+        var writes = 0
+        val repository = object : ThemeProjectRepository {
+            override fun read(): String = "style = 'light'\n"
+            override fun write(source: String) { writes++ }
+        }
+        val document = ThemeDocument(listOf(ThemeNode("broken", 1, ThemeValue.RawLuaNode("{"))))
+        var rejected = false
+        try { ThemeSaveCoordinator().save("project-invalid", repository, document, ThemeSaveCoordinator.fingerprint(repository.read())) }
+        catch (_: java.io.IOException) { rejected = true }
+        rejected shouldBe true
+        writes shouldBe 0
+    }
+
+    "repository save validates raw documents before write" {
+        var writes = 0
+        val repository = object : ThemeProjectRepository {
+            override fun read(): String = "style = 'light'\n"
+            override fun write(source: String) { writes++ }
+        }
+        val document = ThemeDocument(listOf(ThemeNode("broken", 1, ThemeValue.RawLuaNode("{"))))
+        var rejected = false
+        try { repository.save(document) } catch (_: java.io.IOException) { rejected = true }
+        rejected shouldBe true
+        writes shouldBe 0
     }
 })

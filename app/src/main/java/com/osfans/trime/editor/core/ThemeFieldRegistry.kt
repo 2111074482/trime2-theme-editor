@@ -40,7 +40,17 @@ class ThemeFieldRegistry @JvmOverloads constructor(fields: Iterable<ThemeField> 
             ThemeFieldType.TABLE -> value is ThemeValue.LuaTable
             ThemeFieldType.LUA -> true
         }
-        return if (compatible) null else "Expected ${field.type.name.lowercase()} for $path"
+        return if (compatible) null else "$path 需要${fieldTypeText(field.type)}类型"
+    }
+
+    private fun fieldTypeText(type: ThemeFieldType): String = when (type) {
+        ThemeFieldType.COLOR -> "颜色"
+        ThemeFieldType.DIMENSION -> "尺寸"
+        ThemeFieldType.NUMBER -> "数值"
+        ThemeFieldType.BOOLEAN -> "布尔"
+        ThemeFieldType.TEXT -> "文本"
+        ThemeFieldType.TABLE -> "表"
+        ThemeFieldType.LUA -> "Lua"
     }
 
     fun coverage(): ThemeFieldCoverage {

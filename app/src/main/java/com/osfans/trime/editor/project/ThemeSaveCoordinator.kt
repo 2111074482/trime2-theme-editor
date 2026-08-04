@@ -5,7 +5,11 @@
 
 package com.osfans.trime.editor.project
 
+import com.osfans.trime.editor.core.Severity
 import com.osfans.trime.editor.core.ThemeDocument
+import com.osfans.trime.editor.core.ThemeLuaParser
+import com.osfans.trime.editor.core.ThemeLuaWriter
+import java.io.IOException
 import java.security.MessageDigest
 
 /** Serializes project saves and rejects stale external content before commit. */
@@ -25,8 +29,15 @@ class ThemeSaveCoordinator {
         if (expectedFingerprint != null && current != expectedFingerprint) {
             return SaveResult.ExternalConflict(current)
         }
-        repository.save(document)
-        SaveResult.Succeeded(fingerprint(repository.read()))
+        val source = ThemeLuaWriter.write(document)
+        val candidateError = ThemeLuaParser().parse(source).diagnostics.firstOrNull { it.severity == Severity.ERROR }
+        if (candidateError != null) throw IOException("候选 Lua 未通过静态解析:第${candidateError.line}行:${candidateError.message}")
+        repository.write(source)
+        val committed = repository.read()
+        if (committed != source) throw IOException("保存后的源代码回读校验不一致")
+        val committedError = ThemeLuaParser().parse(committed).diagnostics.firstOrNull { it.severity == Severity.ERROR }
+        if (committedError != null) throw IOException("保存后的 Lua 未通过静态解析:第${committedError.line}行:${committedError.message}")
+        SaveResult.Succeeded(fingerprint(committed))
     }
 
     companion object {

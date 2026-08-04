@@ -55,21 +55,8 @@ jobs:
             exit 1
           fi
 
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v5
-        with:
-          name: trime-theme-editor-debug
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      # The inherited repository currently contains tests for classes removed upstream.
-      # Keep their failures visible without blocking a verified APK artifact.
+      # Unit tests are a required gate for the editor APK artifact.
       - name: Run unit tests
-        continue-on-error: true
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
       - name: Upload test reports
@@ -81,4 +68,39 @@ jobs:
             app/build/test-results/testDebugUnitTest/
             app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: warn
+          retention-days: 30
+
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Verify editor APK contents and checksum
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          test -n "$APK" -a -s "$APK"
+          AAPT="$(find "$ANDROID_HOME/build-tools/35.0.0" -maxdepth 1 -type f -name aapt -print -quit)"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > app/build/theme-editor-manifest.txt
+          grep -q 'com.osfans.trime.editor.ui.ThemeEditorActivity' app/build/theme-editor-manifest.txt
+          grep -q 'themeeditor.fileprovider' app/build/theme-editor-manifest.txt
+          unzip -l "$APK" > app/build/theme-editor-apk-files.txt
+          grep -q 'res/xml/theme_editor_provider_paths.xml' app/build/theme-editor-apk-files.txt
+          sha256sum "$APK" | tee app/build/theme-editor-apk.sha256
+
+      - name: Upload editor verification summary
+        uses: actions/upload-artifact@v5
+        with:
+          name: trime-theme-editor-verification
+          path: |
+            app/build/theme-editor-manifest.txt
+            app/build/theme-editor-apk-files.txt
+            app/build/theme-editor-apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: trime-theme-editor-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: 30

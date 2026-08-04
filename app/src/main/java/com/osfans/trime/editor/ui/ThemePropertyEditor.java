@@ -31,6 +31,7 @@ public final class ThemePropertyEditor extends LinearLayout {
         default void onOpenKeyEvents(ThemeEditorModel.Key key) {}
         default void onOpenResources(ThemeEditorModel.Key key) {}
         default void onOpenLuaSource() {}
+        default void onPageChanged(String pageId) {}
     }
 
     private static final int SURFACE = 0xff121726;
@@ -38,6 +39,7 @@ public final class ThemePropertyEditor extends LinearLayout {
     private static final int LINE = 0xff343a50;
     private static final int TEXT = 0xfff4f6ff;
     private static final int MUTED = 0xff929bb3;
+    private static final String[] PAGE_IDS = {"basic", "events", "states", "resources"};
 
     private ThemeEditorModel.Key key;
     private List<ThemeEditorModel.Key> keys = Collections.emptyList();
@@ -204,12 +206,20 @@ public final class ThemePropertyEditor extends LinearLayout {
     }
     private LayoutParams spaced(int width, int height, int marginTop) { LayoutParams p = new LayoutParams(width, height); p.topMargin = dp(marginTop); return p; }
     private void showPage(int selected) {
+        if (selected < 0 || selected >= pages.length) selected = 0;
         commit();
         for (int i = 0; i < pages.length; i++) {
             boolean active = i == selected; pages[i].setVisibility(active ? VISIBLE : GONE);
             tabs[i].setTextColor(active ? 0xffe3ddff : 0xff757e92);
             tabs[i].setBackground(active ? background(0xff292445, 7, Color.TRANSPARENT) : background(Color.TRANSPARENT, 7, Color.TRANSPARENT));
         }
+        if (listener != null) listener.onPageChanged(PAGE_IDS[selected]);
+    }
+
+    public void setPage(String pageId) {
+        int selected = 0;
+        if (pageId != null) for (int i = 0; i < PAGE_IDS.length; i++) if (PAGE_IDS[i].equals(pageId)) { selected = i; break; }
+        showPage(selected);
     }
 
     public void setListener(Listener listener) { this.listener = listener; }

@@ -6,7 +6,7 @@ package com.osfans.trime.editor.core
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldContain
+import io.kotest.matchers.string.shouldContain
 
 class ThemeLuaParserTest : StringSpec({
     "preserves rows array entries and writes them back" {
@@ -19,7 +19,7 @@ class ThemeLuaParserTest : StringSpec({
         val rows = result.document.get("rows") as ThemeValue.LuaTable
         val row = rows.fields["#1"] as ThemeValue.LuaTable
         val keys = row.fields["keys"] as ThemeValue.LuaTable
-        keys.fields.keys shouldContain "#1"
+        keys.fields.keys.contains("#1") shouldBe true
         ThemeLuaWriter.write(result.document) shouldContain "click = \"a\""
     }
 
@@ -152,4 +152,10 @@ class ThemeLuaParserTest : StringSpec({
         ThemeLuaWriter.write(result.document) shouldBe source
     }
 
+
+    "diagnostics expose a stable non-empty code" {
+        val diagnostics = ThemeLuaParser().parse("rows = {\n").diagnostics
+        diagnostics.isNotEmpty() shouldBe true
+        diagnostics.all { it.code.isNotBlank() } shouldBe true
+    }
 })

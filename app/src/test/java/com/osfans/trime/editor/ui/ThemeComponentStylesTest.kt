@@ -7,7 +7,6 @@ package com.osfans.trime.editor.ui
 import com.osfans.trime.editor.core.ThemeValue
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -44,7 +43,7 @@ class ThemeComponentStylesTest : StringSpec({
             it.colorValue shouldBe 0xff010203L
             it.explicit shouldBe false
             it.inheritedFrom shouldBe "base"
-            it.trace shouldContain "candidate -> base"
+            it.trace.contains("candidate -> base") shouldBe true
         }
         val updated = ThemeComponentStyles.updateColorOrResource(source, "candidate.text_color", 0xffaabbccL)
         updated shouldContain "candidate = table.clone(base)"
@@ -240,7 +239,7 @@ class ThemeComponentStylesTest : StringSpec({
             "composition.key.hint.text_color",
             "composition.key.pressed.hint.text_color",
             "key.pressed.hint.text_size",
-        ).forEach { paths shouldContain it }
+        ).forEach { paths.contains(it) shouldBe true }
     }
 
     "blocks inline-table normalization when a sibling is Raw Lua" {

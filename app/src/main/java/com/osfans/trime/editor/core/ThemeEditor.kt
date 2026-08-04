@@ -19,13 +19,13 @@ class ThemeEditor @JvmOverloads constructor(
         val parts = path.split('.').filter { it.isNotBlank() }
         val root = parts.firstOrNull().orEmpty()
         if (document.sourceStatements.count { it.path == path } > 1) {
-            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "Duplicate assignments for '$path' require the source editor", path))
+            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "字段 '$path' 存在重复赋值,必须使用 Lua 源代码编辑器", path))
         }
         val rawAncestor = parts.indices
             .map { parts.take(it + 1).joinToString(".") }
             .firstOrNull { document.get(it) is ThemeValue.RawLuaNode }
         if (rawAncestor != null) {
-            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "Cannot structurally edit raw Lua path '$rawAncestor'; use the source editor", path))
+            return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, "原始 Lua 路径 '$rawAncestor' 不能结构化编辑,请使用 Lua 源代码编辑器", path))
         }
         val error = registry.validate(path, value)
         if (error != null) return listOf(ThemeDiagnostic(0, 0, Severity.ERROR, error, path))

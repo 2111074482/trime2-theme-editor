@@ -17,5 +17,15 @@ data class ThemeSessionState(
 ) {
     fun edited(): ThemeSessionState = copy(modelRevision = modelRevision + 1, dirty = true)
     fun previewChanged(): ThemeSessionState = copy(previewRevision = previewRevision + 1)
-    fun saved(fingerprint: String): ThemeSessionState = copy(savedRevision = modelRevision, sourceFingerprint = fingerprint, dirty = false)
+    fun saved(fingerprint: String): ThemeSessionState = saved(modelRevision, fingerprint)
+
+    fun saved(targetRevision: Long, fingerprint: String): ThemeSessionState {
+        require(targetRevision in 0..modelRevision) { "保存版本必须属于当前模型历史" }
+        if (targetRevision < savedRevision) return this
+        return copy(
+            savedRevision = targetRevision,
+            sourceFingerprint = fingerprint,
+            dirty = targetRevision != modelRevision,
+        )
+    }
 }

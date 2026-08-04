@@ -22,11 +22,11 @@ object ThemeProjectCreator {
         val keyboardTemplate: KeyboardTemplate,
     ) {
         fun validated(): Spec {
-            require(SAFE_NAME.matches(directoryName)) { "Directory name may contain letters, digits, spaces, '_' and '-' only" }
-            require(SAFE_ID.matches(styleName)) { "Style ID must be a Lua-safe identifier" }
-            require(SAFE_ID.matches(keyboardName)) { "Keyboard ID must be a Lua-safe identifier" }
-            require(themeName.isNotBlank()) { "Theme name is required" }
-            require(author.isNotBlank()) { "Author is required" }
+            require(SAFE_NAME.matches(directoryName)) { "目录标识只能包含英文字母、数字、空格、下划线和连字符" }
+            require(SAFE_ID.matches(styleName)) { "样式标识必须是 Lua 安全标识符" }
+            require(SAFE_ID.matches(keyboardName)) { "键盘标识必须是 Lua 安全标识符" }
+            require(themeName.isNotBlank()) { "主题名称不能为空" }
+            require(author.isNotBlank()) { "作者不能为空" }
             return this
         }
     }
@@ -34,8 +34,8 @@ object ThemeProjectCreator {
     @JvmStatic
     fun create(root: File, spec: Spec): ThemeProject {
         spec.validated()
-        require(!root.exists() || root.listFiles().isNullOrEmpty()) { "Target project directory is not empty" }
-        require(root.exists() || root.mkdirs()) { "Cannot create project directory" }
+        require(!root.exists() || root.listFiles().isNullOrEmpty()) { "目标项目目录不为空" }
+        require(root.exists() || root.mkdirs()) { "无法创建项目目录" }
         write(root.resolve("main.lua"), mainSource(spec))
         write(root.resolve("styles/${spec.styleName}/main.lua"), styleSource(spec))
         write(root.resolve("keyboards/${spec.keyboardName}.lua"), keyboardSource(spec))
@@ -111,11 +111,14 @@ composition = { background = $background, text_color = $text, text_size = 18 }
     }
 
     private fun write(file: File, source: String) {
-        require(file.parentFile?.let { it.exists() || it.mkdirs() } != false) { "Cannot create ${file.parent}" }
+        require(file.parentFile?.let { it.exists() || it.mkdirs() } != false) { "无法创建项目文件的父目录" }
         file.writeText(source, Charsets.UTF_8)
     }
 
     private fun luaString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
+    const val EDITOR_SCHEMA_VERSION = 1
+    const val EDITOR_SOURCE = "Trime2 0.7.9.2 theme editor"
+
     private val SAFE_NAME = Regex("^[A-Za-z0-9_ -]{1,64}$")
     private val SAFE_ID = Regex("^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 }

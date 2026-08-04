@@ -18,7 +18,7 @@ object ThemeKeyEvents {
         val swipeRepeatable: Boolean?,
         val sendBindings: Boolean?,
         val effectiveSendBindings: Boolean = sendBindings ?: false,
-        val sendBindingsSource: String = if (sendBindings == null) "runtime default: no effective conditional events" else "explicit",
+        val sendBindingsSource: String = if (sendBindings == null) "运行时默认值:没有生效的条件事件" else "显式值",
     )
     data class Hints(val values: Map<String, String?>)
 
@@ -27,8 +27,8 @@ object ThemeKeyEvents {
     @JvmField val STRING_ONLY_SLOTS = arrayOf("composing", "has_menu", "paging")
 
     @JvmStatic fun parseDocument(source: String): ThemeDocument = ThemeLuaParser().parse(source).also { result ->
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Keyboard Lua source contains errors" }
-        require(result.diagnostics.none { it.message.startsWith("Unsupported table key") }) { "Unsupported table keys require the Lua source page" }
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "键盘 Lua 源代码包含错误" }
+        require(result.diagnostics.none { it.message.startsWith("不支持的表键") || it.message.startsWith("Unsupported table key") }) { "不支持的表键必须在 Lua 源代码页编辑" }
     }.document
 
     @JvmStatic fun read(document: ThemeDocument, keyPath: String): List<Slot> {
@@ -37,16 +37,16 @@ object ThemeKeyEvents {
             is ThemeValue.LuaTable -> value
             is ThemeValue.LuaString -> ThemeValue.LuaTable(linkedMapOf("click" to value))
             null -> return emptyList()
-            else -> throw IllegalArgumentException("Key source is dynamic and requires the Lua source page")
+            else -> throw IllegalArgumentException("按键源为动态内容,必须在 Lua 源代码页编辑")
         }
         return SLOTS.map { name -> slot(name, key.fields[name]) }
     }
 
     @JvmStatic fun options(document: ThemeDocument, keyPath: String): Options {
-        val value = document.get(keyPath); if (value is ThemeValue.RawLuaNode) error("Key source is dynamic and requires the Lua source page")
+        val value = document.get(keyPath); if (value is ThemeValue.RawLuaNode) error("按键源为动态内容,必须在 Lua 源代码页编辑")
         val key = value as? ThemeValue.LuaTable ?: return Options(null, null)
-        require(key.fields["swipe_repeatable"] == null || key.fields["swipe_repeatable"] is ThemeValue.LuaBoolean) { "swipe_repeatable has an invalid type and requires the source page" }
-        require(key.fields["send_bindings"] == null || key.fields["send_bindings"] is ThemeValue.LuaBoolean) { "send_bindings has an invalid type and requires the source page" }
+        require(key.fields["swipe_repeatable"] == null || key.fields["swipe_repeatable"] is ThemeValue.LuaBoolean) { "滑动重复(swipe_repeatable)类型无效,必须在 Lua 源代码页编辑" }
+        require(key.fields["send_bindings"] == null || key.fields["send_bindings"] is ThemeValue.LuaBoolean) { "发送绑定(send_bindings)类型无效,必须在 Lua 源代码页编辑" }
         val swipeRepeatable = (key.fields["swipe_repeatable"] as? ThemeValue.LuaBoolean)?.value
         val sendBindings = (key.fields["send_bindings"] as? ThemeValue.LuaBoolean)?.value
         val conditional = listOf("composing", "has_menu", "paging").any { name ->
@@ -60,31 +60,31 @@ object ThemeKeyEvents {
             swipeRepeatable,
             sendBindings,
             sendBindings ?: conditional,
-            if (sendBindings != null) "explicit" else if (uncertainConditional) "uncertain: conditional source is not a runtime string" else if (conditional) "runtime default: conditional event present" else "runtime default: no effective conditional events",
+            if (sendBindings != null) "显式值" else if (uncertainConditional) "无法确定:条件源不是运行时字符串" else if (conditional) "运行时默认值:存在条件事件" else "运行时默认值:没有生效的条件事件",
         )
     }
 
     @JvmStatic fun hints(document: ThemeDocument, keyPath: String): Hints {
-        val value = document.get(keyPath); if (value is ThemeValue.RawLuaNode) throw IllegalArgumentException("Key source is dynamic and requires the Lua source page")
+        val value = document.get(keyPath); if (value is ThemeValue.RawLuaNode) throw IllegalArgumentException("按键源为动态内容,必须在 Lua 源代码页编辑")
         val key = value as? ThemeValue.LuaTable ?: return Hints(HINTS.associateWith { null })
-        HINTS.forEach { name -> require(key.fields[name] == null || key.fields[name] is ThemeValue.LuaString) { "$name has an invalid type and requires the source page" } }
+        HINTS.forEach { name -> require(key.fields[name] == null || key.fields[name] is ThemeValue.LuaString) { "$name 类型无效,必须在 Lua 源代码页编辑" } }
         return Hints(HINTS.associateWith { name -> (key.fields[name] as? ThemeValue.LuaString)?.value })
     }
 
     @JvmStatic fun updateHints(document: ThemeDocument, keyPath: String, values: Map<String, String?>): ThemeDocument {
-        require(values.keys.all { it in HINTS }) { "Unsupported event hint field" }; hints(document, keyPath); var next = normalizeKey(document, keyPath)
+        require(values.keys.all { it in HINTS }) { "不支持的事件提示字段" }; hints(document, keyPath); var next = normalizeKey(document, keyPath)
         values.forEach { (name, value) -> next = if (value == null) next.remove("$keyPath.$name") else next.set("$keyPath.$name", ThemeValue.LuaString(value)) }
         return next
     }
 
     @JvmStatic fun updateString(document: ThemeDocument, keyPath: String, slot: String, value: String?): ThemeDocument {
-        require(slot in SLOTS) { "Unsupported key event slot" }; val normalized = normalizeKey(document, keyPath); requireEditable(normalized.get("$keyPath.$slot"), slot)
+        require(slot in SLOTS) { "不支持的按键事件槽位" }; val normalized = normalizeKey(document, keyPath); requireEditable(normalized.get("$keyPath.$slot"), slot)
         return if (value == null) normalized.remove("$keyPath.$slot") else normalized.set("$keyPath.$slot", ThemeValue.LuaString(value))
     }
 
     @JvmStatic fun updateInline(document: ThemeDocument, keyPath: String, slot: String, event: ThemePresetEvents.Event): ThemeDocument {
-        require(slot in SLOTS) { "Unsupported key event slot" }
-        require(slot !in STRING_ONLY_SLOTS) { "$slot is string-only in the current Trime runtime" }
+        require(slot in SLOTS) { "不支持的按键事件槽位" }
+        require(slot !in STRING_ONLY_SLOTS) { "当前 Trime 运行时只接受 $slot 字符串值" }
         val normalized = normalizeKey(document, keyPath); requireEditable(normalized.get("$keyPath.$slot"), slot)
         return normalized.set("$keyPath.$slot", ThemePresetEvents.toLiteralTable(event, normalized.get("$keyPath.$slot") as? ThemeValue.LuaTable))
     }
@@ -98,15 +98,15 @@ object ThemeKeyEvents {
     }
 
     @JvmStatic fun verifiedSource(document: ThemeDocument): String = ThemeLuaWriter.write(document).also { source ->
-        require(ThemeLuaParser().parse(source).diagnostics.none { it.severity == Severity.ERROR }) { "Updated key event source failed verification" }
+        require(ThemeLuaParser().parse(source).diagnostics.none { it.severity == Severity.ERROR }) { "更新后的按键事件源未通过校验" }
     }
 
     private fun normalizeKey(document: ThemeDocument, keyPath: String): ThemeDocument = when (val value = document.get(keyPath)) {
         is ThemeValue.LuaTable -> document
         is ThemeValue.LuaString -> document.set(keyPath, ThemeValue.LuaTable(linkedMapOf("click" to value)))
-        is ThemeValue.RawLuaNode -> throw IllegalArgumentException("Key source is dynamic and requires the Lua source page")
-        null -> throw IllegalArgumentException("Key source path not found: $keyPath")
-        else -> throw IllegalArgumentException("Unsupported key source requires the Lua source page")
+        is ThemeValue.RawLuaNode -> throw IllegalArgumentException("按键源为动态内容,必须在 Lua 源代码页编辑")
+        null -> throw IllegalArgumentException("未找到按键源路径:$keyPath")
+        else -> throw IllegalArgumentException("不支持的按键源必须在 Lua 源代码页编辑")
     }
 
     private fun slot(name: String, value: ThemeValue?): Slot = when (value) {
@@ -123,10 +123,10 @@ object ThemeKeyEvents {
     }
 
     private fun requireEditable(value: ThemeValue?, slot: String) {
-        require(value !is ThemeValue.RawLuaNode) { "$slot uses Raw Lua and requires the source page" }
-        if (slot in STRING_ONLY_SLOTS) require(value !is ThemeValue.LuaTable) { "$slot uses a table that the current Trime runtime ignores; use the source page" }
-        if (slot == "ascii" && value is ThemeValue.LuaTable) require(value.fields["click"] == null) { "ascii is a full key replacement and requires the source page" }
-        require(value !is ThemeValue.LuaTable || !value.containsRaw()) { "$slot contains dynamic fields and requires the source page" }
+        require(value !is ThemeValue.RawLuaNode) { "$slot 使用原始 Lua,必须在 Lua 源代码页编辑" }
+        if (slot in STRING_ONLY_SLOTS) require(value !is ThemeValue.LuaTable) { "$slot 使用当前 Trime 运行时会忽略的表,请使用 Lua 源代码页" }
+        if (slot == "ascii" && value is ThemeValue.LuaTable) require(value.fields["click"] == null) { "ASCII 状态(ascii)是完整按键替代,必须在 Lua 源代码页编辑" }
+        require(value !is ThemeValue.LuaTable || !value.containsRaw()) { "$slot 包含动态字段,必须在 Lua 源代码页编辑" }
     }
 
     private fun ThemeValue.containsRaw(): Boolean = when (this) { is ThemeValue.RawLuaNode -> true; is ThemeValue.LuaTable -> fields.values.any { it.containsRaw() }; else -> false }

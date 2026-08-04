@@ -43,7 +43,7 @@ data class ThemeDocument(
 
     fun set(path: String, value: ThemeValue): ThemeDocument {
         val parts = path.split('.').filter { it.isNotBlank() }
-        require(parts.isNotEmpty()) { "path must not be empty" }
+        require(parts.isNotEmpty()) { "字段路径不能为空" }
         val roots = nodes.toMutableList()
         val rootIndex = roots.indexOfFirst { it.source == parts.first() }
         if (rootIndex >= 0 && roots[rootIndex].value is ThemeValue.RawLuaNode) {
@@ -98,7 +98,7 @@ object ThemeLuaWriter {
     private fun preserve(document: ThemeDocument): String {
         val source = document.originalSource
         require(source != null && document.nodes == document.originalNodes) {
-            "Preserve mode cannot write a structurally modified document"
+            "保留模式(Preserve)不能写出已发生结构修改的文档"
         }
         return source
     }
@@ -110,7 +110,7 @@ object ThemeLuaWriter {
         val changed = changedRoots(document)
         val duplicateChanged = document.sourceStatements.mapNotNull { it.path }.groupingBy { it }.eachCount()
             .filter { (path, count) -> count > 1 && path.substringBefore('.') in changed }.keys
-        require(duplicateChanged.isEmpty()) { "Hybrid mode cannot safely rewrite duplicate assignments: ${duplicateChanged.joinToString()}" }
+        require(duplicateChanged.isEmpty()) { "混合模式(Hybrid)无法安全重写重复赋值:${duplicateChanged.joinToString()}" }
         val current = document.nodes.associateBy { it.source }
         val emitted = HashSet<String>()
         val result = buildString {

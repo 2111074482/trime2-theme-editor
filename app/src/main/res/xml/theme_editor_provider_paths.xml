@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2025 Rime community
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<paths>
+    <cache-path
+        name="theme_editor_share"
+        path="theme-editor-share/" />
+</paths>

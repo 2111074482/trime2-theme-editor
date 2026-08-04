@@ -18,6 +18,8 @@ class ThemeProjectCreatorTest : StringSpec({
             project.styles.single().name shouldBe "light"
             project.keyboards.single().name shouldBe "default"
             ThemeLuaParser().parse(project.keyboards.single().file.readText()).diagnostics.none { it.severity.name == "ERROR" } shouldBe true
+            project.mainFile.readText().contains("editor_schema_version = 1") shouldBe true
+            project.mainFile.readText().contains("editor_source =") shouldBe true
             root.parentFile.deleteRecursively()
         }
     }

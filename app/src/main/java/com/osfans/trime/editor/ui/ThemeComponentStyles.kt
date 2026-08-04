@@ -81,7 +81,7 @@ object ThemeComponentStyles {
         val hit = resolve(parsed, path, parsed.document.sourceStatements.size, linkedSetOf(), emptyList(), null)
         val opaque = ambiguousAccess(parsed.document, path.substringBefore('.'), hit.statementIndex)
         if (opaque != null) return dynamicValue(path, field, opaque, hit.trace, hit.inheritedFrom)
-        if (hit.dynamic) return dynamicValue(path, field, hit.diagnostic ?: "Dynamic component style", hit.trace, hit.inheritedFrom)
+        if (hit.dynamic) return dynamicValue(path, field, hit.diagnostic ?: "动态组件样式", hit.trace, hit.inheritedFrom)
         val publicHit = if (hit.diagnostic == MISSING) hit.copy(diagnostic = null) else hit
         val literal = publicHit.literal
         if (literal != null && literal !is ThemeValue.LuaNil) validateLiteral(path, field, literal, strictEnums = false)
@@ -107,7 +107,7 @@ object ThemeComponentStyles {
         val field = requireField(path)
         if (valueOrNull != null) {
             require(valueOrNull !is ThemeValue.LuaNil && valueOrNull !is ThemeValue.RawLuaNode && valueOrNull !is ThemeValue.LuaTable) {
-                "Component fields require a literal scalar; use remove() to clear one"
+                "组件字段必须是字面标量;如需清除请使用移除操作"
             }
             validateLiteral(path, field, valueOrNull, strictEnums = true)
         }
@@ -116,7 +116,7 @@ object ThemeComponentStyles {
         val hit = resolve(parsed, path, parsed.document.sourceStatements.size, linkedSetOf(), emptyList(), null)
         ambiguousAccess(parsed.document, path.substringBefore('.'), hit.statementIndex)
             ?.let { throw IllegalArgumentException(it) }
-        require(!hit.dynamic) { hit.diagnostic ?: "Dynamic component style requires the Lua source page" }
+        require(!hit.dynamic) { hit.diagnostic ?: "动态组件样式必须在 Lua 源代码页编辑" }
 
         val output = if (valueOrNull == null) {
             removeEffective(parsed, path, hit)
@@ -127,7 +127,7 @@ object ThemeComponentStyles {
         if (valueOrNull != null) {
             val verified = read(output, path)
             require(!verified.dynamic && verified.literal == valueOrNull && verified.explicit) {
-                "Updated component field could not be resolved safely"
+                "更新后的组件字段无法安全解析"
             }
         }
         return output
@@ -139,7 +139,7 @@ object ThemeComponentStyles {
     /** Preserves boolean `true` as a distinct source spelling; current getString runtime treats it as none. */
     @JvmStatic
     fun updatePreeditInline(source: String, value: String?, booleanTrue: Boolean = false): String {
-        require(!booleanTrue || value == null) { "Choose either a string inline mode or boolean true" }
+        require(!booleanTrue || value == null) { "请选择字符串内联模式或布尔值 true" }
         return update(
             source,
             "preedit.inline",
@@ -165,7 +165,7 @@ object ThemeComponentStyles {
 
     @JvmStatic
     fun updateColorOrResource(source: String, path: String, value: Long): String {
-        require(value in 0..0xffffffffL) { "Color must be an unsigned 32-bit integer" }
+        require(value in 0..0xffffffffL) { "颜色必须是无符号 32 位整数" }
         return update(source, path, ThemeValue.LuaNumber(value.toDouble()))
     }
 
@@ -177,7 +177,7 @@ object ThemeComponentStyles {
     /** Returns null when table existence cannot be proven without evaluating Lua. */
     @JvmStatic
     fun staticTablePresence(source: String, path: String): Boolean? {
-        require(path.split('.').all(simpleIdentifier::matches)) { "Invalid static table path" }
+        require(path.split('.').all(simpleIdentifier::matches)) { "静态表路径无效" }
         val parsed = parse(source)
         if (ambiguousAccess(parsed.document, path.substringBefore('.'), -1) != null) return null
         return when (tableState(parsed, path, parsed.document.sourceStatements.size, linkedSetOf())) {
@@ -198,7 +198,7 @@ object ThemeComponentStyles {
         val visitKey = path
         if (!visiting.add(visitKey)) return Hit(
             dynamic = true,
-            diagnostic = "Cycle while resolving table.clone fallback for $path",
+            diagnostic = "解析 $path 的表克隆(table.clone)回退时发现循环",
             trace = trace + path,
             inheritedFrom = inheritedFrom,
         )
@@ -246,7 +246,7 @@ object ThemeComponentStyles {
             val match = cloneCall.matchEntire(value.source.trim())
             if (match == null) return Hit(
                 dynamic = true,
-                diagnostic = "Dynamic assignment at $assignmentPath requires the Lua source page",
+                diagnostic = "$assignmentPath 的动态赋值必须在 Lua 源代码页编辑",
                 trace = trace,
                 inheritedFrom = inheritedFrom,
                 statementIndex = statementIndex,
@@ -255,7 +255,7 @@ object ThemeComponentStyles {
             val target = match.groupValues[1]
             if (!simpleIdentifier.matches(target)) return Hit(
                 dynamic = true,
-                diagnostic = "Nested table.clone target '$target' is unsupported",
+                diagnostic = "不支持嵌套表克隆(table.clone)目标 '$target'",
                 trace = trace + "$assignmentPath -> $target",
                 inheritedFrom = inheritedFrom ?: target,
                 statementIndex = statementIndex,
@@ -264,7 +264,7 @@ object ThemeComponentStyles {
             val suffix = relative.drop(consumed)
             if (suffix.isEmpty()) return Hit(
                 dynamic = true,
-                diagnostic = "table.clone result at $assignmentPath is a table, not a literal field",
+                diagnostic = "$assignmentPath 的表克隆(table.clone)结果是表,不是字面字段",
                 trace = trace + "$assignmentPath -> $target",
                 inheritedFrom = inheritedFrom ?: target,
                 statementIndex = statementIndex,
@@ -285,7 +285,7 @@ object ThemeComponentStyles {
         }
         if (consumed < relative.size) return Hit(
             dynamic = value !is ThemeValue.LuaTable,
-            diagnostic = if (value !is ThemeValue.LuaTable) "Non-table ancestor at $assignmentPath" else null,
+            diagnostic = if (value !is ThemeValue.LuaTable) "$assignmentPath 的上级不是表" else null,
             trace = trace,
             inheritedFrom = inheritedFrom,
             statementIndex = statementIndex,
@@ -311,7 +311,7 @@ object ThemeComponentStyles {
         }
         if (winner >= 0 && statements[winner].path != path) {
             val owner = statementValue(statements[winner], statements[winner].path!!)
-            require(!owner.containsRaw()) { "Containing table has dynamic fields; add a safe dotted override or use the Lua source page" }
+            require(!owner.containsRaw()) { "所属表包含动态字段;请添加安全的点路径覆盖或使用 Lua 源代码页" }
         }
 
         // If a later literal ancestor shadows an old dotted assignment, update that winner. This
@@ -324,7 +324,7 @@ object ThemeComponentStyles {
                 cleaned, path, cleaned.document.sourceStatements.size,
                 linkedSetOf(), emptyList(), null,
             )
-            require(!cleanedHit.dynamic) { cleanedHit.diagnostic ?: "Later dynamic ancestor of $path" }
+            require(!cleanedHit.dynamic) { cleanedHit.diagnostic ?: "$path 之后存在动态上级赋值" }
             return writeEffective(cleaned, path, cleanedHit, value)
         }
 
@@ -335,15 +335,15 @@ object ThemeComponentStyles {
             parts.drop(1).asReversed().forEach { key -> root = ThemeValue.LuaTable(linkedMapOf(key to root)) }
             return appendAssignment(source.text, "${parts.first()} = ${render(root)}")
         }
-        require(rootState == TableState.TABLE) { "Component root '${parts.first()}' is not provably a runtime table" }
+        require(rootState == TableState.TABLE) { "无法证明组件根 '${parts.first()}' 是运行时表" }
 
         var firstMissing = -1
         for (size in 2 until parts.size) {
             when (tableState(source, parts.take(size).joinToString("."), statements.size, linkedSetOf())) {
                 TableState.TABLE -> Unit
                 TableState.MISSING -> { firstMissing = size; break }
-                TableState.SCALAR -> throw IllegalArgumentException("Component ancestor '${parts.take(size).joinToString(".")}' is not a table")
-                TableState.DYNAMIC -> throw IllegalArgumentException("Component ancestor '${parts.take(size).joinToString(".")}' is dynamic")
+                TableState.SCALAR -> throw IllegalArgumentException("组件上级 '${parts.take(size).joinToString(".")}' 不是表")
+                TableState.DYNAMIC -> throw IllegalArgumentException("组件上级 '${parts.take(size).joinToString(".")}' 是动态内容")
             }
         }
         if (firstMissing < 0) return appendAssignment(source.text, "$path = ${render(value)}")
@@ -360,8 +360,8 @@ object ThemeComponentStyles {
         if (statement.path == path) return deleteStatement(source, hit.statementIndex)
         val assignment = statement.path ?: return source.text
         val owner = statementValue(statement, assignment) as? ThemeValue.LuaTable
-            ?: throw IllegalArgumentException("Explicit $path is not in a literal table")
-        require(!owner.containsRaw()) { "Containing table has dynamic fields; removing an inline field requires the Lua source page" }
+            ?: throw IllegalArgumentException("显式字段 $path 不在字面表中")
+        require(!owner.containsRaw()) { "所属表包含动态字段;移除内联字段必须使用 Lua 源代码页" }
         val relative = path.split('.').drop(assignment.split('.').size)
         val updated = removeNested(owner, relative)
         return replaceStatement(source, hit.statementIndex, render(updated))
@@ -406,45 +406,45 @@ object ThemeComponentStyles {
         when (field.type) {
             FieldType.STRING -> {
                 if (path == "preedit.inline" && value is ThemeValue.LuaBoolean) {
-                    require(!strictEnums || value.value) { "preedit.inline only writes boolean true; false remains source-only" }
+                    require(!strictEnums || value.value) { "预编辑内联(preedit.inline)只写出布尔值 true;false 仍仅支持源码编辑" }
                     return
                 }
                 val text = (value as? ThemeValue.LuaString)?.value
-                    ?: throw IllegalArgumentException("$path must be a literal string")
+                    ?: throw IllegalArgumentException("$path 必须是字面字符串")
                 when {
-                    path.endsWith(".gravity") -> require(!strictEnums || text in if (path.contains(".tab_bar.")) tabGravities else gravities) { "Invalid gravity for $path" }
-                    path == "preedit.inline" -> require(!strictEnums || text in inlineValues) { "preedit.inline must be one of ${inlineValues.joinToString()}" }
-                    path == "composition.position" -> require(!strictEnums || text in positions) { "Invalid composition.position" }
-                    path == "composition.movable" -> require(!strictEnums || text in movableValues) { "composition.movable must be true, false, or once as a string" }
+                    path.endsWith(".gravity") -> require(!strictEnums || text in if (path.contains(".tab_bar.")) tabGravities else gravities) { "$path 的重力方向(gravity)无效" }
+                    path == "preedit.inline" -> require(!strictEnums || text in inlineValues) { "预编辑内联(preedit.inline)必须是以下值之一:${inlineValues.joinToString()}" }
+                    path == "composition.position" -> require(!strictEnums || text in positions) { "编码窗口位置(composition.position)无效" }
+                    path == "composition.movable" -> require(!strictEnums || text in movableValues) { "编码窗口可移动(composition.movable)必须是字符串 true、false 或 once" }
                 }
             }
             FieldType.NUMBER -> {
                 val number = (value as? ThemeValue.LuaNumber)?.value
-                    ?: throw IllegalArgumentException("$path must be a literal number")
-                require(number.isFinite()) { "$path must be finite" }
-                require(!strictEnums || !field.integer || number % 1.0 == 0.0) { "$path must be an integer for the Trime2 runtime" }
+                    ?: throw IllegalArgumentException("$path 必须是字面数值")
+                require(number.isFinite()) { "$path 必须是有限数值" }
+                require(!strictEnums || !field.integer || number % 1.0 == 0.0) { "$path 在 Trime2 运行时中必须为整数" }
                 val sentinel = path == "composition.max_entries" && number == -1.0
-                require(!field.nonnegative || number >= 0.0 || sentinel) { "$path must be nonnegative${if (path == "composition.max_entries") " or -1" else ""}" }
+                require(!field.nonnegative || number >= 0.0 || sentinel) { "$path 必须非负${if (path == "composition.max_entries") "或为 -1" else ""}" }
             }
-            FieldType.BOOLEAN -> require(value is ThemeValue.LuaBoolean) { "$path must be a literal boolean" }
+            FieldType.BOOLEAN -> require(value is ThemeValue.LuaBoolean) { "$path 必须是字面布尔值" }
             FieldType.COLOR_OR_RESOURCE -> when (value) {
                 is ThemeValue.LuaNumber -> {
                     require(value.value.isFinite() && value.value % 1.0 == 0.0 && value.value >= 0.0 && value.value <= 0xffffffffL.toDouble()) {
-                        "$path color must be a finite unsigned 32-bit integer"
+                        "$path 颜色必须是有限的无符号 32 位整数"
                     }
                 }
                 is ThemeValue.LuaString -> validateResource(value.value)
-                else -> throw IllegalArgumentException("$path must be an unsigned color or safe project-relative resource")
+                else -> throw IllegalArgumentException("$path 必须是无符号颜色或安全的项目相对资源")
             }
         }
     }
 
     private fun validateResource(value: String) {
-        require(value.isNotBlank()) { "Resource path must not be blank" }
-        require(!value.startsWith('/') && !value.startsWith('\\')) { "Resource path must be project-relative" }
-        require(!Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(value)) { "Resource URI schemes are not allowed" }
-        require(value.split('/', '\\').none { it == ".." }) { "Resource traversal is not allowed" }
-        require(value.none { it.code < 32 || it.code == 127 }) { "Resource path contains control characters" }
+        require(value.isNotBlank()) { "资源路径不能为空" }
+        require(!value.startsWith('/') && !value.startsWith('\\')) { "资源路径必须相对于项目" }
+        require(!Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(value)) { "资源路径不允许 URI 协议" }
+        require(value.split('/', '\\').none { it == ".." }) { "资源路径不允许目录穿越" }
+        require(value.none { it.code < 32 || it.code == 127 }) { "资源路径包含控制字符" }
     }
 
     private fun parseColor(value: String): Long? {
@@ -455,19 +455,19 @@ object ThemeComponentStyles {
 
     private fun compatibility(path: String, literal: ThemeValue?): String? = when {
         fields[path]?.integer == true && literal is ThemeValue.LuaNumber && literal.value % 1.0 != 0.0 ->
-            "$path is preserved but the Trime2 integer getter uses its runtime fallback"
+            "$path 已保留,但 Trime2 整数读取器会使用运行时回退值"
         path == "composition.line_spacing_multiplier" && (literal as? ThemeValue.LuaNumber)?.value == 0.0 ->
-            "Preview normalizes line_spacing_multiplier=0 to 1"
+            "预览会将行距倍数(line_spacing_multiplier)=0 归一为 1"
         path == "composition.position" && literal is ThemeValue.LuaString && literal.value.lowercase(java.util.Locale.ROOT) !in positions ->
-            "Unknown composition.position is preserved and previewed as fixed"
+            "未知编码窗口位置(composition.position)已保留,预览按 fixed 显示"
         path == "composition.movable" && literal is ThemeValue.LuaString && literal.value !in movableValues ->
-            "Unknown composition.movable is preserved; the current runtime treats every string except false as movable true"
+            "未知编码窗口可移动值(composition.movable)已保留;当前运行时会把除 false 外的字符串视为可移动"
         path == "preedit.inline" && literal is ThemeValue.LuaString && literal.value !in inlineValues ->
-            "Unknown preedit.inline is preserved and previewed as none"
+            "未知预编辑内联值(preedit.inline)已保留,预览按 none 显示"
         path == "preedit.inline" && literal is ThemeValue.LuaBoolean && literal.value ->
-            "Boolean true is preserved, but the current Style.getString runtime previews it as none"
+            "布尔值 true 已保留,但当前 Style.getString 运行时会按 none 预览"
         path == "preedit.inline" && literal is ThemeValue.LuaBoolean ->
-            "Boolean false is preserved and previewed as none"
+            "布尔值 false 已保留,预览按 none 显示"
         else -> null
     }
 
@@ -476,14 +476,14 @@ object ThemeComponentStyles {
 
     private fun requireField(path: String): Field {
         require(path != "composition.window" && !path.startsWith("composition.window.")) {
-            "composition.window is source-only and cannot be patched generically"
+            "编码窗口(composition.window)仅支持源码编辑,不能通用修改"
         }
-        return fields[path] ?: throw IllegalArgumentException("Unsupported component style field: $path")
+        return fields[path] ?: throw IllegalArgumentException("不支持的组件样式字段:$path")
     }
 
     private fun rejectDuplicateExact(document: ThemeDocument, path: String) {
         require(document.sourceStatements.count { it.path == path } <= 1) {
-            "Duplicate exact assignments for $path require the Lua source page"
+            "$path 的重复精确赋值必须在 Lua 源代码页编辑"
         }
     }
 
@@ -491,28 +491,28 @@ object ThemeComponentStyles {
         val access = Regex("\\b${Regex.escape(root)}\\b")
         return document.sourceStatements.withIndex().firstOrNull { (index, statement) ->
             index > afterIndex && statement.root == null && access.containsMatchIn(visibleLua(statement.text))
-        }?.let { "Assignment precedence for '$root' is not provable because of later unsupported Lua" }
+        }?.let { "由于后续存在不支持的 Lua,无法证明 '$root' 的赋值优先级" }
     }
 
     private fun statementValue(statement: ThemeSourceStatement, path: String): ThemeValue {
         val parsed = ThemeLuaParser().parse(statement.text)
-        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
+        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
         return parsed.document.get(path)
-            ?: throw IllegalArgumentException("Assignment precedence for $path cannot be proven")
+            ?: throw IllegalArgumentException("无法证明 $path 的赋值优先级")
     }
 
     private fun parse(source: String): Source {
         val result = ThemeLuaParser().parse(source)
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
-        require(result.diagnostics.none { it.message.startsWith("Unsupported table key") }) {
-            "Unsupported table keys require the Lua source page"
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
+        require(result.diagnostics.none { it.message.startsWith("不支持的表键") || it.message.startsWith("Unsupported table key") }) {
+            "不支持的表键必须在 Lua 源代码页编辑"
         }
         return Source(source, result.document)
     }
 
     private fun setNested(current: ThemeValue, path: List<String>, value: ThemeValue): ThemeValue {
         if (path.isEmpty()) return value
-        val table = current as? ThemeValue.LuaTable ?: throw IllegalArgumentException("Cannot overwrite a non-table ancestor")
+        val table = current as? ThemeValue.LuaTable ?: throw IllegalArgumentException("不能覆盖非表类型的上级")
         val fields = LinkedHashMap(table.fields)
         val child = fields[path.first()]
         fields[path.first()] = if (path.size == 1) value else setNested(child ?: ThemeValue.LuaTable(), path.drop(1), value)
@@ -543,7 +543,7 @@ object ThemeComponentStyles {
 
     private fun replaceRhs(statement: String, rendered: String): String {
         val equals = topLevelEquals(statement)
-        require(equals >= 0) { "Assignment cannot be rewritten safely" }
+        require(equals >= 0) { "赋值不能安全重写" }
         var rhs = equals + 1
         while (rhs < statement.length && statement[rhs] in " \t") rhs++
         val comment = topLevelComment(statement, rhs)

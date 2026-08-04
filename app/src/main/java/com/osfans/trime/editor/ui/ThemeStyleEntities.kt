@@ -24,7 +24,7 @@ object ThemeStyleEntities {
     @JvmStatic fun isReserved(id: String): Boolean = id in reserved
 
     @JvmStatic fun list(source: String): List<Entry> {
-        val parsed = parseValid(source, "Style source")
+        val parsed = parseValid(source, "样式源代码")
         val roots = linkedSetOf<String>(); parsed.document.sourceStatements.mapNotNullTo(roots) { it.root }
         return roots.mapNotNull { id ->
             if (!safeId.matches(id)) return@mapNotNull null
@@ -41,45 +41,45 @@ object ThemeStyleEntities {
 
     @JvmStatic fun extract(source: String, id: String): Snapshot {
         validateId(id)
-        val parsed = parseValid(source, "Style source")
+        val parsed = parseValid(source, "样式源代码")
         val paths = parsed.document.sourceStatements.mapNotNull { it.path }
-        require(paths.any { it == id || it.startsWith("$id.") }) { "Style entity not found: $id" }
-        require(paths.groupingBy { it }.eachCount().none { (path, count) -> count > 1 && (path == id || path.startsWith("$id.")) }) { "Duplicate entity assignments require the Lua source page" }
+        require(paths.any { it == id || it.startsWith("$id.") }) { "未找到样式实体:$id" }
+        require(paths.groupingBy { it }.eachCount().none { (path, count) -> count > 1 && (path == id || path.startsWith("$id.")) }) { "重复实体赋值必须在 Lua 源代码页编辑" }
         val root = parsed.document.get(id)
         val parent = (root as? ThemeValue.RawLuaNode)?.source?.trim()?.let { clone.matchEntire(it)?.groupValues?.get(1) }
-        require(root !is ThemeValue.RawLuaNode || parent != null) { "Dynamic style entity requires the Lua source page: $id" }
-        require(root == null || root is ThemeValue.RawLuaNode || !root.containsRawLua()) { "Dynamic field in style entity requires the Lua source page: $id" }
+        require(root !is ThemeValue.RawLuaNode || parent != null) { "动态样式实体必须在 Lua 源代码页编辑:$id" }
+        require(root == null || root is ThemeValue.RawLuaNode || !root.containsRawLua()) { "样式实体中的动态字段必须在 Lua 源代码页编辑:$id" }
         val statements = parsed.document.sourceStatements.filter { it.path == id || it.path?.startsWith("$id.") == true }
         statements.forEach { statement ->
             if (statement.path == id && parent != null) return@forEach
             val value = parseAssignmentValue(statement.text)
-            require(!value.containsRawLua()) { "Dynamic field requires the Lua source page: ${statement.path}" }
+            require(!value.containsRawLua()) { "动态字段必须在 Lua 源代码页编辑:${statement.path}" }
         }
         val fragment = buildString { statements.forEach { append(it.text.trim()).append(it.separator.ifEmpty { "\n" }) } }.trimEnd() + "\n"
         val strings = linkedSetOf<String>()
         statements.forEach { statement -> collectStrings(parseAssignmentValue(statement.text), strings) }
         val sensitive = strings.firstOrNull { isSensitivePath(it) }
-        require(sensitive == null) { "Style entity contains a private URI or absolute path and cannot enter the private clipboard" }
+        require(sensitive == null) { "样式实体包含私有 URI 或绝对路径,不能进入编辑器私有剪贴板" }
         return Snapshot(id, fragment, parent, strings.filter { resourceExtension.matches(it) }.sorted())
     }
 
     @JvmStatic fun paste(source: String, snapshot: Snapshot, targetId: String): String {
         validateId(targetId); validateId(snapshot.id)
-        val parsed = parseValid(source, "Target style source")
-        require(parsed.document.get(targetId) == null && parsed.document.sourceStatements.none { it.path == targetId || it.path?.startsWith("$targetId.") == true }) { "Style entity already exists: $targetId" }
+        val parsed = parseValid(source, "目标样式源代码")
+        require(parsed.document.get(targetId) == null && parsed.document.sourceStatements.none { it.path == targetId || it.path?.startsWith("$targetId.") == true }) { "样式实体已存在:$targetId" }
         snapshot.cloneParent?.let { parent ->
             validateId(parent)
             val dependency = list(source).firstOrNull { it.id == parent }
-            require(dependency != null) { "Clone dependency is missing in target style: $parent" }
-            require(!dependency.dynamic) { "Clone dependency is dynamic in target style: $parent" }
+            require(dependency != null) { "目标样式缺少克隆依赖:$parent" }
+            require(!dependency.dynamic) { "目标样式的克隆依赖为动态内容:$parent" }
         }
         // Re-extract to verify clipboard text is still a static, self-contained entity.
         val verified = extract(snapshot.fragment, snapshot.id)
-        require(verified.cloneParent == snapshot.cloneParent) { "Clipboard style dependency changed" }
-        require(verified.referencedResources == snapshot.referencedResources) { "Clipboard style resource dependencies changed" }
+        require(verified.cloneParent == snapshot.cloneParent) { "剪贴板中的样式依赖已变化" }
+        require(verified.referencedResources == snapshot.referencedResources) { "剪贴板中的样式资源依赖已变化" }
         val rewritten = rewriteEntityPaths(verified.fragment, snapshot.id, targetId)
         val result = source + (if (source.isNotEmpty() && !source.endsWith('\n')) "\n" else "") + rewritten
-        parseValid(result, "Pasted style source")
+        parseValid(result, "粘贴后的样式源代码")
         return result
     }
 
@@ -92,16 +92,16 @@ object ThemeStyleEntities {
 
     @JvmStatic fun rename(source: String, oldId: String, newId: String): String {
         validateId(oldId); validateId(newId)
-        require(!isReserved(oldId)) { "Reserved component style cannot be renamed: $oldId" }
-        require(!isReserved(newId)) { "Cannot rename an entity to a reserved component ID: $newId" }
+        require(!isReserved(oldId)) { "保留组件样式不能重命名:$oldId" }
+        require(!isReserved(newId)) { "不能将实体重命名为保留组件标识:$newId" }
         if (oldId == newId) return source
-        val parsed = parseValid(source, "Style source")
+        val parsed = parseValid(source, "样式源代码")
         val duplicatePaths = parsed.document.sourceStatements.mapNotNull { it.path }.groupingBy { it }.eachCount().filter { (path, count) -> count > 1 && (path == oldId || path.startsWith("$oldId.")) }.keys
-        require(duplicatePaths.isEmpty()) { "Duplicate entity assignments require the Lua source page: ${duplicatePaths.joinToString()}" }
-        require(list(source).firstOrNull { it.id == oldId }?.dynamic == false) { "Dynamic style entity requires the Lua source page: $oldId" }
-        require(parsed.document.sourceStatements.none { uncertainEntityReference(it.path, it.text, oldId) }) { "Inline or dynamic style references require the Lua source page before rename: $oldId" }
-        require(parsed.document.get(oldId) != null || parsed.document.sourceStatements.any { it.path == oldId || it.path?.startsWith("$oldId.") == true }) { "Style entity not found: $oldId" }
-        require(parsed.document.get(newId) == null && parsed.document.sourceStatements.none { it.path == newId || it.path?.startsWith("$newId.") == true }) { "Style entity already exists: $newId" }
+        require(duplicatePaths.isEmpty()) { "重复实体赋值必须在 Lua 源代码页编辑:${duplicatePaths.joinToString()}" }
+        require(list(source).firstOrNull { it.id == oldId }?.dynamic == false) { "动态样式实体必须在 Lua 源代码页编辑:$oldId" }
+        require(parsed.document.sourceStatements.none { uncertainEntityReference(it.path, it.text, oldId) }) { "重命名前必须在 Lua 源代码页处理内联或动态样式引用:$oldId" }
+        require(parsed.document.get(oldId) != null || parsed.document.sourceStatements.any { it.path == oldId || it.path?.startsWith("$oldId.") == true }) { "未找到样式实体:$oldId" }
+        require(parsed.document.get(newId) == null && parsed.document.sourceStatements.none { it.path == newId || it.path?.startsWith("$newId.") == true }) { "样式实体已存在:$newId" }
         val result = buildString {
             parsed.document.sourceStatements.forEach { statement ->
                 var text = if (statement.path == oldId || statement.path?.startsWith("$oldId.") == true) rewriteStatementPath(statement.text, statement.path!!, newId + statement.path!!.removePrefix(oldId)) else statement.text
@@ -111,20 +111,20 @@ object ThemeStyleEntities {
                 append(text).append(statement.separator)
             }
         }
-        parseValid(result, "Renamed style source")
+        parseValid(result, "重命名后的样式源代码")
         return result
     }
 
     @JvmStatic fun delete(source: String, id: String): String {
         validateId(id)
-        val parsed = parseValid(source, "Style source")
-        require(!isReserved(id)) { "Reserved component style cannot be deleted: $id" }
-        require(list(source).firstOrNull { it.id == id }?.dynamic == false) { "Dynamic style entity requires the Lua source page: $id" }
-        require(parsed.document.sourceStatements.none { uncertainEntityReference(it.path, it.text, id) }) { "Inline or dynamic style references require the Lua source page before deletion: $id" }
+        val parsed = parseValid(source, "样式源代码")
+        require(!isReserved(id)) { "保留组件样式不能删除:$id" }
+        require(list(source).firstOrNull { it.id == id }?.dynamic == false) { "动态样式实体必须在 Lua 源代码页编辑:$id" }
+        require(parsed.document.sourceStatements.none { uncertainEntityReference(it.path, it.text, id) }) { "删除前必须在 Lua 源代码页处理内联或动态样式引用:$id" }
         require(parsed.document.sourceStatements.none { statement ->
             val value = statement.path?.let { parseAssignmentValue(statement.text) }
             (value is ThemeValue.RawLuaNode && clone.matchEntire(value.source.trim())?.groupValues?.get(1) == id) || (statement.path?.substringAfterLast('.') == "style" && value is ThemeValue.LuaString && value.value == id)
-        }) { "Style entity is referenced or inherited by another style" }
+        }) { "样式实体仍被其他样式引用或继承" }
         var found = false
         val result = buildString {
             parsed.document.sourceStatements.forEach { statement ->
@@ -132,18 +132,18 @@ object ThemeStyleEntities {
                 else append(statement.text).append(statement.separator)
             }
         }
-        require(found) { "Style entity not found: $id" }
-        parseValid(result, "Style source after deletion")
+        require(found) { "未找到样式实体:$id" }
+        parseValid(result, "删除后的样式源代码")
         return result
     }
 
     @JvmStatic fun replaceKeyboardReferences(source: String, oldId: String, newId: String?): ReferenceUpdate {
         validateId(oldId); newId?.let(::validateId)
-        val parsed = parseValid(source, "Keyboard source")
+        val parsed = parseValid(source, "键盘源代码")
         val roots = listOf("rows", "flex_box", "keys", "key_maps")
-        roots.forEach { root -> require(parsed.document.get(root)?.containsRawLua() != true) { "Dynamic layout requires the Lua source page: $root" } }
+        roots.forEach { root -> require(parsed.document.get(root)?.containsRawLua() != true) { "动态布局必须在 Lua 源代码页编辑:$root" } }
         val model = ThemeLayoutCodec.fromDocument(parsed.document)
-        require(model.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "Keyboard has no statically recognized layout" }
+        require(model.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "键盘没有可静态识别的布局" }
         val allKeys = if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) model.keyMapPages.flatMap { it.keys } else model.keys
         val affected = allKeys.filter { it.keyStyle == oldId || (it.keyStyle.isEmpty() && it.click == oldId) }
         val affectedContainers = model.flexContainers.filter { it.style == oldId }
@@ -156,17 +156,17 @@ object ThemeStyleEntities {
         }
         val updated = ThemeLayoutCodec.writeAgainstOriginal(parsed.document, model)
         val written = ThemeLuaWriter.write(updated)
-        parseValid(written, "Keyboard reference update")
+        parseValid(written, "键盘引用更新结果")
         return ReferenceUpdate(written, changed)
     }
 
     @JvmStatic fun referenceCount(source: String, id: String): Int {
         validateId(id)
-        val parsed = parseValid(source, "Keyboard source")
+        val parsed = parseValid(source, "键盘源代码")
         val roots = listOf("rows", "flex_box", "keys", "key_maps")
-        require(roots.none { parsed.document.get(it)?.containsRawLua() == true }) { "Dynamic layout has uncertain style references" }
+        require(roots.none { parsed.document.get(it)?.containsRawLua() == true }) { "动态布局包含无法确定的样式引用" }
         val model = ThemeLayoutCodec.fromDocument(parsed.document)
-        require(model.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "Keyboard has no statically recognized layout" }
+        require(model.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "键盘没有可静态识别的布局" }
         val keys = if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) model.keyMapPages.flatMap { it.keys } else model.keys
         return keys.count { it.keyStyle == id || (it.keyStyle.isEmpty() && it.click == id) } + model.flexContainers.count { it.style == id }
     }
@@ -188,7 +188,7 @@ object ThemeStyleEntities {
     }
 
     private fun rewriteEntityPaths(fragment: String, oldId: String, newId: String): String {
-        val parsed = parseValid(fragment, "Clipboard style entity")
+        val parsed = parseValid(fragment, "剪贴板样式实体")
         return buildString { parsed.document.sourceStatements.forEach { statement ->
             val path = statement.path
             append(if (path == oldId || path?.startsWith("$oldId.") == true) rewriteStatementPath(statement.text, path!!, newId + path.removePrefix(oldId)) else statement.text).append(statement.separator)
@@ -197,13 +197,13 @@ object ThemeStyleEntities {
 
     private fun rewriteStatementPath(text: String, oldPath: String, newPath: String): String {
         val assignment = Regex("(^|\\n)([ \\t]*)${Regex.escape(oldPath)}([ \\t]*=)")
-        val match = assignment.find(text) ?: error("Cannot locate assignment path: $oldPath")
+        val match = assignment.find(text) ?: error("无法定位赋值路径:$oldPath")
         return text.replaceRange(match.range, match.groupValues[1] + match.groupValues[2] + newPath + match.groupValues[3])
     }
 
     private fun rewriteAssignmentValue(text: String, path: String, value: String): String {
         val assignment = Regex("(^|\n)([ \t]*)${Regex.escape(path)}[ \t]*=")
-        val match = assignment.find(text) ?: error("Cannot locate assignment value: $path")
+        val match = assignment.find(text) ?: error("无法定位赋值值:$path")
         val valueStart = match.range.last + 1
         val comment = trailingComment(text, valueStart)
         return text.substring(0, valueStart) + " " + value + if (comment >= 0) " " + text.substring(comment) else ""
@@ -223,15 +223,15 @@ object ThemeStyleEntities {
 
     private fun parseAssignmentValue(text: String): ThemeValue {
         val parsed = ThemeLuaParser().parse(text.trim())
-        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Invalid entity statement" }
-        return parsed.document.nodes.firstOrNull { it.assignment }?.value ?: error("Entity statement is not an assignment")
+        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "实体语句无效" }
+        return parsed.document.nodes.firstOrNull { it.assignment }?.value ?: error("实体语句不是赋值语句")
     }
 
     private fun parseValid(source: String, label: String) = ThemeLuaParser().parse(source).also { parsed ->
-        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "$label contains Lua errors" }
+        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "$label 包含 Lua 错误" }
     }
 
-    private fun validateId(id: String) { require(safeId.matches(id)) { "Style entity ID must be a Lua-safe identifier" } }
+    private fun validateId(id: String) { require(safeId.matches(id)) { "样式实体标识必须是 Lua 安全标识符" } }
     private fun ThemeValue.containsRawLua(): Boolean = when (this) {
         is ThemeValue.RawLuaNode -> true
         is ThemeValue.LuaTable -> fields.values.any { it.containsRawLua() }

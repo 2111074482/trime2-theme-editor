@@ -31,7 +31,7 @@ object ThemeLayoutMigration {
 
     @JvmStatic
     fun preview(source: ThemeEditorModel, target: ThemeEditorModel.LayoutMode): Preview {
-        require(target != ThemeEditorModel.LayoutMode.NONE) { "A concrete target layout is required" }
+        require(target != ThemeEditorModel.LayoutMode.NONE) { "必须选择具体的目标布局" }
         val groups = visualGroups(source.keys)
         val sourceContainers = when (source.layoutMode) {
             ThemeEditorModel.LayoutMode.ROWS -> source.rows.size
@@ -49,11 +49,11 @@ object ThemeLayoutMigration {
         }
         val omitted = if (source.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) (source.keyMapPages.size - 1).coerceAtLeast(0) else 0
         val notes = buildList {
-            add("Only literal key fields are converted; Lua callbacks remain static source data.")
-            add("The target root becomes the only active layout root.")
-            if (omitted > 0) add("$omitted non-active key_maps pages are not converted; choose backup or hidden original data to retain them.")
-            if (target != ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) add("Absolute coordinates become ordering hints; the target layout recalculates positions.")
-            if (source.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) add("Nested Flex sizing is flattened into visual rows when the target is not Flex.")
+            add("仅转换字面量按键字段;Lua 回调继续作为静态源码数据保留。")
+            add("目标根将成为唯一生效的布局根。")
+            if (omitted > 0) add("有 $omitted 个未激活按键映射页(key_maps)不会转换;请选择备份或隐藏原始数据以保留。")
+            if (target != ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) add("绝对坐标将变为排序提示;目标布局会重新计算位置。")
+            if (source.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) add("目标不是弹性盒(flex)时,嵌套弹性尺寸会展平为可视行。")
         }
         return Preview(source.layoutMode, target, source.keys.size, sourceContainers, targetContainers, omitted, notes)
     }
@@ -61,19 +61,19 @@ object ThemeLayoutMigration {
     @JvmStatic
     @JvmOverloads
     fun migrate(document: ThemeDocument, source: ThemeEditorModel, target: ThemeEditorModel.LayoutMode, hideOriginal: Boolean = false): Result {
-        require(source.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "The source has no literal layout" }
-        require(target != ThemeEditorModel.LayoutMode.NONE) { "A concrete target layout is required" }
-        require(source.layoutMode != target) { "Source and target layouts are identical" }
+        require(source.layoutMode != ThemeEditorModel.LayoutMode.NONE) { "源文档没有字面量布局" }
+        require(target != ThemeEditorModel.LayoutMode.NONE) { "必须选择具体的目标布局" }
+        require(source.layoutMode != target) { "源布局与目标布局相同" }
         val dynamicRoots = layoutRoots.filter { document.get(it)?.containsRawLua() == true }
-        require(dynamicRoots.isEmpty()) { "Dynamic layout roots require the Lua source page: ${dynamicRoots.joinToString()}" }
+        require(dynamicRoots.isEmpty()) { "动态布局根必须在 Lua 源代码页编辑:${dynamicRoots.joinToString()}" }
         val duplicateRoots = document.sourceStatements.mapNotNull { it.path }.groupingBy { it }.eachCount()
             .filter { (path, count) -> count > 1 && path.substringBefore('.') in layoutRoots }.keys
-        require(duplicateRoots.isEmpty()) { "Duplicate layout assignments require the Lua source page: ${duplicateRoots.joinToString()}" }
+        require(duplicateRoots.isEmpty()) { "重复布局赋值必须在 Lua 源代码页编辑:${duplicateRoots.joinToString()}" }
         val migrationPreview = preview(source, target)
         var candidate = document
         if (hideOriginal) {
             val existing = document.get("_editor_hidden_layouts")
-            require(existing == null || existing is ThemeValue.LuaTable) { "_editor_hidden_layouts is dynamic; rename or edit it in the Lua source page" }
+            require(existing == null || existing is ThemeValue.LuaTable) { "隐藏布局备份(_editor_hidden_layouts)是动态内容;请重命名或在 Lua 源代码页编辑" }
             val hidden = linkedMapOf<String, ThemeValue>()
             if (existing is ThemeValue.LuaTable) hidden.putAll(existing.fields)
             layoutRoots.forEach { root -> document.get(root)?.let { value ->
@@ -101,7 +101,7 @@ object ThemeLayoutMigration {
             ThemeEditorModel.LayoutMode.FLEX_BOX -> toFlex(result, keys)
             ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS -> result.keys.addAll(keys)
             ThemeEditorModel.LayoutMode.KEY_MAPS -> toKeyMaps(result, keys)
-            ThemeEditorModel.LayoutMode.NONE -> error("unreachable")
+            ThemeEditorModel.LayoutMode.NONE -> error("不可到达的布局分支")
         }
         return result
     }
@@ -128,7 +128,7 @@ object ThemeLayoutMigration {
     }
 
     private fun toKeyMaps(result: ThemeEditorModel, keys: List<ThemeEditorModel.Key>) {
-        val page = ThemeEditorModel.KeyMapPage("migrated_page_0", "Migrated").also { it.sourcePath = "" }
+        val page = ThemeEditorModel.KeyMapPage("migrated_page_0", "迁移结果").also { it.sourcePath = "" }
         keys.forEachIndexed { index, key ->
             key.ownerId = page.id; key.x = (index % 8) * 12.3f; key.y = 10f + (index / 8) * 11f
             page.keys += key.copy(); result.keys += key

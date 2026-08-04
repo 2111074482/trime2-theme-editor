@@ -85,15 +85,15 @@ object ThemePanelComponents {
     fun readToolbar(source: String, panel: Panel): Toolbar {
         val state = snapshot(source, toolbarPath(panel))
         val table = requireLiteralTable(state, "toolbar")
-        val gravity = literalString(table, "gravity", "Toolbar gravity")
+        val gravity = literalString(table, "gravity", "工具栏重力方向(gravity)")
         if (gravity != null) require(gravity in toolbarGravities) {
-            "Toolbar gravity must be left, top, right, or bottom"
+            "工具栏重力方向(gravity)必须是 left、top、right 或 bottom"
         }
         // ExpandedCandidateView has no component height setting; preserve any such unknown field
         // but do not expose or mutate it. Symbol and clipboard toolbars do consume literal height.
         val height = if (panel == Panel.CANDIDATE_EXPANDED) null
-        else literalHeight(table, "height", "Toolbar height")
-        val keys = table?.fields?.get("keys")?.let { stringArray(it, "Toolbar keys") }
+        else literalHeight(table, "height", "工具栏高度(height)")
+        val keys = table?.fields?.get("keys")?.let { stringArray(it, "工具栏按键(keys)") }
         return Toolbar(
             gravity = gravity ?: "right",
             height = height,
@@ -115,12 +115,12 @@ object ThemePanelComponents {
         keys: List<String>?,
     ): String {
         validateGravity(gravity, toolbarGravities, "Toolbar")
-        validateHeight(height, "Toolbar height")
+        validateHeight(height, "工具栏高度(height)")
         require(panel != Panel.CANDIDATE_EXPANDED || height == null) {
-            "candidate.expanded.tool_bar does not expose height"
+            "展开候选工具栏(candidate.expanded.tool_bar)不提供高度字段"
         }
         val safeKeys: List<String>? = keys?.let { input ->
-            require(input.none { it == null }) { "Toolbar keys must be literal strings" }
+            require(input.none { it == null }) { "工具栏按键(keys)必须是字面字符串" }
             input.toList()
         }
         val state = mutableSnapshot(source, toolbarPath(panel), "toolbar")
@@ -139,7 +139,7 @@ object ThemePanelComponents {
                 verified.gravity == (gravity ?: "right") &&
                 verified.height == height &&
                 verified.keys == (safeKeys ?: toolbarDefaults(panel)),
-        ) { "Written toolbar could not be parsed safely; use the Lua source page" }
+        ) { "写出的工具栏无法安全解析;请使用 Lua 源代码页" }
         return output
     }
 
@@ -148,11 +148,11 @@ object ThemePanelComponents {
         requireTabPanel(panel)
         val state = snapshot(source, tabBarPath(panel))
         val table = requireLiteralTable(state, "tab bar")
-        val gravity = literalString(table, "gravity", "Tab-bar gravity")
+        val gravity = literalString(table, "gravity", "标签栏重力方向(gravity)")
         if (gravity != null) require(gravity in tabGravities) {
-            "Tab-bar gravity must be top or bottom"
+            "标签栏重力方向(gravity)必须是 top 或 bottom"
         }
-        val height = literalHeight(table, "height", "Tab-bar height")
+        val height = literalHeight(table, "height", "标签栏高度(height)")
         return TabBar(
             gravity = gravity,
             height = height,
@@ -172,7 +172,7 @@ object ThemePanelComponents {
     ): String {
         requireTabPanel(panel)
         validateGravity(gravity, tabGravities, "Tab bar")
-        validateHeight(height, "Tab-bar height")
+        validateHeight(height, "标签栏高度(height)")
         val state = mutableSnapshot(source, tabBarPath(panel), "tab bar")
         val fields = LinkedHashMap(state.table?.fields ?: emptyMap())
         setOrRemove(fields, "gravity", gravity?.let { ThemeValue.LuaString(it) })
@@ -183,21 +183,21 @@ object ThemePanelComponents {
             verified.gravityExplicit == (gravity != null) &&
                 verified.heightExplicit == (height != null) &&
                 verified.gravity == gravity && verified.height == height,
-        ) { "Written tab bar could not be parsed safely; use the Lua source page" }
+        ) { "写出的标签栏无法安全解析;请使用 Lua 源代码页" }
         return output
     }
 
     @JvmStatic
     fun readCandidateFilter(source: String): FilterBar {
         val state = snapshot(source, "candidate.expanded.filter_bar")
-        val table = requireLiteralTable(state, "candidate filter bar")
+        val table = requireLiteralTable(state, "候选过滤栏")
         val showValue = table?.fields?.get("show")
         require(showValue == null || showValue is ThemeValue.LuaBoolean) {
-            "Candidate filter show must be a literal boolean"
+            "候选过滤栏显示(show)必须是字面布尔值"
         }
-        val gravity = literalString(table, "gravity", "Candidate filter gravity")
+        val gravity = literalString(table, "gravity", "候选过滤栏重力方向(gravity)")
         if (gravity != null) require(gravity in toolbarGravities) {
-            "Candidate filter gravity must be left, top, right, or bottom"
+            "候选过滤栏重力方向(gravity)必须是 left、top、right 或 bottom"
         }
         return FilterBar(
             show = (showValue as? ThemeValue.LuaBoolean)?.value ?: true,
@@ -211,8 +211,8 @@ object ThemePanelComponents {
 
     @JvmStatic
     fun updateCandidateFilter(source: String, show: Boolean?, gravity: String?): String {
-        validateGravity(gravity, toolbarGravities, "Candidate filter")
-        val state = mutableSnapshot(source, "candidate.expanded.filter_bar", "candidate filter bar")
+        validateGravity(gravity, toolbarGravities, "候选过滤栏")
+        val state = mutableSnapshot(source, "candidate.expanded.filter_bar", "候选过滤栏")
         val fields = LinkedHashMap(state.table?.fields ?: emptyMap())
         setOrRemove(fields, "show", show?.let { ThemeValue.LuaBoolean(it) })
         setOrRemove(fields, "gravity", gravity?.let { ThemeValue.LuaString(it) })
@@ -222,7 +222,7 @@ object ThemePanelComponents {
             verified.showExplicit == (show != null) &&
                 verified.gravityExplicit == (gravity != null) &&
                 verified.show == (show ?: true) && verified.gravity == (gravity ?: "left"),
-        ) { "Written candidate filter bar could not be parsed safely; use the Lua source page" }
+        ) { "写出的候选过滤栏无法安全解析;请使用 Lua 源代码页" }
         return output
     }
 
@@ -235,7 +235,7 @@ object ThemePanelComponents {
     private fun tabBarPath(panel: Panel): String = when (panel) {
         Panel.SYMBOL -> "symbol.tab_bar"
         Panel.CLIPBOARD -> "clipboard.tab_bar"
-        Panel.CANDIDATE_EXPANDED -> throw IllegalArgumentException("Candidate expanded panel has no tab bar")
+        Panel.CANDIDATE_EXPANDED -> throw IllegalArgumentException("展开候选面板没有标签栏(tab_bar)")
     }
 
     private fun toolbarDefaults(panel: Panel): List<String> = when (panel) {
@@ -245,21 +245,21 @@ object ThemePanelComponents {
     }
 
     private fun requireTabPanel(panel: Panel) {
-        require(panel != Panel.CANDIDATE_EXPANDED) { "Candidate expanded panel has no tab bar" }
+        require(panel != Panel.CANDIDATE_EXPANDED) { "展开候选面板没有标签栏(tab_bar)" }
     }
 
     private fun requireLiteralTable(state: Snapshot, name: String): ThemeValue.LuaTable? = when (state.location.state) {
         State.MISSING -> null
         State.LITERAL -> state.table
-            ?: throw IllegalArgumentException("$name must be a literal table")
-        State.DYNAMIC -> throw IllegalArgumentException("Dynamic $name requires the Lua source page")
+            ?: throw IllegalArgumentException("$name 必须是字面表")
+        State.DYNAMIC -> throw IllegalArgumentException("动态字段 $name 必须在 Lua 源代码页编辑")
     }
 
     private fun mutableSnapshot(source: String, path: String, name: String): Snapshot {
         val state = snapshot(source, path)
         when (state.location.state) {
-            State.DYNAMIC -> throw IllegalArgumentException("Dynamic $name requires the Lua source page")
-            State.LITERAL -> require(state.table != null) { "$name must be a literal table" }
+            State.DYNAMIC -> throw IllegalArgumentException("动态字段 $name 必须在 Lua 源代码页编辑")
+            State.LITERAL -> require(state.table != null) { "$name 必须是字面表" }
             State.MISSING -> Unit
         }
         // Validate all currently modeled fields before preserving the table around an update.
@@ -275,7 +275,7 @@ object ThemePanelComponents {
         path.startsWith("candidate.expanded.") -> Panel.CANDIDATE_EXPANDED
         path.startsWith("symbol.") -> Panel.SYMBOL
         path.startsWith("clipboard.") -> Panel.CLIPBOARD
-        else -> throw IllegalArgumentException("Unsupported panel component path")
+        else -> throw IllegalArgumentException("不支持的面板组件路径")
     }
 
     /** Finds the last assignment that can determine [componentPath], without evaluating its RHS. */
@@ -284,7 +284,7 @@ object ThemePanelComponents {
         val prefixes = prefixes(componentPath)
         prefixes.forEach { path ->
             require(document.sourceStatements.count { it.path == path } <= 1) {
-                "Duplicate $path assignments are ambiguous; use the Lua source page"
+                "$path 的重复赋值存在歧义;请使用 Lua 源代码页"
             }
         }
         rejectUnclassifiedAccess(document, componentPath.substringBefore('.'))
@@ -308,7 +308,7 @@ object ThemePanelComponents {
                 )
             } else if (path.startsWith("$componentPath.")) {
                 throw IllegalArgumentException(
-                    "Nested $componentPath assignments are unsupported; use one literal component table or the Lua source page",
+                    "不支持嵌套 $componentPath 赋值;请使用单个字面组件表或 Lua 源代码页",
                 )
             }
         }
@@ -324,7 +324,7 @@ object ThemePanelComponents {
         relative.forEach { part ->
             if (current is ThemeValue.RawLuaNode) return Resolved(State.DYNAMIC, current)
             val table = current as? ThemeValue.LuaTable
-                ?: throw IllegalArgumentException("Panel component ancestor must be a literal table")
+                ?: throw IllegalArgumentException("面板组件的上级必须是字面表")
             current = table.fields[part] ?: return Resolved(State.MISSING, null)
         }
         return if (current is ThemeValue.RawLuaNode) Resolved(State.DYNAMIC, current)
@@ -341,7 +341,7 @@ object ThemePanelComponents {
         document.sourceStatements.forEach { statement ->
             if (statement.root == null && access.containsMatchIn(visibleLua(statement.text))) {
                 throw IllegalArgumentException(
-                    "Panel assignment precedence cannot be proven safe; use the Lua source page",
+                    "无法证明面板赋值优先级安全;请使用 Lua 源代码页",
                 )
             }
         }
@@ -349,53 +349,53 @@ object ThemePanelComponents {
 
     private fun statementValue(statement: ThemeSourceStatement, path: String): ThemeValue {
         val result = ThemeLuaParser().parse(statement.text)
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
         return result.document.get(path)
-            ?: throw IllegalArgumentException("Panel assignment precedence cannot be proven safe; use the Lua source page")
+            ?: throw IllegalArgumentException("无法证明面板赋值优先级安全;请使用 Lua 源代码页")
     }
 
     private fun literalString(table: ThemeValue.LuaTable?, field: String, label: String): String? {
         val value = table?.fields?.get(field) ?: return null
         return (value as? ThemeValue.LuaString)?.value
-            ?: throw IllegalArgumentException("$label must be a literal string")
+            ?: throw IllegalArgumentException("$label 必须是字面字符串")
     }
 
     private fun literalHeight(table: ThemeValue.LuaTable?, field: String, label: String): Double? {
         val value = table?.fields?.get(field) ?: return null
         val number = (value as? ThemeValue.LuaNumber)?.value
-            ?: throw IllegalArgumentException("$label must be a literal number")
+            ?: throw IllegalArgumentException("$label 必须是字面数值")
         validateHeight(number, label)
         return number
     }
 
     private fun stringArray(value: ThemeValue, label: String): List<String> {
         val table = value as? ThemeValue.LuaTable
-            ?: throw IllegalArgumentException("$label must be a literal string array")
+            ?: throw IllegalArgumentException("$label 必须是字面字符串数组")
         require(table.fields.keys.all { it.matches(Regex("^#[1-9][0-9]*$")) }) {
-            "$label must be a literal array without named fields"
+            "$label 必须是不含命名字段的字面数组"
         }
         val indexed = table.fields.entries.map { entry ->
             entry.key.drop(1).toIntOrNull()?.let { it to entry.value }
-                ?: throw IllegalArgumentException("$label contains an unsupported array index")
+                ?: throw IllegalArgumentException("$label 包含不支持的数组索引")
         }.sortedBy { it.first }
         require(indexed.map { it.first } == (1..indexed.size).toList()) {
-            "$label must be a contiguous literal array"
+            "$label 必须是连续的字面数组"
         }
         return indexed.map { (_, item) ->
             (item as? ThemeValue.LuaString)?.value
-                ?: throw IllegalArgumentException("$label must contain literal strings only; event tables are not supported")
+                ?: throw IllegalArgumentException("$label 只能包含字面字符串;不支持事件表")
         }
     }
 
     private fun validateGravity(value: String?, allowed: Set<String>, label: String) {
         require(value == null || value in allowed) {
-            "$label gravity must be one of ${allowed.joinToString()}"
+            "$label 的重力方向(gravity)必须是以下值之一:${allowed.joinToString()}"
         }
     }
 
     private fun validateHeight(value: Double?, label: String) {
         require(value == null || value.isFinite() && value >= 0.0) {
-            "$label must be finite and nonnegative"
+            "$label 必须是有限且非负的数值"
         }
     }
 
@@ -424,7 +424,7 @@ object ThemePanelComponents {
                 }
                 replaceStatement(state, render(replacement))
             }
-            else -> throw IllegalArgumentException("Dynamic component requires the Lua source page")
+            else -> throw IllegalArgumentException("动态组件必须在 Lua 源代码页编辑")
         }
         parse(output) // Parse-after-write is part of the mutation contract.
         return output
@@ -433,7 +433,7 @@ object ThemePanelComponents {
     private fun setNested(current: ThemeValue, path: List<String>, value: ThemeValue): ThemeValue {
         if (path.isEmpty()) return value
         val table = current as? ThemeValue.LuaTable
-            ?: throw IllegalArgumentException("Panel component ancestor cannot be overwritten safely")
+            ?: throw IllegalArgumentException("面板组件上级不能安全覆盖")
         val fields = LinkedHashMap(table.fields)
         val child = fields[path.first()]
         fields[path.first()] = if (path.size == 1) value else {
@@ -448,7 +448,7 @@ object ThemePanelComponents {
         val existingRoot = state.document.sourceStatements.lastOrNull { it.path == rootName }
         if (existingRoot != null) {
             val rootValue = statementValue(existingRoot, rootName)
-            require(rootValue is ThemeValue.LuaTable) { "Dynamic panel root requires the Lua source page" }
+            require(rootValue is ThemeValue.LuaTable) { "动态面板根必须在 Lua 源代码页编辑" }
             val nested = setNested(rootValue, parts.drop(1), component)
             val index = state.document.sourceStatements.indexOf(existingRoot)
             val nestedState = state.copy(location = Location(State.MISSING, index, rootName, rootValue, parts.drop(1)))
@@ -469,7 +469,7 @@ object ThemePanelComponents {
     /** Keeps assignment indentation and a top-level trailing line comment where possible. */
     private fun replaceRhs(statement: String, rendered: String): String {
         val equals = topLevelEquals(statement)
-        require(equals >= 0) { "Panel assignment cannot be rewritten safely; use the Lua source page" }
+        require(equals >= 0) { "面板赋值不能安全重写;请使用 Lua 源代码页" }
         var rhs = equals + 1
         while (rhs < statement.length && (statement[rhs] == ' ' || statement[rhs] == '\t')) rhs++
         val comment = topLevelComment(statement, rhs)
@@ -531,9 +531,9 @@ object ThemePanelComponents {
     }
 
     private fun parse(source: String): ThemeDocument = ThemeLuaParser().parse(source).also { result ->
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
-        require(result.diagnostics.none { it.message.startsWith("Unsupported table key") }) {
-            "Unsupported table keys require the Lua source page"
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
+        require(result.diagnostics.none { it.message.startsWith("不支持的表键") || it.message.startsWith("Unsupported table key") }) {
+            "不支持的表键必须在 Lua 源代码页编辑"
         }
     }.document
 

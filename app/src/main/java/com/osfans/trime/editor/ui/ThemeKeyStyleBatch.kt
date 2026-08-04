@@ -46,15 +46,15 @@ object ThemeKeyStyleBatch {
     }
 
     @JvmStatic fun update(source: String, styleIds: Collection<String>, change: Change): String {
-        require(change.background != null || change.textColor != null) { "No style fields selected" }
+        require(change.background != null || change.textColor != null) { "未选择要修改的样式字段" }
         val ids = styleIds.map { normalizedId(it) }.toSortedSet()
-        require(ids.isNotEmpty()) { "No referenced style entities selected" }
+        require(ids.isNotEmpty()) { "未选择引用的样式实体" }
         val parsed = ThemeLuaParser().parse(source)
-        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Style source contains Lua errors" }
+        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "样式源代码包含 Lua 错误" }
         val entries = ThemeStyleEntities.list(source).associateBy { it.id }
         ids.forEach { id ->
-            require(styleExists(parsed.document.get(id), parsed.document.sourceStatements.mapNotNull { it.path }, id)) { "Style entity not found: $id" }
-            require(entries[id]?.dynamic != true) { "Dynamic style entity requires the Lua source page: $id" }
+            require(styleExists(parsed.document.get(id), parsed.document.sourceStatements.mapNotNull { it.path }, id)) { "未找到样式实体:$id" }
+            require(entries[id]?.dynamic != true) { "动态样式实体必须在 Lua 源代码页编辑:$id" }
         }
         val replacements = linkedMapOf<String, String>()
         ids.forEach { id ->
@@ -62,12 +62,12 @@ object ThemeKeyStyleBatch {
             change.textColor?.let { replacements["$id.text_color"] = colorLiteral(it) }
         }
         val duplicates = parsed.document.sourceStatements.mapNotNull { it.path }.groupingBy { it }.eachCount().filter { (path, count) -> count > 1 && path in replacements }.keys
-        require(duplicates.isEmpty()) { "Duplicate style assignments require the Lua source page: ${duplicates.joinToString()}" }
+        require(duplicates.isEmpty()) { "重复样式赋值必须在 Lua 源代码页编辑:${duplicates.joinToString()}" }
         val statements = parsed.document.sourceStatements
         replacements.keys.forEach { path ->
             val exact = statements.indexOfLast { it.path == path }
             val laterRoot = statements.indexOfLast { it.path == path.substringBefore('.') }
-            require(exact < 0 || laterRoot < exact) { "A later '${path.substringBefore('.')}' assignment overrides '$path'; use the Lua source page" }
+            require(exact < 0 || laterRoot < exact) { "后续 '${path.substringBefore('.')}' 赋值会覆盖 '$path';请使用 Lua 源代码页" }
         }
         val found = hashSetOf<String>()
         val result = buildString {
@@ -82,7 +82,7 @@ object ThemeKeyStyleBatch {
             }
         }
         val verified = ThemeLuaParser().parse(result)
-        require(verified.diagnostics.none { it.severity == Severity.ERROR }) { "Updated style source failed verification parse" }
+        require(verified.diagnostics.none { it.severity == Severity.ERROR }) { "更新后的样式源代码未通过静态解析校验" }
         return result
     }
 
@@ -124,7 +124,7 @@ object ThemeKeyStyleBatch {
     }
 
     private fun styleExists(value: ThemeValue?, paths: List<String>, id: String): Boolean = value != null || paths.any { it == id || it.startsWith("$id.") }
-    private fun normalizedId(value: String): String = value.ifBlank { "key" }.also { require(safeId.matches(it)) { "Unsafe style entity ID: $it" } }
+    private fun normalizedId(value: String): String = value.ifBlank { "key" }.also { require(safeId.matches(it)) { "样式实体标识不安全:$it" } }
 
     private fun colorLiteral(value: String): String {
         if (value.isBlank()) return "nil"
@@ -137,7 +137,7 @@ object ThemeKeyStyleBatch {
         return runCatching { colorLiteral(value) }.getOrElse { colorError ->
             val trimmed = value.trim()
             if (trimmed.all { it.isDigit() } || trimmed.startsWith('#') || trimmed.startsWith("0x", true)) throw colorError
-            require(!value.startsWith('/') && !value.startsWith('\\') && value.split('/', '\\').none { it == ".." } && value.none { it.code < 32 }) { "Background resource must be a safe project-relative path" }
+            require(!value.startsWith('/') && !value.startsWith('\\') && value.split('/', '\\').none { it == ".." } && value.none { it.code < 32 }) { "背景资源必须是安全的项目相对路径" }
             "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
         }
     }
@@ -146,7 +146,7 @@ object ThemeKeyStyleBatch {
         val trimmed = value.trim(); val match = color.matchEntire(trimmed)
         val hexadecimal = trimmed.startsWith('#') || trimmed.startsWith("0x", true) || trimmed.any { it in 'a'..'f' || it in 'A'..'F' }
         val parsed = if (match != null && hexadecimal) match.groupValues[1].toLong(16) else trimmed.toLong()
-        require(parsed in 0..0xffffffffL) { "Color must fit #AARRGGBB" }
+        require(parsed in 0..0xffffffffL) { "颜色必须符合 #AARRGGBB 范围" }
         return parsed
     }
 
@@ -157,7 +157,7 @@ object ThemeKeyStyleBatch {
     }
 
     private fun rewriteAssignment(text: String, literal: String): String {
-        val equals = text.indexOf('='); require(equals >= 0) { "Malformed style assignment" }
+        val equals = text.indexOf('='); require(equals >= 0) { "样式赋值格式错误" }
         val comment = trailingComment(text, equals + 1)
         val prefix = text.substring(0, equals + 1).trimEnd()
         return if (comment < 0) "$prefix $literal" else "$prefix $literal " + text.substring(comment).trimStart()

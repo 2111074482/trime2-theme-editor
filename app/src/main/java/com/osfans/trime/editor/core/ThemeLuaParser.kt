@@ -19,7 +19,7 @@ class ThemeLuaParser {
             if (assignment == null) {
                 nodes += ThemeNode(text, line, ThemeValue.RawLuaNode(statement, line), assignment = false)
                 document = document.copy(nodes = nodes.toList())
-                diagnostics += ThemeDiagnostic(line, 1, Severity.INFO, "Preserved unsupported Lua statement")
+                diagnostics += ThemeDiagnostic(line, 1, Severity.INFO, "不支持的 Lua 语句已按原文保留")
                 continue
             }
             val path = assignment.groupValues[1]
@@ -137,7 +137,7 @@ class ThemeLuaParser {
         var line = 1
         var i = 0
         longBracketRanges(source).filter { !it.closed }.forEach { range ->
-            diagnostics += ThemeDiagnostic(source.substring(0, range.start).count { it == '\n' } + 1, 1, Severity.ERROR, "Unclosed Lua long bracket")
+            diagnostics += ThemeDiagnostic(source.substring(0, range.start).count { it == '\n' } + 1, 1, Severity.ERROR, "Lua 长括号未闭合")
         }
         val scan = maskLongBrackets(source, true)
         while (i < scan.length) {
@@ -155,14 +155,14 @@ class ThemeLuaParser {
                 '}', ')', ']' -> {
                     val expected = when (c) { '}' -> '{'; ')' -> '('; else -> '[' }
                     val open = stack.removeLastOrNull()
-                    if (open == null || open.first != expected) diagnostics += ThemeDiagnostic(line, 1, Severity.ERROR, "Unmatched '$c'")
+                    if (open == null || open.first != expected) diagnostics += ThemeDiagnostic(line, 1, Severity.ERROR, "括号 '$c' 不匹配")
                 }
                 '\n' -> line++
             }
             i++
         }
-        if (quote != '\u0000') diagnostics += ThemeDiagnostic(quoteLine, 1, Severity.ERROR, "Unterminated Lua string")
-        stack.forEach { (open, openLine) -> diagnostics += ThemeDiagnostic(openLine, 1, Severity.ERROR, "Unclosed '$open'") }
+        if (quote != '\u0000') diagnostics += ThemeDiagnostic(quoteLine, 1, Severity.ERROR, "Lua 字符串未闭合")
+        stack.forEach { (open, openLine) -> diagnostics += ThemeDiagnostic(openLine, 1, Severity.ERROR, "括号 '$open' 未闭合") }
         return diagnostics
     }
 
@@ -179,7 +179,7 @@ class ThemeLuaParser {
             return ThemeValue.LuaString(unescape(text.substring(1, text.length - 1)))
         }
         parseNumber(text)?.let { return ThemeValue.LuaNumber(it) }
-        diagnostics += ThemeDiagnostic(line, 1, Severity.WARNING, "Unsupported Lua expression preserved as raw text")
+        diagnostics += ThemeDiagnostic(line, 1, Severity.WARNING, "不支持的 Lua 表达式已按原文保留")
         return ThemeValue.RawLuaNode(text, line)
     }
 
@@ -200,7 +200,7 @@ class ThemeLuaParser {
                 else -> keyText
             }
             if (!IDENTIFIER.matches(key) && !key.startsWith("#")) {
-                diagnostics += ThemeDiagnostic(line, 1, Severity.WARNING, "Unsupported table key: $key")
+                diagnostics += ThemeDiagnostic(line, 1, Severity.WARNING, "不支持的表键:$key")
                 continue
             }
             fields[key] = parseValue(item.substring(equals + 1).trim(), line, diagnostics)

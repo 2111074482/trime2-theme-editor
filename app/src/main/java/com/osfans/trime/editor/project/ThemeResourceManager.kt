@@ -11,6 +11,16 @@ import java.io.File
 class ThemeResourceManager(private val root: File, private val source: String) {
     fun list(): List<ThemeResource> = ThemeResourceIndex.scan(root, source)
 
+    fun list(
+        kind: ThemeResource.Kind?,
+        sort: ThemeResourceIndex.Sort = ThemeResourceIndex.Sort.PATH,
+        ascending: Boolean = true,
+    ): List<ThemeResource> = ThemeResourceIndex.sortBy(
+        ThemeResourceIndex.filterByKind(list(), kind), sort, ascending
+    )
+
+    fun statistics(): ThemeResourceStats = ThemeResourceIndex.statistics(list())
+
     fun delete(relativePath: String): ResourceDeleteResult {
         val resource = list().firstOrNull { it.relativePath == relativePath }
             ?: return ResourceDeleteResult.NotFound

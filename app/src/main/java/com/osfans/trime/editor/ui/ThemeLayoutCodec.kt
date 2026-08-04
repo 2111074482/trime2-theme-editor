@@ -303,7 +303,7 @@ object ThemeLayoutCodec {
     }
 
     private fun updatedKey(original: ThemeValue?, key: ThemeEditorModel.Key, absolute: Boolean, stripCoordinates: Boolean): ThemeValue {
-        require(original !is ThemeValue.RawLuaNode) { "Dynamic key nodes require the Lua source page" }
+        require(original !is ThemeValue.RawLuaNode) { "动态按键节点必须在 Lua 源代码页编辑" }
         val labelChanged = key.label != key.sourceLabel
         val clickChanged = key.click != key.sourceClick
         val eventChanged = clickChanged || key.longClick != key.sourceLongClick || key.swipeLeft != key.sourceSwipeLeft || key.swipeRight != key.sourceSwipeRight || key.swipeUp != key.sourceSwipeUp || key.swipeDown != key.sourceSwipeDown || key.combo != key.sourceCombo || key.composing != key.sourceComposing || key.hasMenu != key.sourceHasMenu || key.paging != key.sourcePaging || key.ascii != key.sourceAscii || key.keyStyle != key.sourceKeyStyle || key.popup != key.sourcePopup

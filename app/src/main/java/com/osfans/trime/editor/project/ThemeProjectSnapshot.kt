@@ -31,7 +31,7 @@ data class ThemeProjectSnapshot(
             val diagnostics = selected.diagnostics.toMutableList()
             if (styleSource == null) {
                 styleSource = project.style("light")
-                if (styleSource != null) diagnostics += ThemeDiagnostic(0, 0, Severity.INFO, "Fell back to styles/light/main.lua", "style")
+                if (styleSource != null) diagnostics += ThemeDiagnostic(0, 0, Severity.INFO, "已回退到 styles/light/main.lua", "style")
             }
             val style = styleSource?.let { parser.parse(it.file.readText(Charsets.UTF_8)) }
             val keyboard = selected.keyboardSource?.let { parser.parse(it.file.readText(Charsets.UTF_8)) }

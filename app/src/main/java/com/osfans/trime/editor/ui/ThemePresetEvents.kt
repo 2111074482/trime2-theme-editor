@@ -30,20 +30,20 @@ object ThemePresetEvents {
 
     @JvmStatic fun list(source: String): List<Event> {
         val table = literalRoot(parse(source), "preset_keys") ?: return emptyList()
-        require(table.fields.values.all { it is ThemeValue.LuaTable && it.isLiteralEvent() }) { "preset_keys contains dynamic or invalid entries and requires the Lua source page" }
+        require(table.fields.values.all { it is ThemeValue.LuaTable && it.isLiteralEvent() }) { "预设事件(preset_keys)包含动态或无效条目,必须在 Lua 源代码页编辑" }
         return table.fields.map { (id, value) -> read(id, value as ThemeValue.LuaTable) }
     }
 
     @JvmStatic fun actionLabels(source: String): Map<String, String> {
         val table = literalRoot(parse(source), "action_labels") ?: return emptyMap()
-        require(table.fields.values.all { it is ThemeValue.LuaString }) { "action_labels contains dynamic or non-string entries and requires the Lua source page" }
+        require(table.fields.values.all { it is ThemeValue.LuaString }) { "操作标签(action_labels)包含动态或非字符串条目,必须在 Lua 源代码页编辑" }
         return table.fields.mapNotNull { (id, value) -> (value as? ThemeValue.LuaString)?.value?.let { id to it } }.toMap(LinkedHashMap())
     }
 
     @JvmStatic fun updateActionLabels(source: String, values: Map<String, String?>): String {
-        require(values.keys.all { it in labels }) { "Unsupported action label key" }
+        require(values.keys.all { it in labels }) { "不支持的操作标签键" }
         val parsed = parse(source); val old = literalRoot(parsed, "action_labels") ?: ThemeValue.LuaTable()
-        require(old.fields.values.all { it is ThemeValue.LuaString }) { "action_labels contains dynamic or non-string entries and requires the Lua source page" }
+        require(old.fields.values.all { it is ThemeValue.LuaString }) { "操作标签(action_labels)包含动态或非字符串条目,必须在 Lua 源代码页编辑" }
         val fields = LinkedHashMap(old.fields)
         labels.forEach { id ->
             if (id in values) values[id]?.let { fields[id] = ThemeValue.LuaString(it) } ?: fields.remove(id)
@@ -54,30 +54,30 @@ object ThemePresetEvents {
     @JvmStatic fun put(source: String, event: Event, replace: Boolean): String {
         validateEvent(event)
         val parsed = parse(source); val old = literalRoot(parsed, "preset_keys") ?: ThemeValue.LuaTable()
-        require(replace || event.id !in old.fields) { "Preset event already exists: ${event.id}" }
-        require(event.id !in old.fields || old.fields[event.id] is ThemeValue.LuaTable) { "Dynamic preset event requires the Lua source page" }
+        require(replace || event.id !in old.fields) { "预设事件已存在:${event.id}" }
+        require(event.id !in old.fields || old.fields[event.id] is ThemeValue.LuaTable) { "动态预设事件必须在 Lua 源代码页编辑" }
         val previous = old.fields[event.id] as? ThemeValue.LuaTable
-        require(previous == null || previous.isLiteralEvent()) { "Dynamic or invalid preset event requires the Lua source page" }
+        require(previous == null || previous.isLiteralEvent()) { "动态或无效预设事件必须在 Lua 源代码页编辑" }
         val root = LinkedHashMap(old.fields); root[event.id] = write(event, previous)
         return verifiedWrite(parsed.set("preset_keys", ThemeValue.LuaTable(root)))
     }
 
     @JvmStatic fun copy(source: String, sourceId: String, targetId: String): String {
-        val event = list(source).firstOrNull { it.id == sourceId } ?: error("Preset event not found: $sourceId")
+        val event = list(source).firstOrNull { it.id == sourceId } ?: error("未找到预设事件:$sourceId")
         return put(source, event.copy(id = targetId), false)
     }
 
     @JvmStatic fun renameDefinition(source: String, oldId: String, newId: String): String {
-        validateId(oldId); validateId(newId); val parsed = parse(source); val table = literalRoot(parsed, "preset_keys") ?: error("preset_keys is missing")
-        require(oldId in table.fields) { "Preset event not found: $oldId" }; require(newId !in table.fields) { "Preset event already exists: $newId" }
-        require(table.fields[oldId] is ThemeValue.LuaTable && (table.fields[oldId] as ThemeValue.LuaTable).isLiteralEvent()) { "Dynamic or invalid preset event requires the Lua source page" }
+        validateId(oldId); validateId(newId); val parsed = parse(source); val table = literalRoot(parsed, "preset_keys") ?: error("缺少预设事件表(preset_keys)")
+        require(oldId in table.fields) { "未找到预设事件:$oldId" }; require(newId !in table.fields) { "预设事件已存在:$newId" }
+        require(table.fields[oldId] is ThemeValue.LuaTable && (table.fields[oldId] as ThemeValue.LuaTable).isLiteralEvent()) { "动态或无效预设事件必须在 Lua 源代码页编辑" }
         val fields = linkedMapOf<String, ThemeValue>(); table.fields.forEach { (id, value) -> fields[if (id == oldId) newId else id] = value }
         return verifiedWrite(parsed.set("preset_keys", ThemeValue.LuaTable(fields)))
     }
 
     @JvmStatic fun deleteDefinition(source: String, id: String): String {
-        validateId(id); val parsed = parse(source); val table = literalRoot(parsed, "preset_keys") ?: error("preset_keys is missing")
-        require(id in table.fields) { "Preset event not found: $id" }; require(table.fields[id] is ThemeValue.LuaTable && (table.fields[id] as ThemeValue.LuaTable).isLiteralEvent()) { "Dynamic or invalid preset event requires the Lua source page" }; val fields = LinkedHashMap(table.fields); fields.remove(id)
+        validateId(id); val parsed = parse(source); val table = literalRoot(parsed, "preset_keys") ?: error("缺少预设事件表(preset_keys)")
+        require(id in table.fields) { "未找到预设事件:$id" }; require(table.fields[id] is ThemeValue.LuaTable && (table.fields[id] as ThemeValue.LuaTable).isLiteralEvent()) { "动态或无效预设事件必须在 Lua 源代码页编辑" }; val fields = LinkedHashMap(table.fields); fields.remove(id)
         return verifiedWrite(parsed.set("preset_keys", ThemeValue.LuaTable(fields)))
     }
 
@@ -131,7 +131,7 @@ object ThemePresetEvents {
         return toolbarKeys || panelToolbarKeys || layoutKeys
     }
 
-    @JvmStatic fun fromLiteralTable(id: String, table: ThemeValue.LuaTable): Event { require(table.isLiteralEvent()) { "Dynamic or invalid event table requires the Lua source page" }; return read(id, table) }
+    @JvmStatic fun fromLiteralTable(id: String, table: ThemeValue.LuaTable): Event { require(table.isLiteralEvent()) { "动态或无效事件表必须在 Lua 源代码页编辑" }; return read(id, table) }
     @JvmStatic fun toLiteralTable(event: Event, previous: ThemeValue.LuaTable?): ThemeValue.LuaTable { validateEvent(event); return write(event, previous) }
 
     private fun read(id: String, table: ThemeValue.LuaTable): Event = Event(
@@ -155,17 +155,17 @@ object ThemePresetEvents {
 
     private fun validateEvent(event: Event) {
         validateId(event.id)
-        require(event.shiftLock in setOf("", "click", "double", "long")) { "shift_lock must be click, double, long, or empty" }
-        require(event.index == null || (event.index.isFinite() && event.index % 1.0 == 0.0 && event.index in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble())) { "index must be a 32-bit integer" }
+        require(event.shiftLock in setOf("", "click", "double", "long")) { "Shift 锁定(shift_lock)必须是 click、double、long 或空值" }
+        require(event.index == null || (event.index.isFinite() && event.index % 1.0 == 0.0 && event.index in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble())) { "索引(index)必须是 32 位整数" }
     }
 
     private fun parse(source: String): ThemeDocument = ThemeLuaParser().parse(source).also { result ->
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
-        require(result.diagnostics.none { it.message.startsWith("Unsupported table key") }) { "Unsupported table keys require the Lua source page" }
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
+        require(result.diagnostics.none { it.message.startsWith("不支持的表键") || it.message.startsWith("Unsupported table key") }) { "不支持的表键必须在 Lua 源代码页编辑" }
     }.document
-    private fun literalRoot(document: ThemeDocument, name: String): ThemeValue.LuaTable? { val value = document.get(name); require(value == null || value is ThemeValue.LuaTable) { "$name is dynamic and requires the Lua source page" }; return value as? ThemeValue.LuaTable }
+    private fun literalRoot(document: ThemeDocument, name: String): ThemeValue.LuaTable? { val value = document.get(name); require(value == null || value is ThemeValue.LuaTable) { "$name 为动态内容,必须在 Lua 源代码页编辑" }; return value as? ThemeValue.LuaTable }
     private fun verifiedWrite(document: ThemeDocument): String = ThemeLuaWriter.write(document).also { parse(it) }
-    private fun validateId(id: String) { require(safeId.matches(id)) { "Preset ID must be a Lua-safe identifier" } }
+    private fun validateId(id: String) { require(safeId.matches(id)) { "预设标识必须是 Lua 安全标识符" } }
     private fun string(table: ThemeValue.LuaTable, name: String) = (table.fields[name] as? ThemeValue.LuaString)?.value.orEmpty()
     private fun bool(table: ThemeValue.LuaTable, name: String, fallback: Boolean) = (table.fields[name] as? ThemeValue.LuaBoolean)?.value ?: fallback
     private fun strings(value: ThemeValue?): List<String> = (value as? ThemeValue.LuaTable)?.fields?.entries?.filter { it.key.startsWith("#") }?.sortedBy { it.key.drop(1).toIntOrNull() }?.mapNotNull { (it.value as? ThemeValue.LuaString)?.value } ?: emptyList()

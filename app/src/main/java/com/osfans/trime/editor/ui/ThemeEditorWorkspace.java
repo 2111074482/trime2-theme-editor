@@ -115,12 +115,12 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ 多选" : "多选"); setStatus(appendSelection ? "已启用追加选择" : "已启用单选"); }); selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection()); rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
         previousPageButton.setOnClickListener(v -> switchKeyMapPage(-1)); nextPageButton.setOnClickListener(v -> switchKeyMapPage(1)); pageAddButton.setOnClickListener(v -> addKeyMapPage()); pageDeleteButton.setOnClickListener(v -> deleteKeyMapPage()); pageManageButton.setOnClickListener(v -> manageKeyMapPage()); flexButton.setOnClickListener(v -> editSelectedFlex()); flexManageButton.setOnClickListener(v -> manageFlexContainers()); absoluteButton.setOnClickListener(v -> manageAbsoluteKeys());
         previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("请先选择按键"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
-        modeButton.setOnClickListener(v -> cycleInputMode(modeButton)); candidateButton.setOnClickListener(v -> toggleCandidate()); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); }); compositionButton.setOnClickListener(v -> toggleComposition()); pressedButton.setOnClickListener(v -> togglePressed());
-        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); dirty = false; setStatus("所有更改已保存"); });
+        modeButton.setOnClickListener(v -> cycleInputMode(modeButton)); candidateButton.setOnClickListener(v -> toggleCandidate()); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); }); compositionButton.setOnClickListener(v -> toggleComposition()); pressedButton.setOnClickListener(v -> togglePressed());
+        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); else setStatus("保存失败:未设置保存回调"); });
         contextCopy.setOnClickListener(v -> duplicateSelected()); contextLeft.setOnClickListener(v -> moveSelection(-1)); contextRight.setOnClickListener(v -> moveSelection(1)); contextStyle.setOnClickListener(v -> showStyleActions()); contextDelete.setOnClickListener(v -> deleteSelected());
         selectModeButton.setOnClickListener(v -> setCanvasMode("select")); panModeButton.setOnClickListener(v -> setCanvasMode("pan")); gridModeButton.setOnClickListener(v -> toggleGrid()); canvasPreviewButton.setOnClickListener(v -> toggleCanvasPreview()); zoomOut.setOnClickListener(v -> setCanvasZoom(model.previewZoom - .1f)); zoomIn.setOnClickListener(v -> setCanvasZoom(model.previewZoom + .1f)); fit.setOnClickListener(v -> fitCanvas());
-        chineseChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.CHINESE; canvas.invalidate(); setStatus("预览状态:中文"); }); asciiChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.ASCII; canvas.invalidate(); setStatus("预览状态:ASCII"); }); composeChip.setOnClickListener(v -> toggleComposition()); pagingChip.setOnClickListener(v -> { model.previewPaging = !model.previewPaging; canvas.invalidate(); setStatus("翻页状态已" + (model.previewPaging ? "开启" : "关闭")); }); pressedChip.setOnClickListener(v -> togglePressed()); detailChip.setOnClickListener(v -> showPreviewState()); statisticsTab.setOnClickListener(v -> showStructurePage(0)); layersTab.setOnClickListener(v -> showStructurePage(1)); historyTab.setOnClickListener(v -> showStructurePage(2));
-        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; contextBar.setVisibility(key == null && model.selectedIds.isEmpty() ? INVISIBLE : VISIBLE); setStatus(key == null ? "未选择" : selectedKeys().size() > 1 ? "已选择 " + selectedKeys().size() + " 个按键" : "已选择 " + key.label); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("正在移动所选对象"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } });
+        chineseChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.CHINESE; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览状态:中文"); }); asciiChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.ASCII; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览状态:ASCII"); }); composeChip.setOnClickListener(v -> toggleComposition()); pagingChip.setOnClickListener(v -> { model.previewPaging = !model.previewPaging; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("翻页状态已" + (model.previewPaging ? "开启" : "关闭")); }); pressedChip.setOnClickListener(v -> togglePressed()); detailChip.setOnClickListener(v -> showPreviewState()); statisticsTab.setOnClickListener(v -> showStructurePage(0)); layersTab.setOnClickListener(v -> showStructurePage(1)); historyTab.setOnClickListener(v -> showStructurePage(2));
+        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; contextBar.setVisibility(key == null && model.selectedIds.isEmpty() ? INVISIBLE : VISIBLE); setStatus(key == null ? "未选择" : selectedKeys().size() > 1 ? "已选择 " + selectedKeys().size() + " 个按键" : "已选择 " + key.label); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("正在移动所选对象"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } public void onViewportChanged() { notifyPreviewStateChanged(); } });
         properties.setListener(new ThemePropertyEditor.Listener() {
             public void onPropertyChangeStarted() { changeStarted(); }
             public void onPropertyChanged() { canvas.invalidate(); dirty = true; setStatus("已编辑 " + (canvas.getSelectedKey() == null ? "主题" : canvas.getSelectedKey().label)); if (callbacks != null) callbacks.onModelChanged(model.copy()); }
@@ -128,6 +128,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             public void onOpenKeyEvents(ThemeEditorModel.Key key) { if (callbacks != null) callbacks.onOpenKeyEvents(key); else setStatus("无法打开按键事件:未设置编辑器回调"); }
             public void onOpenResources(ThemeEditorModel.Key key) { if (callbacks != null) callbacks.onOpenResources(key); else setStatus("无法打开资源浏览器:未设置编辑器回调"); }
             public void onOpenLuaSource() { if (callbacks != null) callbacks.onOpenLuaSource(); else setStatus("无法打开 Lua 源码:未设置编辑器回调"); }
+            public void onPageChanged(String pageId) { if (callbacks != null) callbacks.onInspectorPageChanged(pageId); }
         });
         setModel(ThemeEditorModel.sample()); setCanvasMode("select"); showStructurePage(0);
     }
@@ -142,25 +143,22 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     private Button chip(String text) { Button button = action(text, text); styleCanvasAction(button); button.setTextSize(9); return button; }
     private void styleCanvasAction(Button button) { button.setTextSize(10); button.setTextColor(Color.parseColor("#b8bfd0")); button.setBackground(roundedBackground("#191f30", 8)); button.setPadding(dp(5), 0, dp(5), 0); }
 
-    /** Canvas owners may implement these optional methods without coupling this workspace to a new API revision. */
-    private void canvasCommand(String method, Class<?> type, Object value) {
-        try { canvas.getClass().getMethod(method, type).invoke(canvas, value); }
-        catch (ReflectiveOperationException ignored) { canvas.invalidate(); }
-    }
     private void setCanvasMode(String mode) {
-        canvasMode = mode; canvasCommand("setInteractionMode", String.class, mode); canvasCommand("setCanvasMode", String.class, mode);
+        canvasMode = mode; canvas.setInteractionMode(mode);
         boolean select = "select".equals(mode); selectModeButton.setText(select ? "✓ 选择" : "选择"); panModeButton.setText(select ? "平移" : "✓ 平移");
-        canvas.setReadOnly(readOnly || !select); setStatus(select ? "选择模式" : "画布平移模式");
+        canvas.setReadOnly(readOnly || !select); notifyPreviewStateChanged(); setStatus(select ? "选择模式" : "画布平移模式");
     }
-    private void toggleGrid() { gridVisible = !gridVisible; canvasCommand("setGridVisible", boolean.class, gridVisible); gridModeButton.setText(gridVisible ? "✓ 网格" : "网格"); setStatus("网格已" + (gridVisible ? "显示" : "隐藏")); }
-    private void toggleCanvasPreview() { canvasPreviewMode = !canvasPreviewMode; canvasCommand("setPreviewMode", boolean.class, canvasPreviewMode); canvasPreviewButton.setText(canvasPreviewMode ? "✓ 预览" : "预览"); contextBar.setVisibility(canvasPreviewMode ? INVISIBLE : selectedKeys().isEmpty() ? INVISIBLE : VISIBLE); setStatus(canvasPreviewMode ? "纯净预览模式" : "编辑器预览模式"); }
-    private void setCanvasZoom(float zoom) { model.previewZoom = Math.max(.5f, Math.min(4f, zoom)); canvasCommand("setZoom", float.class, model.previewZoom); canvas.invalidate(); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); setStatus("缩放至 " + zoomValue.getText()); }
-    private void fitCanvas() { model.previewZoom = 1f; model.previewPanX = 0; model.previewPanY = 0; canvasCommand("fitToViewport", boolean.class, true); canvas.invalidate(); zoomValue.setText("100%"); setStatus("画布已适应窗口"); }
+    private void toggleGrid() { gridVisible = !gridVisible; canvas.setGridVisible(gridVisible); gridModeButton.setText(gridVisible ? "✓ 网格" : "网格"); notifyPreviewStateChanged(); setStatus("网格已" + (gridVisible ? "显示" : "隐藏")); }
+    private void toggleCanvasPreview() { canvasPreviewMode = !canvasPreviewMode; canvas.setPreviewMode(canvasPreviewMode); canvasPreviewButton.setText(canvasPreviewMode ? "✓ 预览" : "预览"); contextBar.setVisibility(canvasPreviewMode ? INVISIBLE : selectedKeys().isEmpty() ? INVISIBLE : VISIBLE); notifyPreviewStateChanged(); setStatus(canvasPreviewMode ? "纯净预览模式" : "编辑器预览模式"); }
+    private void setCanvasZoom(float zoom) { model.previewZoom = Math.max(.5f, Math.min(4f, zoom)); canvas.setZoom(model.previewZoom); canvas.invalidate(); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); notifyPreviewStateChanged(); setStatus("缩放至 " + zoomValue.getText()); }
+    private void fitCanvas() { model.previewZoom = 1f; model.previewPanX = 0; model.previewPanY = 0; canvas.fitToViewport(true); canvas.invalidate(); zoomValue.setText("100%"); notifyPreviewStateChanged(); setStatus("画布已适应窗口"); }
 
-    private void cycleInputMode(Button source) { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; source.setText(model.inputMode.name()); canvas.invalidate(); setStatus("预览输入模式:" + model.inputMode.name()); }
-    private void toggleCandidate() { model.showCandidate = !model.showCandidate; canvas.invalidate(); setStatus("候选栏预览已" + (model.showCandidate ? "开启" : "关闭")); }
-    private void toggleComposition() { model.showComposition = !model.showComposition; canvas.invalidate(); setStatus("组合窗预览已" + (model.showComposition ? "开启" : "关闭")); }
-    private void togglePressed() { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); setStatus("按下状态预览已" + (model.pressedPreview ? "开启" : "关闭")); }
+    private void notifyPreviewStateChanged() { if (callbacks != null) callbacks.onPreviewStateChanged(); }
+    private void cycleInputMode(Button source) { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; source.setText(inputModeText(model.inputMode)); canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览输入模式:" + inputModeText(model.inputMode)); }
+    private static String inputModeText(ThemeEditorModel.InputMode mode) { if (mode == ThemeEditorModel.InputMode.CHINESE) return "中文"; if (mode == ThemeEditorModel.InputMode.ASCII) return "英文(ASCII)"; if (mode == ThemeEditorModel.InputMode.NUMBER) return "数字"; return "符号"; }
+    private void toggleCandidate() { model.showCandidate = !model.showCandidate; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("候选栏预览已" + (model.showCandidate ? "开启" : "关闭")); }
+    private void toggleComposition() { model.showComposition = !model.showComposition; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("组合窗预览已" + (model.showComposition ? "开启" : "关闭")); }
+    private void togglePressed() { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("按下状态预览已" + (model.pressedPreview ? "开启" : "关闭")); }
 
     private void moveSelection(int direction) {
         java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
@@ -194,7 +192,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             int groups = model.layoutMode == ThemeEditorModel.LayoutMode.ROWS ? model.rows.size() : model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX ? model.flexContainers.size() : model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS ? model.keyMapPages.size() : 0; addStructureRow("分组数", String.valueOf(groups)); addStructureRow("预览尺寸", Math.round(model.previewWidth) + "×" + Math.round(model.previewHeight));
         } else if (structurePage == 1) {
             addStructureAction("候选栏", model.showCandidate ? "显示" : "隐藏", v -> toggleCandidate());
-            addStructureAction("工具栏", model.showToolbar ? "显示" : "隐藏", v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); });
+            addStructureAction("工具栏", model.showToolbar ? "显示" : "隐藏", v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); });
             addStructureAction("组合窗", model.showComposition ? "显示" : "隐藏", v -> toggleComposition());
             if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) for (ThemeEditorModel.Row row : model.rows) addStructureAction("↳ 行(rows):" + row.id, countOwner(row.id) + " 个按键", v -> selectOwner(row.id));
             else if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) for (ThemeEditorModel.FlexContainer flex : model.flexContainers) addStructureAction("↳ 弹性容器(flex):" + flex.id, countOwner(flex.id) + " 个按键", v -> { model.selectedFlexContainerId = flex.id; selectOwner(flex.id); });
@@ -219,7 +217,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         android.widget.CheckBox comments = new android.widget.CheckBox(getContext()); comments.setText("候选注释"); comments.setChecked(model.candidateComments); fields.addView(comments); android.widget.CheckBox paging = new android.widget.CheckBox(getContext()); paging.setText("翻页状态"); paging.setChecked(model.previewPaging); fields.addView(paging); android.widget.CheckBox menu = new android.widget.CheckBox(getContext()); menu.setText("存在菜单状态"); menu.setChecked(model.previewHasMenu); fields.addView(menu);
         android.widget.Spinner panel = new android.widget.Spinner(getContext()); panel.setAdapter(new android.widget.ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, new String[]{"键盘", "展开候选", "符号面板", "剪贴板面板"})); panel.setSelection(model.previewPanel.ordinal()); fields.addView(panel);
         android.widget.ScrollView scroll = new android.widget.ScrollView(getContext()); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(getContext()).setTitle("预览状态").setView(scroll).setNegativeButton("取消", null).setNeutralButton("重置", (dialog, which) -> { model.candidateCount = 4; model.candidateComments = false; model.previewPaging = false; model.previewHasMenu = false; model.compositionText = "拼音"; model.editorActionLabel = "回车"; model.schemaName = "方案"; model.previewPanel = ThemeEditorModel.PreviewPanel.KEYBOARD; canvas.invalidate(); setStatus("预览状态已重置;主题未更改"); }).setPositiveButton("应用", (dialog, which) -> { model.candidateCount = Math.max(0, Math.min(20, (int) parseFloat(candidateCount, model.candidateCount))); model.candidateComments = comments.isChecked(); model.previewPaging = paging.isChecked(); model.previewHasMenu = menu.isChecked(); model.compositionText = composition.getText().toString(); model.editorActionLabel = action.getText().toString(); model.schemaName = schema.getText().toString(); model.previewPanel = ThemeEditorModel.PreviewPanel.values()[panel.getSelectedItemPosition()]; canvas.invalidate(); setStatus("预览状态已应用;主题未更改"); }).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("预览状态").setView(scroll).setNegativeButton("取消", null).setNeutralButton("重置", (dialog, which) -> { model.candidateCount = 4; model.candidateComments = false; model.previewPaging = false; model.previewHasMenu = false; model.compositionText = "拼音"; model.editorActionLabel = "回车"; model.schemaName = "方案"; model.previewPanel = ThemeEditorModel.PreviewPanel.KEYBOARD; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览状态已重置;主题未更改"); }).setPositiveButton("应用", (dialog, which) -> { model.candidateCount = Math.max(0, Math.min(20, (int) parseFloat(candidateCount, model.candidateCount))); model.candidateComments = comments.isChecked(); model.previewPaging = paging.isChecked(); model.previewHasMenu = menu.isChecked(); model.compositionText = composition.getText().toString(); model.editorActionLabel = action.getText().toString(); model.schemaName = schema.getText().toString(); model.previewPanel = ThemeEditorModel.PreviewPanel.values()[panel.getSelectedItemPosition()]; canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览状态已应用;主题未更改"); }).show();
     }
 
     private void showSelectedEventPreview() {
@@ -236,7 +234,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         new android.app.AlertDialog.Builder(getContext()).setTitle("预览设备").setSingleChoiceItems(presets, 4, (dialog, which) -> {
             if (which == 0) { width.setText("360"); height.setText("300"); } else if (which == 1) { width.setText("720"); height.setText("260"); } else if (which == 2) { width.setText("600"); height.setText("420"); } else if (which == 3) { width.setText("960"); height.setText("360"); } else if (which == 5) { zoom.setText("1"); panX.setText("0"); panY.setText("0"); }
         }).setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
-            model.previewWidth = Math.max(120, parseFloat(width, model.previewWidth)); model.previewHeight = Math.max(100, parseFloat(height, model.previewHeight)); model.previewZoom = Math.max(.5f, Math.min(4f, parseFloat(zoom, model.previewZoom))); model.previewPanX = parseFloat(panX, model.previewPanX); model.previewPanY = parseFloat(panY, model.previewPanY); canvas.invalidate(); setStatus("预览 " + (int) model.previewWidth + "×" + (int) model.previewHeight + ",缩放 " + trimPreview(model.previewZoom) + "×;主题未更改");
+            model.previewWidth = Math.max(120, parseFloat(width, model.previewWidth)); model.previewHeight = Math.max(100, parseFloat(height, model.previewHeight)); model.previewZoom = Math.max(.5f, Math.min(4f, parseFloat(zoom, model.previewZoom))); model.previewPanX = parseFloat(panX, model.previewPanX); model.previewPanY = parseFloat(panY, model.previewPanY); canvas.invalidate(); notifyPreviewStateChanged(); setStatus("预览 " + (int) model.previewWidth + "×" + (int) model.previewHeight + ",缩放 " + trimPreview(model.previewZoom) + "×;主题未更改");
         }).show();
     }
     private static String trimPreview(float value) { return value == (int) value ? Integer.toString((int) value) : Float.toString(value); }
@@ -318,7 +316,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
 
     private void duplicateKeyMapPage(ThemeEditorModel.KeyMapPage page) {
-        if (!changeStarted()) return; ThemeEditorModel.KeyMapPage copy = page.copy(); copy.id = "key_map_copy_" + System.nanoTime(); copy.name = page.name + " copy";
+        if (!changeStarted()) return; ThemeEditorModel.KeyMapPage copy = page.copy(); copy.id = "key_map_copy_" + System.nanoTime(); copy.name = page.name + " 副本";
         for (int i = 0; i < copy.keys.size(); i++) { copy.keys.get(i).id = copy.id + "_key_" + i; copy.keys.get(i).ownerId = copy.id; }
         model.keyMapPages.add(model.selectedKeyMapPage + 1, copy); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : copy.keys) model.keys.add(key.copy()); canvas.setModel(model); notifyModelChanged("已复制符号页");
     }
@@ -491,17 +489,17 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         String styleValue = commonString(keys, key -> key.keyStyle), clickValue = commonString(keys, key -> key.click), longValue = commonString(keys, key -> key.longClick), leftValue = commonString(keys, key -> key.swipeLeft), rightValue = commonString(keys, key -> key.swipeRight), upValue = commonString(keys, key -> key.swipeUp), downValue = commonString(keys, key -> key.swipeDown), popupValue = commonString(keys, key -> key.popup);
         Float widthValue = commonNumber(keys, key -> key.width), heightValue = commonNumber(keys, key -> key.height);
         BatchField style = batchField(fields, "样式", valueState(styleValue), styleValue == null ? "" : styleValue);
-        BatchField width = batchField(fields, "Width", numberState(widthValue), widthValue == null ? "" : String.valueOf(widthValue));
-        BatchField height = batchField(fields, "Height", numberState(heightValue), heightValue == null ? "" : String.valueOf(heightValue));
-        BatchField click = batchField(fields, "Click", valueState(clickValue), clickValue == null ? "" : clickValue);
-        BatchField longClick = batchField(fields, "Long click", valueState(longValue), longValue == null ? "" : longValue);
-        BatchField swipeLeft = batchField(fields, "Swipe left", valueState(leftValue), leftValue == null ? "" : leftValue);
-        BatchField swipeRight = batchField(fields, "Swipe right", valueState(rightValue), rightValue == null ? "" : rightValue);
-        BatchField swipeUp = batchField(fields, "Swipe up", valueState(upValue), upValue == null ? "" : upValue);
-        BatchField swipeDown = batchField(fields, "Swipe down", valueState(downValue), downValue == null ? "" : downValue);
-        BatchField popup = batchField(fields, "Popup/resource literal", valueState(popupValue), popupValue == null ? "" : popupValue);
-        BatchField background = batchField(fields, "Referenced style background", "style entity", "");
-        BatchField textColor = batchField(fields, "Referenced style text color", "style entity", "");
+        BatchField width = batchField(fields, "宽度(width)", numberState(widthValue), widthValue == null ? "" : String.valueOf(widthValue));
+        BatchField height = batchField(fields, "高度(height)", numberState(heightValue), heightValue == null ? "" : String.valueOf(heightValue));
+        BatchField click = batchField(fields, "点击(click)", valueState(clickValue), clickValue == null ? "" : clickValue);
+        BatchField longClick = batchField(fields, "长按(long_click)", valueState(longValue), longValue == null ? "" : longValue);
+        BatchField swipeLeft = batchField(fields, "左滑(swipe_left)", valueState(leftValue), leftValue == null ? "" : leftValue);
+        BatchField swipeRight = batchField(fields, "右滑(swipe_right)", valueState(rightValue), rightValue == null ? "" : rightValue);
+        BatchField swipeUp = batchField(fields, "上滑(swipe_up)", valueState(upValue), upValue == null ? "" : upValue);
+        BatchField swipeDown = batchField(fields, "下滑(swipe_down)", valueState(downValue), downValue == null ? "" : downValue);
+        BatchField popup = batchField(fields, "弹出内容/资源字面值(popup)", valueState(popupValue), popupValue == null ? "" : popupValue);
+        BatchField background = batchField(fields, "引用样式背景(background)", "样式实体", "");
+        BatchField textColor = batchField(fields, "引用样式文字颜色(text_color)", "样式实体", "");
         TextView colors = label("颜色会更新引用的样式实体,而不是键盘节点。背景接受 #AARRGGBB 或项目相对资源路径;勾选后的空值会清除样式覆盖。", 12); fields.addView(colors, new LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(getContext()); scroll.addView(fields, new ScrollView.LayoutParams(-1, -2));
         new android.app.AlertDialog.Builder(getContext()).setTitle("批量属性 — " + keys.size() + " 个按键").setView(scroll).setNegativeButton("取消", null).setPositiveButton("检查", (dialog, which) -> reviewBatch(keys, style, width, height, click, longClick, swipeLeft, swipeRight, swipeUp, swipeDown, popup, background, textColor)).show();
@@ -584,19 +582,29 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         ThemeEditorClipboard.Payload payload = ThemeEditorClipboard.get(); if (payload == null) { setStatus("内部剪贴板为空"); return; }
         boolean crossScope = !java.util.Objects.equals(payload.projectIdentity, clipboardScope);
         String dependencies = dependencySummary(payload);
-        int targetCount = selectedKeys().size(); String warning = "Paste " + payload.type + " into the current " + model.layoutMode + " layout?" + (payload.type == ThemeEditorClipboard.Type.EVENTS ? "\nAffected target keys: " + targetCount : "");
-        if (crossScope) warning += "\nCross-project copy: new node IDs will be generated. Source URIs and paths are not retained.";
-        if (!dependencies.isEmpty()) warning += "\nDependencies are not auto-mapped: " + dependencies;
+        int targetCount = selectedKeys().size(); String warning = "将" + clipboardTypeText(payload.type) + "粘贴到当前" + layoutName() + "?" + (payload.type == ThemeEditorClipboard.Type.EVENTS ? "\n受影响的目标按键:" + targetCount + " 个" : "");
+        if (crossScope) warning += "\n跨项目复制会生成新的节点标识,不会保留来源 URI 或绝对路径。";
+        if (!dependencies.isEmpty()) warning += "\n以下依赖不会自动映射:" + dependencies;
         new android.app.AlertDialog.Builder(getContext()).setTitle("确认粘贴目标").setMessage(warning).setNegativeButton("取消", null).setPositiveButton("粘贴", (dialog, which) -> applyClipboard(payload, crossScope)).show();
+    }
+
+    private static String clipboardTypeText(ThemeEditorClipboard.Type type) {
+        if (type == ThemeEditorClipboard.Type.KEYS) return "按键";
+        if (type == ThemeEditorClipboard.Type.ROW) return "行";
+        if (type == ThemeEditorClipboard.Type.FLEX_SUBTREE) return "弹性容器子树";
+        if (type == ThemeEditorClipboard.Type.KEY_MAP_PAGE) return "符号页";
+        if (type == ThemeEditorClipboard.Type.KEY_STYLE) return "按键样式引用";
+        if (type == ThemeEditorClipboard.Type.STYLE_ENTITY) return "样式实体";
+        return "事件";
     }
 
     private String dependencySummary(ThemeEditorClipboard.Payload payload) {
         java.util.LinkedHashSet<String> values = new java.util.LinkedHashSet<>();
-        if (payload.type == ThemeEditorClipboard.Type.KEY_STYLE && !payload.keyStyle.isEmpty()) values.add("style=" + payload.keyStyle);
-        if (payload.type == ThemeEditorClipboard.Type.STYLE_ENTITY && payload.styleEntity != null) { values.add("style entity=" + payload.styleEntity.getId()); if (payload.styleEntity.getCloneParent() != null) values.add("inherits=" + payload.styleEntity.getCloneParent()); values.addAll(payload.styleEntity.getReferencedResources()); }
+        if (payload.type == ThemeEditorClipboard.Type.KEY_STYLE && !payload.keyStyle.isEmpty()) values.add("样式(style)=" + payload.keyStyle);
+        if (payload.type == ThemeEditorClipboard.Type.STYLE_ENTITY && payload.styleEntity != null) { values.add("样式实体=" + payload.styleEntity.getId()); if (payload.styleEntity.getCloneParent() != null) values.add("继承(inherits)=" + payload.styleEntity.getCloneParent()); values.addAll(payload.styleEntity.getReferencedResources()); }
         for (ThemeEditorModel.Key key : payload.keys) {
-            if (!key.keyStyle.isEmpty()) values.add("style=" + key.keyStyle);
-            if (!key.click.isEmpty() || !key.longClick.isEmpty() || !key.popup.isEmpty()) values.add("event/popup literals");
+            if (!key.keyStyle.isEmpty()) values.add("样式(style)=" + key.keyStyle);
+            if (!key.click.isEmpty() || !key.longClick.isEmpty() || !key.popup.isEmpty()) values.add("事件/弹出内容字面值");
         }
         return android.text.TextUtils.join(", ", values);
     }
@@ -617,7 +625,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && selectedFlex() == null) { setStatus("粘贴按键前请添加或选择弹性容器(flex)"); return; }
         if (!changeStarted()) return;
         if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS && model.rows.isEmpty()) model.rows.add(new ThemeEditorModel.Row("pasted_row_" + System.nanoTime(), 18));
-        if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS && model.keyMapPages.isEmpty()) { model.keyMapPages.add(new ThemeEditorModel.KeyMapPage("pasted_page_" + System.nanoTime(), "Pasted")); model.selectedKeyMapPage = 0; }
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS && model.keyMapPages.isEmpty()) { model.keyMapPages.add(new ThemeEditorModel.KeyMapPage("pasted_page_" + System.nanoTime(), "粘贴页")); model.selectedKeyMapPage = 0; }
         String owner = pasteOwner(); java.util.ArrayList<ThemeEditorModel.Key> pasted = new java.util.ArrayList<>();
         int index = 0; for (ThemeEditorModel.Key original : source) { ThemeEditorModel.Key key = detachedKey(original, "pasted_key_" + System.nanoTime() + "_" + index++); if (crossScope) key.keyStyle = ""; key.ownerId = owner; key.x = Math.min(100 - key.width, key.x + 2); key.y = Math.min(80 - key.height, key.y + 2); model.keys.add(key); pasted.add(key); if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) { ThemeEditorModel.FlexContainer container = selectedFlex(); if (container != null) container.keyIds.add(key.id); } }
         selectPasted(pasted); persistCurrentKeyMapPage(); notifyModelChanged("已粘贴 " + pasted.size() + " 个按键" + (crossScope ? ";请检查列出的依赖项" : ""));
@@ -646,7 +654,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
     private void pastePage(ThemeEditorClipboard.Payload payload, boolean crossScope) {
         if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || payload.page == null) { setStatus("符号页只能粘贴到按键映射(key_maps)键盘"); return; }
-        if (!changeStarted()) return; persistCurrentKeyMapPage(); ThemeEditorModel.KeyMapPage page = payload.page.copy(); page.id = "pasted_page_" + System.nanoTime(); page.name = page.name + " copy"; page.sourcePath = "";
+        if (!changeStarted()) return; persistCurrentKeyMapPage(); ThemeEditorModel.KeyMapPage page = payload.page.copy(); page.id = "pasted_page_" + System.nanoTime(); page.name = page.name + " 副本"; page.sourcePath = "";
         java.util.ArrayList<ThemeEditorModel.Key> remapped = new java.util.ArrayList<>(); int index = 0; for (ThemeEditorModel.Key original : page.keys) { ThemeEditorModel.Key key = detachedKey(original, page.id + "_key_" + index++); if (crossScope) key.keyStyle = ""; key.ownerId = page.id; remapped.add(key); } page.keys.clear(); page.keys.addAll(remapped);
         model.keyMapPages.add(model.selectedKeyMapPage + 1, page); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); selectPasted(model.keys); notifyModelChanged("已粘贴符号页" + (crossScope ? ";请检查列出的依赖项" : ""));
     }
@@ -911,13 +919,13 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             copyTabPreview(target.clipboardTabBar, clipboardTab, "top", 48f);
             copyToolbarPreview(target.clipboardToolBar, clipboardTool, 48f);
             String structuralWarning = panelPreviewResolved(target) ? ""
-                    : "Inherited panel fields were not evaluated; showing literal overrides and static defaults";
+                    : "继承的面板字段未执行求值;当前显示字面覆盖值和静态默认值";
             if (!structuralWarning.isEmpty()) target.panelPreviewWarning = target.panelPreviewWarning == null || target.panelPreviewWarning.isEmpty()
                     ? structuralWarning : target.panelPreviewWarning + "; " + structuralWarning;
         } catch (RuntimeException error) {
-            target.panelPreviewWarning = "Dynamic or ambiguous panel source was not previewed";
+            target.panelPreviewWarning = "动态或歧义面板源未进入预览";
         } catch (LinkageError error) {
-            target.panelPreviewWarning = "Static panel reader is unavailable; showing preview defaults";
+            target.panelPreviewWarning = "静态面板读取器不可用;当前显示预览默认值";
         }
     }
 
@@ -1060,9 +1068,9 @@ public final class ThemeEditorWorkspace extends LinearLayout {
                         ? componentWarning : target.panelPreviewWarning + "; " + componentWarning;
             }
         } catch (RuntimeException error) {
-            target.panelPreviewWarning = "Dynamic or ambiguous component style source was not previewed";
+            target.panelPreviewWarning = "动态或歧义组件样式源未进入预览";
         } catch (LinkageError error) {
-            target.panelPreviewWarning = "Static component style reader is unavailable";
+            target.panelPreviewWarning = "静态组件样式读取器不可用";
         }
     }
 
@@ -1234,22 +1242,22 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             target.compositionPreviewWarning = warnings.isEmpty() ? "" : android.text.TextUtils.join("; ", warnings);
         } catch (RuntimeException error) {
             target.compositionPreviewSourceResolved = false;
-            target.compositionPreviewWarning = "Dynamic or ambiguous preedit/composition source was not previewed";
+            target.compositionPreviewWarning = "动态或歧义的预编辑/编码窗口源未进入预览";
         } catch (LinkageError error) {
             target.compositionPreviewSourceResolved = false;
-            target.compositionPreviewWarning = "Static preedit/composition reader is unavailable";
+            target.compositionPreviewWarning = "静态预编辑/编码窗口读取器不可用";
         }
     }
 
     private Boolean staticComponentTable(String path, java.util.List<String> warnings) {
         Boolean value = ThemeComponentStyles.staticTablePresence(panelPreviewSource, path);
-        if (value == null) warnings.add(path + " table is dynamic or ambiguous");
+        if (value == null) warnings.add(path + " 表为动态内容或存在歧义");
         return value;
     }
 
     private ThemeComponentStyles.Value componentValue(String path, java.util.List<String> warnings) {
         ThemeComponentStyles.Value value = ThemeComponentStyles.read(panelPreviewSource, path);
-        if (value.getDynamic()) warnings.add(path + " is dynamic");
+        if (value.getDynamic()) warnings.add(path + " 为动态内容");
         if (value.getCompatibilityDiagnostic() != null) warnings.add(value.getCompatibilityDiagnostic());
         return value;
     }
@@ -1258,7 +1266,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         ThemeComponentStyles.Value value = componentValue(path, warnings);
         if (value.getDynamic() || value.getLiteral() == null) return fallback;
         if (value.getColorValue() != null) return (int) (long) value.getColorValue();
-        if (value.getResourceValue() != null) warnings.add(path + " resource drawable is not loaded in static preview");
+        if (value.getResourceValue() != null) warnings.add(path + " 资源图像不会在静态预览中加载");
         return fallback;
     }
 
@@ -1271,8 +1279,8 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         ThemeComponentStyles.Value value = componentValue(path, warnings);
         if (value.getDynamic() || value.getNumberValue() == null) return fallback;
         double number = value.getNumberValue();
-        if (number != Math.rint(number)) { warnings.add(path + " uses runtime integer fallback"); return fallback; }
-        if (number < Integer.MIN_VALUE || number > Integer.MAX_VALUE) { warnings.add(path + " exceeds runtime integer range"); return fallback; }
+        if (number != Math.rint(number)) { warnings.add(path + " 使用运行时整数回退值"); return fallback; }
+        if (number < Integer.MIN_VALUE || number > Integer.MAX_VALUE) { warnings.add(path + " 超出运行时整数范围"); return fallback; }
         return (int) number;
     }
 
@@ -1294,17 +1302,17 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             }
             target.toolbarKeysSourceResolved = !rawLua;
             target.toolbarPreviewWarning = rawLua
-                    ? "Raw Lua toolbar items were not evaluated; showing static placeholders" : "";
+                    ? "原始 Lua 工具栏项目未执行求值;当前显示静态占位" : "";
         } catch (RuntimeException error) {
             target.toolbarKeys.clear();
             target.toolbarKeys.add("[动态/歧义 toolbar.keys]");
             target.toolbarKeysSourceResolved = false;
-            target.toolbarPreviewWarning = "Dynamic or ambiguous toolbar.keys was not previewed";
+            target.toolbarPreviewWarning = "动态或歧义工具栏按键(toolbar.keys)未进入预览";
         } catch (LinkageError error) {
             target.toolbarKeys.clear();
             target.toolbarKeys.add("[toolbar.keys 不可用]");
             target.toolbarKeysSourceResolved = false;
-            target.toolbarPreviewWarning = "Static toolbar reader is unavailable";
+            target.toolbarPreviewWarning = "静态工具栏读取器不可用";
         }
     }
 
@@ -1312,7 +1320,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         if (item == null) return "[未知]";
         if (item.getSource() == ThemeToolbarKeys.Source.STRING) return nonEmpty(item.getLiteral(), "[空字符串]");
         if (item.getSource() == ThemeToolbarKeys.Source.FULL_KEY) return "[完整按键]";
-        if (item.getSource() == ThemeToolbarKeys.Source.RAW_LUA) return "[Raw Lua]";
+        if (item.getSource() == ThemeToolbarKeys.Source.RAW_LUA) return "[原始 Lua]";
         if (item.getSource() == ThemeToolbarKeys.Source.SCHEMA_SWITCH) {
             ThemeToolbarKeys.SchemaSwitch value = item.getSchemaSwitch();
             if (value == null) return "[方案开关]";
@@ -1411,6 +1419,20 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
     public boolean replaceModelAsAtomic(ThemeEditorModel value, String message) { if (value == null) return false; properties.commit(); if (!changeStarted()) return false; model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); canvas.setModel(model); canvas.setSelectedKey(null); properties.setLayoutMode(model.layoutMode); properties.bind(null); if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus(message); return true; }
     public ThemeEditorModel getModel() { properties.commit(); persistCurrentKeyMapPage(); return model.copy(); }
+    public void markSaved(String message) { dirty = false; undo.clear(); redo.clear(); setStatus(message == null || message.isEmpty() ? "保存完成" : message); }
+    public void restoreEditorState(String selectedKeyId, String inspectorPageId) {
+        ThemeEditorModel.Key key = selectedKeyId == null ? null : model.find(selectedKeyId);
+        model.selectedIds.clear();
+        if (key != null) model.selectedIds.add(key.id);
+        canvas.setModel(model);
+        canvas.setSelectedKey(key);
+        properties.setLayoutMode(model.layoutMode);
+        properties.bind(key);
+        properties.setPage(inspectorPageId);
+        contextBar.setVisibility(key == null ? INVISIBLE : VISIBLE);
+        if (callbacks != null) callbacks.onSelectionChanged(key);
+        if (key == null && selectedKeyId != null) setStatus("原选中节点已失效,已安全清除选择");
+    }
     private boolean changeStarted() { if (!canEdit()) return false; dirty = true; if (applying) return true; if (undo.isEmpty() || !same(undo.peek(), model)) undo.push(model.copy()); redo.clear(); return true; }
     private boolean same(ThemeEditorModel a, ThemeEditorModel b) {
         if (a.layoutMode != b.layoutMode || a.selectedKeyMapPage != b.selectedKeyMapPage || !java.util.Objects.equals(a.selectedFlexContainerId, b.selectedFlexContainerId) || a.flexContainers.size() != b.flexContainers.size() || a.keyMapPages.size() != b.keyMapPages.size() || a.rows.size() != b.rows.size() || a.backgroundColor != b.backgroundColor || a.keys.size() != b.keys.size()) return false;

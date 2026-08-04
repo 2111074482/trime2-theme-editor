@@ -8,7 +8,29 @@ package com.osfans.trime.editor.core
 import com.osfans.trime.editor.project.ThemeResource
 
 enum class Severity { INFO, WARNING, ERROR }
-data class ThemeDiagnostic(val line: Int, val column: Int, val severity: Severity, val message: String, val path: String? = null)
+
+data class ThemeDiagnostic(
+    val line: Int,
+    val column: Int,
+    val severity: Severity,
+    val message: String,
+    val path: String? = null,
+    val code: String = stableDiagnosticCode(message, path),
+)
+
+private fun stableDiagnosticCode(message: String, path: String?): String {
+    val category = when {
+        message.contains("未闭合") || message.contains("不匹配") -> "lua.syntax"
+        message.contains("不支持") || message.contains("原始 Lua") || message.contains("动态") -> "lua.dynamic"
+        message.contains("资源") -> "resource.integrity"
+        message.contains("布局") || path?.startsWith("rows") == true || path?.startsWith("flex_box") == true || path?.startsWith("keys") == true || path?.startsWith("key_maps") == true -> "layout.structure"
+        message.contains("样式") -> "style.structure"
+        message.contains("键盘") -> "keyboard.structure"
+        else -> "theme.validation"
+    }
+    val suffix = path?.substringBefore(".#")?.replace(Regex("[^A-Za-z0-9_.-]"), "_")?.takeIf { it.isNotBlank() }
+    return if (suffix == null) category else "$category.$suffix"
+}
 
 object ThemeDiagnostics {
     fun validate(document: ThemeDocument, registry: ThemeFieldRegistry = ThemeFieldRegistry()): List<ThemeDiagnostic> = buildList {
@@ -20,10 +42,10 @@ object ThemeDiagnostics {
 
     fun resources(resources: Iterable<ThemeResource>): List<ThemeDiagnostic> = buildList {
         resources.filter { it.referenced && it.size == 0L }.forEach {
-            add(ThemeDiagnostic(0, 0, Severity.ERROR, "Referenced resource is empty: ${it.relativePath}", it.relativePath))
+            add(ThemeDiagnostic(0, 0, Severity.ERROR, "引用的资源为空:${it.relativePath}", it.relativePath))
         }
         resources.filter { it.referenceUncertain }.forEach {
-            add(ThemeDiagnostic(0, 0, Severity.WARNING, "Dynamic Lua may reference this resource; safe deletion is disabled", it.relativePath))
+            add(ThemeDiagnostic(0, 0, Severity.WARNING, "动态 Lua 可能引用此资源,已禁止安全删除", it.relativePath))
         }
     }
 
@@ -39,12 +61,12 @@ object ThemeDiagnostics {
     private fun validateRows(rows: ThemeValue.LuaTable, out: MutableList<ThemeDiagnostic>) {
         arrayEntries(rows).forEachIndexed { rowIndex, row ->
             val table = row as? ThemeValue.LuaTable ?: return@forEachIndexed
-            val keys = table.fields["keys"] as? ThemeValue.LuaTable ?: run { out += ThemeDiagnostic(0, 0, Severity.WARNING, "Row has no literal keys table", "rows.#${rowIndex + 1}.keys"); return@forEachIndexed }
+            val keys = table.fields["keys"] as? ThemeValue.LuaTable ?: run { out += ThemeDiagnostic(0, 0, Severity.WARNING, "行缺少字面量按键表(keys)", "rows.#${rowIndex + 1}.keys"); return@forEachIndexed }
             val defaultWidth = number(table.fields["width"])
             var total = 0.0
             val values = arrayEntries(keys)
             values.forEach { value -> total += number((value as? ThemeValue.LuaTable)?.fields?.get("width")) ?: defaultWidth ?: if (values.isEmpty()) 0.0 else 100.0 / values.size }
-            if (total > 100.01) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Row key widths total ${format(total)}%, exceeding 100%", "rows.#${rowIndex + 1}")
+            if (total > 100.01) out += ThemeDiagnostic(0, 0, Severity.WARNING, "行内按键宽度总和为 ${format(total)}%,超过 100%", "rows.#${rowIndex + 1}")
         }
     }
 
@@ -52,7 +74,7 @@ object ThemeDiagnostics {
         val direction = (table.fields["direction"] as? ThemeValue.LuaString)?.value ?: "row"
         val fixed = number(table.fields[if (direction == "column") "height" else "width"])
         val grow = number(table.fields["grow"])
-        if (fixed != null && fixed > 0 && grow != null && grow > 0) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Fixed main-axis size overrides grow; preview uses grow=0 semantics", path)
+        if (fixed != null && fixed > 0 && grow != null && grow > 0) out += ThemeDiagnostic(0, 0, Severity.WARNING, "主轴固定尺寸会覆盖增长值(grow);预览按 grow=0 处理", path)
         arrayEntries(table).forEachIndexed { index, child -> (child as? ThemeValue.LuaTable)?.let { validateFlex(it, "$path.#${index + 1}", out) } }
     }
 
@@ -61,12 +83,12 @@ object ThemeDiagnostics {
         val boxes = arrayEntries(keys).mapIndexedNotNull { index, value ->
             val fields = (value as? ThemeValue.LuaTable)?.fields ?: return@mapIndexedNotNull null
             val box = Box("keys.#${index + 1}", number(fields["x"]) ?: 0.0, number(fields["y"]) ?: 0.0, number(fields["width"]) ?: 0.0, number(fields["height"]) ?: 0.0)
-            if (box.width <= 0 || box.height <= 0) out += ThemeDiagnostic(0, 0, Severity.ERROR, "Absolute key width and height must be positive", box.path)
-            if (box.x < 0 || box.y < 0 || box.x + box.width > 100.01 || box.y + box.height > 100.01) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Absolute key extends outside the 0..100 layout bounds", box.path)
+            if (box.width <= 0 || box.height <= 0) out += ThemeDiagnostic(0, 0, Severity.ERROR, "绝对定位按键宽高必须为正数", box.path)
+            if (box.x < 0 || box.y < 0 || box.x + box.width > 100.01 || box.y + box.height > 100.01) out += ThemeDiagnostic(0, 0, Severity.WARNING, "绝对定位按键超出 0..100 布局边界", box.path)
             box
         }
-        if (boxes.size <= 200) for (i in boxes.indices) for (j in i + 1 until boxes.size) if (overlaps(boxes[i], boxes[j])) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Absolute keys overlap: ${boxes[i].path} and ${boxes[j].path}", boxes[j].path)
-        else out += ThemeDiagnostic(0, 0, Severity.INFO, "Overlap diagnostics skipped for more than 200 absolute keys", "keys")
+        if (boxes.size <= 200) for (i in boxes.indices) for (j in i + 1 until boxes.size) if (overlaps(boxes[i], boxes[j])) out += ThemeDiagnostic(0, 0, Severity.WARNING, "绝对定位按键重叠:${boxes[i].path} 与 ${boxes[j].path}", boxes[j].path)
+        else out += ThemeDiagnostic(0, 0, Severity.INFO, "绝对定位按键超过 200 个,已跳过重叠诊断", "keys")
     }
 
     private fun validateKeyMaps(pages: ThemeValue.LuaTable, out: MutableList<ThemeDiagnostic>) {
@@ -75,9 +97,9 @@ object ThemeDiagnostics {
             val page = value as? ThemeValue.LuaTable ?: return@forEachIndexed
             val path = "key_maps.#${index + 1}"
             val name = (page.fields["name"] as? ThemeValue.LuaString)?.value.orEmpty()
-            if (name.isBlank()) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Symbol page has no name", "$path.name") else if (!names.add(name)) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Duplicate symbol page name: $name", "$path.name")
+            if (name.isBlank()) out += ThemeDiagnostic(0, 0, Severity.WARNING, "符号页没有名称(name)", "$path.name") else if (!names.add(name)) out += ThemeDiagnostic(0, 0, Severity.WARNING, "符号页名称重复:$name", "$path.name")
             val keys = page.fields["keys"] as? ThemeValue.LuaTable
-            if (keys == null || arrayEntries(keys).isEmpty()) out += ThemeDiagnostic(0, 0, Severity.WARNING, "Symbol page has no keys", "$path.keys")
+            if (keys == null || arrayEntries(keys).isEmpty()) out += ThemeDiagnostic(0, 0, Severity.WARNING, "符号页没有按键(keys)", "$path.keys")
         }
     }
 
@@ -90,9 +112,17 @@ object ThemeDiagnostics {
         registry.all().forEach { field ->
             if (field.consumption != ConsumptionStatus.CONSUMED) {
                 val severity = if (field.consumption == ConsumptionStatus.UNRELIABLE) Severity.WARNING else Severity.INFO
-                add(ThemeDiagnostic(0, 0, severity, "${field.path}: ${field.consumption.name.lowercase().replace('_', ' ')}", field.path))
+                add(ThemeDiagnostic(0, 0, severity, "${field.path}:${consumptionText(field.consumption)}", field.path))
             }
         }
+    }
+
+    private fun consumptionText(status: ConsumptionStatus): String = when (status) {
+        ConsumptionStatus.CONSUMED -> "已实现"
+        ConsumptionStatus.PARSED_NOT_TRIGGERED -> "已解析但不会自动触发"
+        ConsumptionStatus.UNRELIABLE -> "兼容性不可靠"
+        ConsumptionStatus.NOT_PARSED -> "未结构化解析"
+        ConsumptionStatus.RAW_ONLY -> "仅保留原始源码"
     }
 
     private fun validateValue(path: String, value: ThemeValue, line: Int, registry: ThemeFieldRegistry, out: MutableList<ThemeDiagnostic>) {
@@ -100,12 +130,12 @@ object ThemeDiagnostics {
         registry.find(path)?.let { field ->
             if (field.consumption != ConsumptionStatus.CONSUMED) {
                 val severity = if (field.consumption == ConsumptionStatus.UNRELIABLE) Severity.WARNING else Severity.INFO
-                out.add(ThemeDiagnostic(line, 1, severity, "${field.path}: ${field.consumption.name.lowercase().replace('_', ' ')}", path))
+                out.add(ThemeDiagnostic(line, 1, severity, "${field.path}:${consumptionText(field.consumption)}", path))
             }
         }
         when (value) {
             is ThemeValue.LuaTable -> value.fields.forEach { (key, child) -> validateValue("$path.$key", child, line, registry, out) }
-            is ThemeValue.RawLuaNode -> out.add(ThemeDiagnostic(line, 1, Severity.INFO, "Raw Lua is preserved and not executed", path))
+            is ThemeValue.RawLuaNode -> out.add(ThemeDiagnostic(line, 1, Severity.INFO, "原始 Lua 已保留且不会执行", path))
             else -> Unit
         }
     }

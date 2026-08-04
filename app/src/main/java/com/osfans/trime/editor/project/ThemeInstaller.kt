@@ -11,7 +11,7 @@ import java.io.IOException
 /** Local directory installer with a manifest-backed backup and rollback. */
 class ThemeInstaller {
     fun install(source: File, target: File): InstallResult {
-        require(source.isDirectory) { "Theme source must be a directory" }
+        require(source.isDirectory) { "主题源必须是目录" }
         val project = ThemeProject.discover(source)
         val backup = File(target.parentFile, ".${target.name}.backup-${System.currentTimeMillis()}")
         if (target.exists()) copyDirectory(target, backup)
@@ -23,7 +23,7 @@ class ThemeInstaller {
         } catch (error: Exception) {
             if (target.exists()) target.deleteRecursively()
             if (backup.exists()) copyDirectory(backup, target)
-            throw IOException("Theme install rolled back", error)
+            throw IOException("主题安装失败并已回滚", error)
         }
     }
 

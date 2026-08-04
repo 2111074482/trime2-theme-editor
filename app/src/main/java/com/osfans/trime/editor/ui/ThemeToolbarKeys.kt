@@ -91,16 +91,16 @@ object ThemeToolbarKeys {
     @JvmStatic
     fun put(source: String, index: Int, item: Item, append: Boolean): String {
         require(item.source != Source.FULL_KEY && item.source != Source.RAW_LUA) {
-            "FULL_KEY and RAW_LUA require an explicit safe replacement or the Lua source page"
+            "完整按键(FULL_KEY)和原始 Lua(RAW_LUA)需要显式安全替换或使用 Lua 源代码页"
         }
         val state = mutableSnapshot(source)
         val values = state.values!!.toMutableList()
         val target = if (append) values.size else index
         if (!append) {
-            require(index in values.indices) { "Toolbar key index is out of range" }
+            require(index in values.indices) { "工具栏按键索引超出范围" }
             val existing = state.items[index]
             require(existing.source != Source.FULL_KEY && existing.source != Source.RAW_LUA) {
-                "FULL_KEY and RAW_LUA cannot be overwritten by generic item edit; use explicit replacement or the Lua source page"
+                "完整按键(FULL_KEY)和原始 Lua(RAW_LUA)不能由通用条目编辑覆盖;请显式替换或使用 Lua 源代码页"
             }
         }
         val previous = if (append) null else values[target]
@@ -112,10 +112,10 @@ object ThemeToolbarKeys {
     /** Explicit safe replacement contract for a static full key. RAW_LUA remains blocked. */
     @JvmStatic
     fun replace(source: String, index: Int, item: Item): String {
-        require(item.source != Source.RAW_LUA) { "RAW_LUA requires the Lua source page" }
+        require(item.source != Source.RAW_LUA) { "原始 Lua(RAW_LUA)必须在 Lua 源代码页编辑" }
         val state = mutableSnapshot(source)
         val values = state.values!!.toMutableList()
-        require(index in values.indices) { "Toolbar key index is out of range" }
+        require(index in values.indices) { "工具栏按键索引超出范围" }
         val previous = if (item.source == Source.INLINE_EVENT && state.items[index].source == Source.INLINE_EVENT) {
             values[index] as? ThemeValue.LuaTable
         } else null
@@ -127,7 +127,7 @@ object ThemeToolbarKeys {
     fun delete(source: String, index: Int): String {
         val state = mutableSnapshot(source)
         val values = state.values!!.toMutableList()
-        require(index in values.indices) { "Toolbar key index is out of range" }
+        require(index in values.indices) { "工具栏按键索引超出范围" }
         values.removeAt(index)
         return writeAndVerify(source, state, values)
     }
@@ -136,7 +136,7 @@ object ThemeToolbarKeys {
     fun move(source: String, from: Int, to: Int): String {
         val state = mutableSnapshot(source)
         val values = state.values!!.toMutableList()
-        require(from in values.indices && to in values.indices) { "Toolbar key index is out of range" }
+        require(from in values.indices && to in values.indices) { "工具栏按键索引超出范围" }
         if (from == to) return source
         values.add(to, values.removeAt(from))
         return writeAndVerify(source, state, values)
@@ -144,9 +144,9 @@ object ThemeToolbarKeys {
 
     private fun mutableSnapshot(source: String): Snapshot {
         val state = snapshot(source)
-        require(state.values != null) { "Dynamic toolbar.keys requires the Lua source page" }
+        require(state.values != null) { "动态工具栏按键(toolbar.keys)必须在 Lua 源代码页编辑" }
         require(state.items.none { it.source == Source.RAW_LUA }) {
-            "toolbar.keys contains Raw Lua and cannot be structurally overwritten; use the Lua source page"
+            "工具栏按键(toolbar.keys)包含原始 Lua,不能结构化覆盖;请使用 Lua 源代码页"
         }
         return state
     }
@@ -155,7 +155,7 @@ object ThemeToolbarKeys {
         val document = parse(source)
         val effective = effective(document)
         require(effective.owner != Owner.NONE || !containsUnclassifiedToolbar(source)) {
-            "Toolbar assignment precedence cannot be proven safe; use the Lua source page"
+            "无法证明工具栏赋值优先级安全;请使用 Lua 源代码页"
         }
         val value = effective.value
         if (value == null) return Snapshot(document, effective, emptyList(), emptyList())
@@ -170,7 +170,7 @@ object ThemeToolbarKeys {
     /** Determine Lua assignment precedence from source statements, including raw clone roots. */
     private fun effective(document: ThemeDocument): Effective {
         require(document.sourceStatements.count { it.path == "toolbar.keys" } <= 1) {
-            "Duplicate toolbar.keys assignments are ambiguous; use the Lua source page"
+            "重复的工具栏按键(toolbar.keys)赋值存在歧义;请使用 Lua 源代码页"
         }
         var result = Effective(Owner.NONE, -1, null)
         document.sourceStatements.forEachIndexed { index, statement ->
@@ -185,12 +185,12 @@ object ThemeToolbarKeys {
                 }
                 "toolbar.keys" -> result = Effective(Owner.DOTTED, index, statementValue(statement, "toolbar.keys"))
                 else -> if (statement.path?.startsWith("toolbar.keys.") == true) {
-                    throw IllegalArgumentException("Nested or ambiguous toolbar.keys assignment requires the Lua source page")
+                    throw IllegalArgumentException("嵌套或歧义的工具栏按键(toolbar.keys)赋值必须在 Lua 源代码页编辑")
                 }
             }
             if (statement.root == null && statement.text.contains(Regex("\\btoolbar\\b")) &&
                 !statement.text.trimStart().startsWith("--")) {
-                throw IllegalArgumentException("Toolbar mutation precedence cannot be proven safe; use the Lua source page")
+                throw IllegalArgumentException("无法证明工具栏修改优先级安全;请使用 Lua 源代码页")
             }
         }
         return result
@@ -224,9 +224,9 @@ object ThemeToolbarKeys {
 
     private fun statementValue(statement: ThemeSourceStatement, path: String): ThemeValue {
         val parsed = ThemeLuaParser().parse(statement.text)
-        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
+        require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
         return parsed.document.get(path)
-            ?: throw IllegalArgumentException("Toolbar assignment precedence cannot be proven safe; use the Lua source page")
+            ?: throw IllegalArgumentException("无法证明工具栏赋值优先级安全;请使用 Lua 源代码页")
     }
 
     private fun classify(index: Int, value: ThemeValue): Item = when (value) {
@@ -250,63 +250,63 @@ object ThemeToolbarKeys {
 
     private fun readSchema(table: ThemeValue.LuaTable): SchemaSwitch {
         require(table.fields.keys.all { it in schemaFields }) {
-            "Unsupported schema-switch table keys require the Lua source page"
+            "不支持的方案切换表键必须在 Lua 源代码页编辑"
         }
         val name = (table.fields["name"] as? ThemeValue.LuaString)?.value
-            ?: throw IllegalArgumentException("Schema switch name must be a literal string")
+            ?: throw IllegalArgumentException("方案切换名称(name)必须是字面字符串")
         val options = stringArray(table.fields["options"], "options")
         val states = stringArray(table.fields["states"], "states")
         val resetNumber = table.fields["reset"] as? ThemeValue.LuaNumber
-            ?: throw IllegalArgumentException("Schema switch reset must be a 32-bit integer")
+            ?: throw IllegalArgumentException("方案切换重置值(reset)必须是 32 位整数")
         require(resetNumber.value.isFinite() && resetNumber.value % 1.0 == 0.0 &&
             resetNumber.value in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) {
-            "Schema switch reset must be a 32-bit integer"
+            "方案切换重置值(reset)必须是 32 位整数"
         }
         val styleValue = table.fields["style"]
-        require(styleValue == null || styleValue is ThemeValue.LuaString) { "Schema switch style must be a literal string" }
+        require(styleValue == null || styleValue is ThemeValue.LuaString) { "方案切换样式(style)必须是字面字符串" }
         val result = SchemaSwitch(name, options, states, resetNumber.value.toInt(), (styleValue as? ThemeValue.LuaString)?.value)
         validateSchema(result)
         return result
     }
 
     private fun validateSchema(schema: SchemaSwitch) {
-        require(identifier.matches(schema.name)) { "Schema switch name must be a Lua-safe identifier" }
-        require(schema.style == null || identifier.matches(schema.style)) { "Schema switch style must be a Lua-safe identifier" }
+        require(identifier.matches(schema.name)) { "方案切换名称(name)必须是 Lua 安全标识符" }
+        require(schema.style == null || identifier.matches(schema.style)) { "方案切换样式(style)必须是 Lua 安全标识符" }
     }
 
     private fun stringArray(value: ThemeValue?, name: String): List<String> {
-        require(value is ThemeValue.LuaTable) { "Schema switch $name must be a literal string array" }
+        require(value is ThemeValue.LuaTable) { "方案切换字段 $name 必须是字面字符串数组" }
         return array(value).map {
             (it as? ThemeValue.LuaString)?.value
-                ?: throw IllegalArgumentException("Schema switch $name must be a literal string array")
+                ?: throw IllegalArgumentException("方案切换字段 $name 必须是字面字符串数组")
         }
     }
 
     private fun array(table: ThemeValue.LuaTable): List<ThemeValue> {
         require(table.fields.keys.all { it.matches(Regex("^#[1-9][0-9]*$")) }) {
-            "toolbar.keys must be a literal array without named fields"
+            "工具栏按键(toolbar.keys)必须是不含命名字段的字面数组"
         }
         val indexed = table.fields.entries.map { entry ->
             entry.key.drop(1).toIntOrNull()?.let { it to entry.value }
-                ?: throw IllegalArgumentException("toolbar.keys array index is unsupported")
+                ?: throw IllegalArgumentException("工具栏按键(toolbar.keys)数组索引不受支持")
         }.sortedBy { it.first }
         require(indexed.map { it.first } == (1..indexed.size).toList()) {
-            "toolbar.keys must be a contiguous literal array"
+            "工具栏按键(toolbar.keys)必须是连续的字面数组"
         }
         return indexed.map { it.second }
     }
 
     private fun encode(item: Item, previous: ThemeValue.LuaTable?): ThemeValue = when (item.source) {
-        Source.STRING -> ThemeValue.LuaString(item.literal ?: throw IllegalArgumentException("String toolbar key is missing its literal"))
+        Source.STRING -> ThemeValue.LuaString(item.literal ?: throw IllegalArgumentException("字符串工具栏按键缺少字面值"))
         Source.INLINE_EVENT -> {
-            val event = item.event ?: throw IllegalArgumentException("Inline toolbar event is missing")
+            val event = item.event ?: throw IllegalArgumentException("缺少内联工具栏事件")
             // The ID identifies preset definitions only; toolbar inline events have no serialized ID.
             ThemePresetEvents.toLiteralTable(event.copy(id = "ToolbarKey"), previous)
         }
-        Source.SCHEMA_SWITCH -> writeSchema(item.schemaSwitch ?: throw IllegalArgumentException("Schema switch is missing"))
+        Source.SCHEMA_SWITCH -> writeSchema(item.schemaSwitch ?: throw IllegalArgumentException("缺少方案切换内容"))
         Source.FULL_KEY -> item.literalValue as? ThemeValue.LuaTable
-            ?: throw IllegalArgumentException("FULL_KEY is not a static literal table")
-        Source.RAW_LUA -> throw IllegalArgumentException("RAW_LUA requires the Lua source page")
+            ?: throw IllegalArgumentException("完整按键(FULL_KEY)不是静态字面表")
+        Source.RAW_LUA -> throw IllegalArgumentException("原始 Lua(RAW_LUA)必须在 Lua 源代码页编辑")
     }
 
     private fun writeSchema(schema: SchemaSwitch): ThemeValue.LuaTable {
@@ -333,7 +333,7 @@ object ThemeToolbarKeys {
             Owner.DOTTED -> replaceStatement(source, state.document, state.effective.statementIndex, render(table))
             Owner.ROOT -> {
                 val root = state.effective.root
-                    ?: throw IllegalArgumentException("Dynamic toolbar root requires the Lua source page")
+                    ?: throw IllegalArgumentException("动态工具栏根必须在 Lua 源代码页编辑")
                 val fields = LinkedHashMap(root.fields)
                 fields["keys"] = table
                 replaceStatement(source, state.document, state.effective.statementIndex, render(ThemeValue.LuaTable(fields)))
@@ -342,13 +342,13 @@ object ThemeToolbarKeys {
         }
         val verified = snapshot(output)
         require(verified.values != null && verified.items.none { it.source == Source.RAW_LUA } && verified.values.size == values.size) {
-            "Written toolbar.keys could not be parsed safely; use the Lua source page"
+            "写出的工具栏按键(toolbar.keys)无法安全解析;请使用 Lua 源代码页"
         }
         return output
     }
 
     private fun replaceStatement(source: String, document: ThemeDocument, index: Int, rendered: String): String {
-        require(index in document.sourceStatements.indices) { "Effective toolbar.keys source statement is missing" }
+        require(index in document.sourceStatements.indices) { "缺少生效的工具栏按键(toolbar.keys)源语句" }
         return buildString(source.length + rendered.length) {
             document.sourceStatements.forEachIndexed { statementIndex, statement ->
                 append(if (statementIndex == index) replaceRhs(statement.text, rendered) else statement.text)
@@ -360,7 +360,7 @@ object ThemeToolbarKeys {
     /** Keeps assignment indentation and a top-level trailing line comment where possible. */
     private fun replaceRhs(statement: String, rendered: String): String {
         val equals = topLevelEquals(statement)
-        require(equals >= 0) { "Effective toolbar assignment cannot be rewritten safely; use the Lua source page" }
+        require(equals >= 0) { "生效的工具栏赋值不能安全重写;请使用 Lua 源代码页" }
         var rhs = equals + 1
         while (rhs < statement.length && (statement[rhs] == ' ' || statement[rhs] == '\t')) rhs++
         val comment = topLevelComment(statement, rhs)
@@ -417,9 +417,9 @@ object ThemeToolbarKeys {
     }
 
     private fun parse(source: String): ThemeDocument = ThemeLuaParser().parse(source).also { result ->
-        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua source contains errors" }
-        require(result.diagnostics.none { it.message.startsWith("Unsupported table key") }) {
-            "Unsupported table keys require the Lua source page"
+        require(result.diagnostics.none { it.severity == Severity.ERROR }) { "Lua 源代码包含错误" }
+        require(result.diagnostics.none { it.message.startsWith("不支持的表键") || it.message.startsWith("Unsupported table key") }) {
+            "不支持的表键必须在 Lua 源代码页编辑"
         }
     }.document
 

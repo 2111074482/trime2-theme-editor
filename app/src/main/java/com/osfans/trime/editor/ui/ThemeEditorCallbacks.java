@@ -31,4 +31,10 @@ public interface ThemeEditorCallbacks {
 
     /** Opens the Lua source editor from the advanced page. */
     default void onOpenLuaSource() {}
+
+    /** Persists a stable inspector page id: basic, events, states or resources. */
+    default void onInspectorPageChanged(String pageId) {}
+
+    /** Records preview-only state without dirtying the theme model. */
+    default void onPreviewStateChanged() {}
 }

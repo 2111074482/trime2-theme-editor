@@ -35,47 +35,215 @@ public final class ThemeKeyboardCanvas extends View {
     public ThemeEditorModel.Key getSelectedKey() { return selected; }
     public void setSelectedKey(ThemeEditorModel.Key key) { selected = key; invalidate(); }
 
+    private static final float STAGE_LEFT = -3f;
+    private static final float STAGE_RIGHT = 104f;
+    private static final float STAGE_TOP = -27f;
+    private static final float MIN_STAGE_BOTTOM = 85f;
+    private float stageBottom = MIN_STAGE_BOTTOM;
+
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(model.backgroundColor);
+        drawCanvasBackground(canvas);
         updateTransform();
-        canvas.save(); canvas.translate(transformLeft, transformTop); canvas.scale(transformScaleX, transformScaleY);
-        paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(0.45f); paint.setColor(0x553F4A52);
-        canvas.drawRect(0, 0, 100, 94, paint);
-        float y = 2;
-        if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS && !model.keyMapPages.isEmpty()) {
-            StringBuilder tabs = new StringBuilder();
-            for (int i = 0; i < model.keyMapPages.size(); i++) {
-                if (i > 0) tabs.append("   ");
-                if (i == model.selectedKeyMapPage) tabs.append("[").append(model.keyMapPages.get(i).name).append("]"); else tabs.append(model.keyMapPages.get(i).name);
-                if (tabs.length() > 42) { tabs.append(" ..."); break; }
-            }
-            panel(canvas, 2, y, 96, 7, tabs.toString(), model.symbolBackgroundColor, model.symbolTabTextColor); y += 8;
-        }
-        if (model.showToolbar) { drawToolbarPreview(canvas, y); y += model.toolbarHeight + 1; }
-        if (model.showCandidate) { drawCandidatePreview(canvas, y); y += model.candidateHeight + 1; }
-        if (!"none".equals(model.preeditInlineMode)) {
-            float preeditHeight = Math.max(5f, Math.min(10f, model.preeditTextSize / 4f));
-            panel(canvas, 2, y, 96, preeditHeight, "编辑器内联 " + model.preeditInlineMode + " [source=" + model.preeditInlineSource + "]", model.preeditBackgroundColor, model.preeditTextColor, Math.max(2f, Math.min(4.5f, model.preeditTextSize / 5.5f)));
-            y += preeditHeight + 1;
-        }
-        if (model.showComposition) y = model.compositionWindowEnabled
-                ? drawCompositionPreview(canvas, y) : drawPlainPreeditPreview(canvas, y);
-        if (model.previewPanel != ThemeEditorModel.PreviewPanel.KEYBOARD) {
-            drawPanelPreview(canvas, model.previewPanel, y);
-        }
-        if (model.previewPanel == ThemeEditorModel.PreviewPanel.KEYBOARD) for (ThemeEditorModel.Key key : model.keys) {
-            RectF bounds = new RectF(key.x, key.y + 8, key.x + key.width, key.y + key.height + 8);
-            paint.setStyle(Paint.Style.FILL); paint.setColor(model.pressedPreview && key == selected ? model.pressedKeyBackgroundColor : key.fillColor); canvas.drawRoundRect(bounds, model.keyCornerRadius, model.keyCornerRadius, paint);
-            boolean inSelection = model.selectedIds.contains(key.id);
-            paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(key == selected ? 1.35f : inSelection ? .85f : .35f);
-            paint.setColor(key == selected ? 0xff1565c0 : inSelection ? 0xff42a5f5 : 0x884F5A60); canvas.drawRoundRect(bounds, model.keyCornerRadius, model.keyCornerRadius, paint);
-            paint.setStyle(Paint.Style.FILL); paint.setColor(model.pressedPreview && key == selected ? model.pressedKeyTextColor : key.textColor); paint.setTextAlign(Paint.Align.CENTER);
-            paint.setTextSize(Math.min(model.keyTextSize, key.height * .55f));
-            String displayLabel = "schema_name".equals(key.label) ? model.schemaName : "Enter".equals(key.label) || "Return".equals(key.click) ? model.editorActionLabel : key.label;
-            canvas.drawText(displayLabel, key.x + key.width / 2, key.y + 8 + key.height / 2 - (paint.ascent() + paint.descent()) / 2, paint);
-        }
+        canvas.save();
+        canvas.translate(transformLeft, transformTop);
+        canvas.scale(transformScaleX, transformScaleY);
+        drawDeviceMeta(canvas);
+        drawKeyboardShell(canvas);
         canvas.restore();
+    }
+
+    private void drawCanvasBackground(Canvas canvas) {
+        canvas.drawColor(0xff080b13);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1f);
+        float minor = Math.max(12f, getResources().getDisplayMetrics().density * 8f);
+        float major = minor * 5f;
+        paint.setColor(0x0cffffff);
+        for (float x = 0; x <= getWidth(); x += minor) canvas.drawLine(x, 0, x, getHeight(), paint);
+        for (float y = 0; y <= getHeight(); y += minor) canvas.drawLine(0, y, getWidth(), y, paint);
+        paint.setColor(0x13ffffff);
+        for (float x = 0; x <= getWidth(); x += major) canvas.drawLine(x, 0, x, getHeight(), paint);
+        for (float y = 0; y <= getHeight(); y += major) canvas.drawLine(0, y, getWidth(), y, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0x18000000);
+        canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+    }
+
+    private boolean usesPlaceholderKeyboard() {
+        return model.layoutMode == ThemeEditorModel.LayoutMode.NONE || model.keys.isEmpty();
+    }
+
+    private void drawDeviceMeta(Canvas canvas) {
+        drawMetaPill(canvas, 0f, -24f, 24f, "●  实时预览", 0xff6ce5ad);
+        String orientation = model.previewHeight >= model.previewWidth ? "竖屏" : "横屏";
+        String device = Math.round(model.previewWidth) + " × " + Math.round(model.previewHeight) + " · " + orientation;
+        drawMetaPill(canvas, 25f, -24f, 42f, device, 0xff858da1);
+        drawMetaPill(canvas, 68f, -24f, 32f, model.layoutMode.name(), 0xff858da1);
+    }
+
+    private void drawMetaPill(Canvas canvas, float x, float y, float width, String text, int color) {
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0xe610141f);
+        canvas.drawRoundRect(new RectF(x, y, x + width, y + 6f), 1.6f, 1.6f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(.25f);
+        paint.setColor(0x334f5870);
+        canvas.drawRoundRect(new RectF(x, y, x + width, y + 6f), 1.6f, 1.6f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(color);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(2.15f);
+        canvas.drawText(text, x + width / 2f, y + 3f - (paint.ascent() + paint.descent()) / 2f, paint);
+    }
+
+    private void drawKeyboardShell(Canvas canvas) {
+        float contentBottom = placeholderBottom();
+        if (!usesPlaceholderKeyboard()) {
+            contentBottom = 0f;
+            for (ThemeEditorModel.Key key : model.keys) contentBottom = Math.max(contentBottom, key.y + key.height);
+        }
+        stageBottom = Math.max(MIN_STAGE_BOTTOM, contentBottom + 5f);
+        RectF shadow = new RectF(-2.2f, -14.2f, 102.2f, stageBottom);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0x55000000);
+        canvas.drawRoundRect(new RectF(shadow.left + 1.2f, shadow.top + 2f, shadow.right + 1.2f, shadow.bottom + 2f), 5.2f, 5.2f, paint);
+        paint.setColor(0xff151923);
+        canvas.drawRoundRect(shadow, 5.2f, 5.2f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(.35f);
+        paint.setColor(0x38ffffff);
+        canvas.drawRoundRect(shadow, 5.2f, 5.2f, paint);
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0x28ffffff);
+        canvas.drawRoundRect(new RectF(44f, -12.3f, 56f, -11.3f), .6f, .6f, paint);
+        drawShellCandidateBar(canvas);
+
+        if (model.previewPanel != ThemeEditorModel.PreviewPanel.KEYBOARD) {
+            drawPanelPreview(canvas, model.previewPanel, 1f);
+        } else if (usesPlaceholderKeyboard()) {
+            drawPlaceholderKeyboard(canvas);
+            drawUnavailableNotice(canvas);
+        } else {
+            drawModelKeys(canvas);
+        }
+    }
+
+    private void drawShellCandidateBar(Canvas canvas) {
+        RectF bar = new RectF(1f, -10f, 99f, -1.5f);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(model.showCandidate ? model.candidateBackgroundColor : 0xff202531);
+        canvas.drawRoundRect(bar, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(.25f);
+        paint.setColor(0x22ffffff);
+        canvas.drawRoundRect(bar, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(model.showCandidate ? model.candidateTextColor : 0xff747d91);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(Math.max(2.1f, Math.min(3.5f, model.candidateTextSize / 7f)));
+        String[] words = model.showCandidate ? new String[]{"⌘", "你好", "你", "输入", "⌄"}
+                : new String[]{"", "", "候选栏已隐藏", "", ""};
+        float[] centers = {6f, 25f, 48f, 72f, 94f};
+        for (int i = 0; i < words.length; i++)
+            canvas.drawText(words[i], centers[i], bar.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+        paint.setColor(0x18ffffff);
+        canvas.drawRect(36f, bar.top + 2f, 36.2f, bar.bottom - 2f, paint);
+        canvas.drawRect(60f, bar.top + 2f, 60.2f, bar.bottom - 2f, paint);
+    }
+
+    private void drawModelKeys(Canvas canvas) {
+        for (ThemeEditorModel.Key key : model.keys) {
+            RectF bounds = new RectF(key.x, key.y, key.x + key.width, key.y + key.height);
+            boolean primary = key == selected;
+            boolean inSelection = model.selectedIds.contains(key.id);
+            float radius = Math.max(.7f, Math.min(model.keyCornerRadius, Math.min(key.width, key.height) / 2f));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(0x66000000);
+            canvas.drawRoundRect(new RectF(bounds.left, bounds.top + .8f, bounds.right, bounds.bottom + .8f), radius, radius, paint);
+            paint.setColor(model.pressedPreview && primary ? model.pressedKeyBackgroundColor : key.fillColor);
+            canvas.drawRoundRect(bounds, radius, radius, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(primary ? 1.05f : inSelection ? .7f : .25f);
+            paint.setColor(primary ? 0xffa797ff : inSelection ? 0xff8170e7 : 0x35ffffff);
+            canvas.drawRoundRect(bounds, radius, radius, paint);
+            if (primary) {
+                paint.setStrokeWidth(.35f);
+                paint.setColor(0x889783ff);
+                canvas.drawRoundRect(new RectF(bounds.left - .6f, bounds.top - .6f, bounds.right + .6f, bounds.bottom + .6f), radius + .6f, radius + .6f, paint);
+            }
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(model.pressedPreview && primary ? model.pressedKeyTextColor : key.textColor);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextSize(Math.max(2f, Math.min(model.keyTextSize, key.height * .48f)));
+            String displayLabel = "schema_name".equals(key.label) ? model.schemaName
+                    : "Enter".equals(key.label) || "Return".equals(key.click) ? model.editorActionLabel : key.label;
+            if (displayLabel == null) displayLabel = "";
+            canvas.save();
+            canvas.clipRect(bounds);
+            canvas.drawText(displayLabel, bounds.centerX(), bounds.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+            canvas.restore();
+        }
+    }
+
+    private float placeholderBottom() { return 78f; }
+
+    private void drawPlaceholderKeyboard(Canvas canvas) {
+        drawPlaceholderRow(canvas, "QWERTYUIOP", 2f, 4f, 9.1f, 14f);
+        drawPlaceholderRow(canvas, "ASDFGHJKL", 6.6f, 21f, 9.1f, 14f);
+        drawPlaceholderRow(canvas, new String[]{"⇧", "Z", "X", "C", "V", "B", "N", "M", "⌫"}, 2f, 38f, 9.1f, 14f);
+        String[] labels = {"符", "中/En", ",", "Trime", "。", "↵"};
+        float[] widths = {11f, 15f, 9f, 35f, 9f, 15f};
+        float x = 2f;
+        for (int i = 0; i < labels.length; i++) {
+            drawPlaceholderKey(canvas, x, 55f, widths[i], 14f, labels[i], i == labels.length - 1);
+            x += widths[i] + 1.2f;
+        }
+    }
+
+    private void drawPlaceholderRow(Canvas canvas, String labels, float x, float y, float width, float height) {
+        String[] items = new String[labels.length()];
+        for (int i = 0; i < labels.length(); i++) items[i] = String.valueOf(labels.charAt(i));
+        drawPlaceholderRow(canvas, items, x, y, width, height);
+    }
+
+    private void drawPlaceholderRow(Canvas canvas, String[] labels, float x, float y, float width, float height) {
+        for (String label : labels) { drawPlaceholderKey(canvas, x, y, width, height, label, false); x += width + .8f; }
+    }
+
+    private void drawPlaceholderKey(Canvas canvas, float x, float y, float width, float height, String label, boolean accent) {
+        RectF bounds = new RectF(x, y, x + width, y + height);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0x77000000);
+        canvas.drawRoundRect(new RectF(x, y + .8f, x + width, y + height + .8f), 2f, 2f, paint);
+        paint.setColor(accent ? 0xff6959d0 : 0xff303542);
+        canvas.drawRoundRect(bounds, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(.25f);
+        paint.setColor(0x30ffffff);
+        canvas.drawRoundRect(bounds, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0xffe7e9f2);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(label.length() > 2 ? 2.4f : 3.7f);
+        canvas.drawText(label, bounds.centerX(), bounds.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+    }
+
+    private void drawUnavailableNotice(Canvas canvas) {
+        RectF notice = new RectF(22f, 72f, 78f, 80f);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0xee201d32);
+        canvas.drawRoundRect(notice, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(.3f);
+        paint.setColor(0x779b8cff);
+        canvas.drawRoundRect(notice, 2f, 2f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0xffc8c0ff);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(2.5f);
+        canvas.drawText("未加载可编辑键盘源", notice.centerX(), notice.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
     }
 
     private void drawToolbarPreview(Canvas canvas, float y) {
@@ -328,20 +496,34 @@ public final class ThemeKeyboardCanvas extends View {
         paint.setColor(textColor); paint.setTextAlign(Paint.Align.LEFT); paint.setTextSize(textSize); canvas.save(); canvas.clipRect(x, y, x + width, y + height); canvas.drawText(text, x + 2, y + height / 2 - (paint.ascent() + paint.descent()) / 2, paint); canvas.restore();
     }
 
+    private float contentStageBottom() {
+        if (usesPlaceholderKeyboard()) return MIN_STAGE_BOTTOM;
+        float bottom = MIN_STAGE_BOTTOM;
+        for (ThemeEditorModel.Key key : model.keys) bottom = Math.max(bottom, key.y + key.height + 5f);
+        return bottom;
+    }
+
     private void updateTransform() {
-        float ratio = Math.max(.2f, Math.min(5f, model.previewWidth / Math.max(1f, model.previewHeight)));
-        float availableWidth = Math.max(1, getWidth() - getPaddingLeft() - getPaddingRight()), availableHeight = Math.max(1, getHeight() - getPaddingTop() - getPaddingBottom());
-        float viewportWidth = availableWidth, viewportHeight = viewportWidth / ratio;
-        if (viewportHeight > availableHeight) { viewportHeight = availableHeight; viewportWidth = viewportHeight * ratio; }
-        transformScaleX = viewportWidth / 100f * model.previewZoom; transformScaleY = viewportHeight / 94f * model.previewZoom;
-        transformLeft = (getWidth() - 100f * transformScaleX) / 2f + model.previewPanX;
-        transformTop = (getHeight() - 94f * transformScaleY) / 2f + model.previewPanY;
+        stageBottom = contentStageBottom();
+        float availableWidth = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
+        float availableHeight = Math.max(1f, getHeight() - getPaddingTop() - getPaddingBottom());
+        float visualBottom = stageBottom + 3f; // Includes the shell's lower shadow.
+        float stageWidth = STAGE_RIGHT - STAGE_LEFT;
+        float stageHeight = visualBottom - STAGE_TOP;
+        float fitScale = Math.min(availableWidth / stageWidth, availableHeight / stageHeight);
+        float zoom = Float.isNaN(model.previewZoom) || Float.isInfinite(model.previewZoom)
+                ? 1f : Math.max(.1f, model.previewZoom);
+        transformScaleX = transformScaleY = fitScale * zoom;
+        float centerModelX = (STAGE_LEFT + STAGE_RIGHT) / 2f;
+        float centerModelY = (STAGE_TOP + visualBottom) / 2f;
+        transformLeft = getPaddingLeft() + availableWidth / 2f - centerModelX * transformScaleX + model.previewPanX;
+        transformTop = getPaddingTop() + availableHeight / 2f - centerModelY * transformScaleY + model.previewPanY;
     }
 
     private ThemeEditorModel.Key hit(float x, float y) {
-        if (model.previewPanel != ThemeEditorModel.PreviewPanel.KEYBOARD) return null;
+        if (model.previewPanel != ThemeEditorModel.PreviewPanel.KEYBOARD || usesPlaceholderKeyboard()) return null;
         updateTransform();
-        float modelX = (x - transformLeft) / transformScaleX, modelY = (y - transformTop) / transformScaleY - 8;
+        float modelX = (x - transformLeft) / transformScaleX, modelY = (y - transformTop) / transformScaleY;
         for (int i = model.keys.size() - 1; i >= 0; i--) {
             ThemeEditorModel.Key key = model.keys.get(i);
             if (modelX >= key.x && modelX <= key.x + key.width && modelY >= key.y && modelY <= key.y + key.height) return key;

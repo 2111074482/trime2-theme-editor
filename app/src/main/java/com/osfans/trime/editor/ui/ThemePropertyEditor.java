@@ -31,16 +31,17 @@ public final class ThemePropertyEditor extends LinearLayout {
     private final EditText label, click, longClick, swipeLeft, swipeRight, swipeUp, swipeDown, keyStyle, popup, x, y, width, height, fill, text;
 
     public ThemePropertyEditor(Context context) {
-        super(context); setOrientation(VERTICAL); setPadding(20, 16, 20, 16); setBackgroundColor(0xfffafafa);
+        super(context); setOrientation(VERTICAL); setPadding(dp(16), dp(12), dp(16), dp(16)); setBackgroundColor(0xff121726);
         title = text("Selected key", 17); addView(title, new LayoutParams(-1, -2));
         label = field("Display label", false); click = field("Click action", false); longClick = field("Long-click action", false); swipeLeft = field("Swipe left", false); swipeRight = field("Swipe right", false); swipeUp = field("Swipe up", false); swipeDown = field("Swipe down", false); keyStyle = field("Key style name", false); popup = field("Popup text or comma-separated items", false);
         x = field("X", true); y = field("Y", true); width = field("Width", true); height = field("Height", true); fill = field("Preview fill (style-controlled)", false); text = field("Preview text (style-controlled)", false); fill.setEnabled(false); text.setEnabled(false);
     }
-    private TextView text(String value, float size) { TextView view = new TextView(getContext()); view.setText(value); view.setTextSize(size); view.setTextColor(0xff263238); view.setGravity(Gravity.CENTER_VERTICAL); return view; }
+    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private TextView text(String value, float size) { TextView view = new TextView(getContext()); view.setText(value); view.setTextSize(size); view.setTextColor(0xfff4f6ff); view.setGravity(Gravity.CENTER_VERTICAL); return view; }
     private EditText field(String hint, boolean number) {
         EditText view = new EditText(getContext()); view.setHint(hint); view.setSingleLine(true); view.setContentDescription(hint + " property");
         if (number) view.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        LayoutParams params = new LayoutParams(-1, 48); params.topMargin = 4; addView(view, params);
+        LayoutParams params = new LayoutParams(-1, dp(44)); params.topMargin = dp(7); addView(view, params);
         view.addTextChangedListener(new android.text.TextWatcher() {
             public void beforeTextChanged(CharSequence value, int start, int count, int after) { }
             public void onTextChanged(CharSequence value, int start, int before, int count) { if (!binding) edited.add(view); }

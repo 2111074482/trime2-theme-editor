@@ -66,16 +66,16 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         });
         ViewCompat.requestApplyInsets(this);
 
-        Button appendSelectButton = action("Multi", "Toggle additive selection"); Button selectAllButton = action("All", "Select all keys"); Button invertButton = action("Invert", "Invert key selection"); Button rowButton = action("Row", "Select row"); Button batchButton = action("Batch...", "Batch edit selected keys"); Button clipboardButton = action("Clipboard...", "Internal editor clipboard"); Button rowManageButton = action("Rows...", "Manage rows");
-        Button previousPageButton = action("◀ Page", "Previous key map page"); Button nextPageButton = action("Page ▶", "Next key map page"); Button pageAddButton = action("+ Page", "Add key map page"); Button pageDeleteButton = action("− Page", "Delete key map page"); Button pageManageButton = action("Pages...", "Manage key map page");
-        Button flexButton = action("Flex", "Edit selected flex container"); Button flexManageButton = action("Flex...", "Manage flex containers"); Button absoluteButton = action("Keys...", "Absolute key tools");
-        Button previewButton = action("Preview", "Preview device settings"); Button stateButton = action("State...", "Detailed preview state"); Button eventButton = action("Event...", "Manage selected key events"); Button modeButton = action("中文", "Switch preview input mode"); Button candidateButton = action("Candidate", "Toggle candidate preview"); Button toolbarButton = action("Toolbar", "Toggle toolbar preview"); Button compositionButton = action("Compose", "Toggle composition preview"); Button pressedButton = action("Pressed", "Toggle pressed preview");
-        Button addButton = action("Key", "Add key"); Button duplicateButton = action("Copy", "Copy selected key"); Button deleteButton = action("Delete", "Delete selected key");
-        Button undoButton = action("↶", "Undo last change"); Button redoButton = action("↷", "Redo last change"); Button saveButton = action(wideLayout ? "Save theme" : "Save", "Save theme"); Button moreButton = action("⋯", "All editor operations");
+        Button appendSelectButton = action("多选", "切换追加选择"); Button selectAllButton = action("全选", "选择全部按键"); Button invertButton = action("反选", "反选按键"); Button rowButton = action("行", "选择当前行"); Button batchButton = action("批量...", "批量编辑所选按键"); Button clipboardButton = action("剪贴板...", "编辑器内部剪贴板"); Button rowManageButton = action("行管理...", "管理行(rows)");
+        Button previousPageButton = action("◀ 上一页", "上一按键映射页(key_maps)"); Button nextPageButton = action("下一页 ▶", "下一按键映射页(key_maps)"); Button pageAddButton = action("+ 新建页", "添加按键映射页(key_maps)"); Button pageDeleteButton = action("− 删除页", "删除按键映射页(key_maps)"); Button pageManageButton = action("页面...", "管理按键映射页(key_maps)");
+        Button flexButton = action("弹性盒", "编辑所选弹性容器(flex)"); Button flexManageButton = action("弹性盒...", "管理弹性容器(flex)"); Button absoluteButton = action("按键...", "绝对定位按键工具");
+        Button previewButton = action("预览", "预览设备设置"); Button stateButton = action("状态...", "详细预览状态"); Button eventButton = action("事件...", "管理所选按键事件"); Button modeButton = action("中文", "切换预览输入模式"); Button candidateButton = action("候选栏", "切换候选栏预览"); Button toolbarButton = action("工具栏", "切换工具栏预览"); Button compositionButton = action("组字", "切换组合窗预览"); Button pressedButton = action("按下", "切换按下状态预览");
+        Button addButton = action("按键", "添加按键"); Button duplicateButton = action("复制", "复制所选按键"); Button deleteButton = action("删除", "删除所选按键");
+        Button undoButton = action("↶", "撤销上次更改"); Button redoButton = action("↷", "重做上次更改"); Button saveButton = action(wideLayout ? "保存主题" : "保存", "保存主题"); Button moreButton = action("⋯", "全部编辑操作");
 
         LinearLayout topBar = panel(HORIZONTAL, 17); topBar.setGravity(Gravity.CENTER_VERTICAL); topBar.setPadding(dp(12), 0, dp(8), 0);
         TextView mark = label("T2", 14); mark.setGravity(Gravity.CENTER); mark.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); mark.setBackground(roundedBackground("#8b7cff", 10)); topBar.addView(mark, new LayoutParams(dp(34), dp(34)));
-        LinearLayout brand = new LinearLayout(context); brand.setOrientation(VERTICAL); brand.setGravity(Gravity.CENTER_VERTICAL); TextView brandName = label(wideLayout ? "Trime2 Studio" : "Trime2", 13); brandName.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView project = label(wideLayout ? "Theme workspace · ● Live" : "● Live", 9); project.setTextColor(Color.parseColor("#929bb3")); brand.addView(brandName); brand.addView(project); LayoutParams brandParams = new LayoutParams(0, -1, 1); brandParams.leftMargin = dp(10); topBar.addView(brand, brandParams);
+        LinearLayout brand = new LinearLayout(context); brand.setOrientation(VERTICAL); brand.setGravity(Gravity.CENTER_VERTICAL); TextView brandName = label(wideLayout ? "Trime2 主题工作台" : "Trime2", 13); brandName.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView project = label(wideLayout ? "主题工作台 · ● 实时" : "● 实时", 9); project.setTextColor(Color.parseColor("#929bb3")); brand.addView(brandName); brand.addView(project); LayoutParams brandParams = new LayoutParams(0, -1, 1); brandParams.leftMargin = dp(10); topBar.addView(brand, brandParams);
         styleTopAction(undoButton, false); styleTopAction(redoButton, false); styleTopAction(previewButton, false); styleTopAction(saveButton, true); styleTopAction(moreButton, false);
         topBar.addView(undoButton, topActionParams()); topBar.addView(redoButton, topActionParams());
         topBar.addView(previewButton, topActionParams()); topBar.addView(saveButton, new LayoutParams(dp(wideLayout ? 92 : 58), dp(38))); topBar.addView(moreButton, topActionParams());
@@ -84,18 +84,18 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         canvas = new ThemeKeyboardCanvas(context); canvas.setBackgroundColor(Color.parseColor("#080b13"));
         properties = new ThemePropertyEditor(context); themePropertyEditor(properties);
         ScrollView propertyScroll = new ScrollView(context); propertyScroll.setFillViewport(true); propertyScroll.addView(properties, new ScrollView.LayoutParams(-1, -2));
-        LinearLayout propertyContainer = panel(VERTICAL, 20); LinearLayout propertyHeader = new LinearLayout(context); propertyHeader.setGravity(Gravity.CENTER_VERTICAL); propertyHeader.setPadding(dp(16), 0, dp(8), 0); LinearLayout titles = new LinearLayout(context); titles.setOrientation(VERTICAL); titles.setGravity(Gravity.CENTER_VERTICAL); TextView propertyTitle = label("Inspector", 14); propertyTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView propertyHint = label("Selection properties", 9); propertyHint.setTextColor(Color.parseColor("#929bb3")); titles.addView(propertyTitle); titles.addView(propertyHint); propertyHeader.addView(titles, new LayoutParams(0, dp(54), 1)); Button closeProperties = action(wideLayout ? "‹" : "Close", "Close inspector"); styleTopAction(closeProperties, false); propertyHeader.addView(closeProperties, new LayoutParams(dp(wideLayout ? 40 : 64), dp(38))); propertyContainer.addView(propertyHeader, new LayoutParams(-1, dp(58))); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); propertyPanel = propertyContainer;
+        LinearLayout propertyContainer = panel(VERTICAL, 20); LinearLayout propertyHeader = new LinearLayout(context); propertyHeader.setGravity(Gravity.CENTER_VERTICAL); propertyHeader.setPadding(dp(16), 0, dp(8), 0); LinearLayout titles = new LinearLayout(context); titles.setOrientation(VERTICAL); titles.setGravity(Gravity.CENTER_VERTICAL); TextView propertyTitle = label("属性检查器", 14); propertyTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView propertyHint = label("所选对象属性", 9); propertyHint.setTextColor(Color.parseColor("#929bb3")); titles.addView(propertyTitle); titles.addView(propertyHint); propertyHeader.addView(titles, new LayoutParams(0, dp(54), 1)); Button closeProperties = action(wideLayout ? "‹" : "关闭", "关闭属性检查器"); styleTopAction(closeProperties, false); propertyHeader.addView(closeProperties, new LayoutParams(dp(wideLayout ? 40 : 64), dp(38))); propertyContainer.addView(propertyHeader, new LayoutParams(-1, dp(58))); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); propertyPanel = propertyContainer;
 
-        selectModeButton = action("Select", "Select and move objects"); panModeButton = action("Pan", "Pan canvas"); gridModeButton = action("Grid", "Toggle grid"); canvasPreviewButton = action("Preview", "Toggle clean preview");
+        selectModeButton = action("选择", "选择并移动对象"); panModeButton = action("平移", "平移画布"); gridModeButton = action("网格", "切换网格"); canvasPreviewButton = action("预览", "切换纯净预览");
         LinearLayout canvasTools = panel(HORIZONTAL, 11); canvasTools.setGravity(Gravity.CENTER); canvasTools.setPadding(dp(4), dp(4), dp(4), dp(4)); for (Button b : new Button[]{selectModeButton, panModeButton, gridModeButton, canvasPreviewButton}) { styleCanvasAction(b); canvasTools.addView(b, new LayoutParams(dp(64), dp(32))); }
-        contextBar = panel(HORIZONTAL, 11); contextBar.setGravity(Gravity.CENTER); contextBar.setPadding(dp(4), dp(3), dp(4), dp(3)); Button contextCopy = action("Copy", "Duplicate selection"); Button contextLeft = action("←", "Move selection left"); Button contextRight = action("→", "Move selection right"); Button contextStyle = action("Style", "Selected style actions"); Button contextDelete = action("Delete", "Delete selection"); for (Button b : new Button[]{contextCopy, contextLeft, contextRight, contextStyle, contextDelete}) { styleCanvasAction(b); contextBar.addView(b, new LayoutParams(dp(58), dp(30))); } contextBar.setVisibility(INVISIBLE);
+        contextBar = panel(HORIZONTAL, 11); contextBar.setGravity(Gravity.CENTER); contextBar.setPadding(dp(4), dp(3), dp(4), dp(3)); Button contextCopy = action("复制", "复制所选对象"); Button contextLeft = action("←", "向左移动所选对象"); Button contextRight = action("→", "向右移动所选对象"); Button contextStyle = action("样式", "所选样式操作"); Button contextDelete = action("删除", "删除所选对象"); for (Button b : new Button[]{contextCopy, contextLeft, contextRight, contextStyle, contextDelete}) { styleCanvasAction(b); contextBar.addView(b, new LayoutParams(dp(58), dp(30))); } contextBar.setVisibility(INVISIBLE);
 
-        LinearLayout previewStates = panel(VERTICAL, 15); previewStates.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView stateTitle = label("PREVIEW STATE", 9); stateTitle.setTextColor(Color.parseColor("#929bb3")); previewStates.addView(stateTitle, new LayoutParams(-1, dp(24))); LinearLayout stateRow1 = new LinearLayout(context), stateRow2 = new LinearLayout(context); Button chineseChip = chip("中文"), asciiChip = chip("ASCII"), composeChip = chip("Compose"), pagingChip = chip("Paging"), pressedChip = chip("Pressed"), detailChip = chip("More..."); for (Button b : new Button[]{chineseChip, asciiChip, composeChip}) stateRow1.addView(b, new LayoutParams(0, dp(30), 1)); for (Button b : new Button[]{pagingChip, pressedChip, detailChip}) stateRow2.addView(b, new LayoutParams(0, dp(30), 1)); previewStates.addView(stateRow1); previewStates.addView(stateRow2);
+        LinearLayout previewStates = panel(VERTICAL, 15); previewStates.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView stateTitle = label("预览状态", 9); stateTitle.setTextColor(Color.parseColor("#929bb3")); previewStates.addView(stateTitle, new LayoutParams(-1, dp(24))); LinearLayout stateRow1 = new LinearLayout(context), stateRow2 = new LinearLayout(context); Button chineseChip = chip("中文"), asciiChip = chip("ASCII"), composeChip = chip("组字"), pagingChip = chip("翻页"), pressedChip = chip("按下"), detailChip = chip("更多..."); for (Button b : new Button[]{chineseChip, asciiChip, composeChip}) stateRow1.addView(b, new LayoutParams(0, dp(30), 1)); for (Button b : new Button[]{pagingChip, pressedChip, detailChip}) stateRow2.addView(b, new LayoutParams(0, dp(30), 1)); previewStates.addView(stateRow1); previewStates.addView(stateRow2);
 
-        LinearLayout structurePanel = panel(VERTICAL, 15); structurePanel.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView structureTitle = label("STRUCTURE", 9); structureTitle.setTextColor(Color.parseColor("#929bb3")); structurePanel.addView(structureTitle, new LayoutParams(-1, dp(22))); LinearLayout tabs = new LinearLayout(context); statisticsTab = chip("Statistics"); layersTab = chip("Layers"); historyTab = chip("History"); tabs.addView(statisticsTab, new LayoutParams(0, dp(29), 1)); tabs.addView(layersTab, new LayoutParams(0, dp(29), 1)); tabs.addView(historyTab, new LayoutParams(0, dp(29), 1)); structurePanel.addView(tabs); structureContent = new LinearLayout(context); structureContent.setOrientation(VERTICAL); structurePanel.addView(structureContent, new LayoutParams(-1, -2));
+        LinearLayout structurePanel = panel(VERTICAL, 15); structurePanel.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView structureTitle = label("结构", 9); structureTitle.setTextColor(Color.parseColor("#929bb3")); structurePanel.addView(structureTitle, new LayoutParams(-1, dp(22))); LinearLayout tabs = new LinearLayout(context); statisticsTab = chip("统计"); layersTab = chip("图层"); historyTab = chip("历史"); tabs.addView(statisticsTab, new LayoutParams(0, dp(29), 1)); tabs.addView(layersTab, new LayoutParams(0, dp(29), 1)); tabs.addView(historyTab, new LayoutParams(0, dp(29), 1)); structurePanel.addView(tabs); structureContent = new LinearLayout(context); structureContent.setOrientation(VERTICAL); structurePanel.addView(structureContent, new LayoutParams(-1, -2));
         if (!wideLayout) { propertyContainer.removeView(propertyScroll); propertyContainer.addView(previewStates, new LayoutParams(-1, dp(102))); propertyContainer.addView(structurePanel, new LayoutParams(-1, -2)); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); }
 
-        LinearLayout toolbox = panel(wideLayout ? VERTICAL : HORIZONTAL, 20); toolbox.setGravity(Gravity.CENTER); toolbox.setPadding(dp(6), dp(6), dp(6), dp(6)); TextView toolboxTitle = label(wideLayout ? "COMPONENTS" : "", 8); toolboxTitle.setTextColor(Color.parseColor("#7f879c")); if (wideLayout) toolbox.addView(toolboxTitle, new LayoutParams(-1, dp(28))); Button propertiesButton = action("Inspect", "Open inspector"); for (Button b : new Button[]{appendSelectButton, addButton, rowButton, candidateButton, propertiesButton}) { styleCompactAction(b); toolbox.addView(b, wideLayout ? new LayoutParams(dp(68), dp(50)) : compactActionParams()); }
+        LinearLayout toolbox = panel(wideLayout ? VERTICAL : HORIZONTAL, 20); toolbox.setGravity(Gravity.CENTER); toolbox.setPadding(dp(6), dp(6), dp(6), dp(6)); TextView toolboxTitle = label(wideLayout ? "组件" : "", 8); toolboxTitle.setTextColor(Color.parseColor("#7f879c")); if (wideLayout) toolbox.addView(toolboxTitle, new LayoutParams(-1, dp(28))); Button propertiesButton = action("属性", "打开属性检查器"); for (Button b : new Button[]{appendSelectButton, addButton, rowButton, candidateButton, propertiesButton}) { styleCompactAction(b); toolbox.addView(b, wideLayout ? new LayoutParams(dp(68), dp(50)) : compactActionParams()); }
 
         FrameLayout stage = new FrameLayout(context); stage.setClipChildren(false); stage.addView(canvas, new FrameLayout.LayoutParams(-1, -1));
         FrameLayout.LayoutParams toolsParams = new FrameLayout.LayoutParams(dp(272), dp(40), Gravity.TOP | Gravity.CENTER_HORIZONTAL); toolsParams.topMargin = dp(4); stage.addView(canvasTools, toolsParams);
@@ -108,20 +108,20 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         addView(body, new LayoutParams(-1, 0, 1));
         if (!wideLayout) { HorizontalScrollView bottomScroll = new HorizontalScrollView(context); bottomScroll.setHorizontalScrollBarEnabled(false); bottomScroll.addView(toolbox, new HorizontalScrollView.LayoutParams(-2, dp(62))); LayoutParams bottomTools = new LayoutParams(-1, dp(66)); bottomTools.setMargins(dp(10), dp(3), dp(10), dp(3)); addView(bottomScroll, bottomTools); }
 
-        LinearLayout statusBar = panel(HORIZONTAL, 13); statusBar.setGravity(Gravity.CENTER_VERTICAL); statusBar.setPadding(dp(12), 0, dp(6), 0); status = label("All changes saved", 10); status.setTextColor(Color.parseColor("#8d95a9")); status.setSingleLine(true); status.setEllipsize(android.text.TextUtils.TruncateAt.END); statusBar.addView(status, new LayoutParams(0, -1, 1)); statusContext = label("", 9); statusContext.setTextColor(Color.parseColor("#697287")); if (wideLayout) statusBar.addView(statusContext, new LayoutParams(-2, -1)); Button zoomOut = action("−", "Zoom out"); Button zoomIn = action("+", "Zoom in"); Button fit = action("Fit", "Fit canvas"); zoomValue = label("100%", 10); zoomValue.setGravity(Gravity.CENTER); for (Button b : new Button[]{zoomOut, zoomIn, fit}) styleCanvasAction(b); statusBar.addView(zoomOut, new LayoutParams(dp(32), dp(30))); statusBar.addView(zoomValue, new LayoutParams(dp(48), dp(30))); statusBar.addView(zoomIn, new LayoutParams(dp(32), dp(30))); statusBar.addView(fit, new LayoutParams(dp(42), dp(30))); LayoutParams statusParams = new LayoutParams(-1, dp(42)); statusParams.setMargins(dp(wideLayout ? 120 : 10), dp(4), dp(wideLayout ? 340 : 10), dp(10)); addView(statusBar, statusParams);
+        LinearLayout statusBar = panel(HORIZONTAL, 13); statusBar.setGravity(Gravity.CENTER_VERTICAL); statusBar.setPadding(dp(12), 0, dp(6), 0); status = label("所有更改已保存", 10); status.setTextColor(Color.parseColor("#8d95a9")); status.setSingleLine(true); status.setEllipsize(android.text.TextUtils.TruncateAt.END); statusBar.addView(status, new LayoutParams(0, -1, 1)); statusContext = label("", 9); statusContext.setTextColor(Color.parseColor("#697287")); if (wideLayout) statusBar.addView(statusContext, new LayoutParams(-2, -1)); Button zoomOut = action("−", "缩小"); Button zoomIn = action("+", "放大"); Button fit = action("适应", "使画布适应窗口"); zoomValue = label("100%", 10); zoomValue.setGravity(Gravity.CENTER); for (Button b : new Button[]{zoomOut, zoomIn, fit}) styleCanvasAction(b); statusBar.addView(zoomOut, new LayoutParams(dp(32), dp(30))); statusBar.addView(zoomValue, new LayoutParams(dp(48), dp(30))); statusBar.addView(zoomIn, new LayoutParams(dp(32), dp(30))); statusBar.addView(fit, new LayoutParams(dp(42), dp(30))); LayoutParams statusParams = new LayoutParams(-1, dp(42)); statusParams.setMargins(dp(wideLayout ? 120 : 10), dp(4), dp(wideLayout ? 340 : 10), dp(10)); addView(statusBar, statusParams);
 
         final Button[] selectionActions = {appendSelectButton, selectAllButton, invertButton, rowButton, batchButton}; final Button[] structureActions = {addButton, duplicateButton, deleteButton, rowManageButton, flexButton, flexManageButton, absoluteButton}; final Button[] pageActions = {previousPageButton, nextPageButton, pageAddButton, pageDeleteButton, pageManageButton}; final Button[] previewActions = {previewButton, stateButton, eventButton, modeButton, candidateButton, toolbarButton, compositionButton, pressedButton}; final Button[] dataActions = {clipboardButton};
         moreButton.setOnClickListener(v -> showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions)); propertiesButton.setOnClickListener(v -> showProperties(true)); closeProperties.setOnClickListener(v -> showProperties(false));
-        appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ Multi" : "Multi"); setStatus(appendSelection ? "Additive selection enabled" : "Single selection enabled"); }); selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection()); rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
+        appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ 多选" : "多选"); setStatus(appendSelection ? "已启用追加选择" : "已启用单选"); }); selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection()); rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
         previousPageButton.setOnClickListener(v -> switchKeyMapPage(-1)); nextPageButton.setOnClickListener(v -> switchKeyMapPage(1)); pageAddButton.setOnClickListener(v -> addKeyMapPage()); pageDeleteButton.setOnClickListener(v -> deleteKeyMapPage()); pageManageButton.setOnClickListener(v -> manageKeyMapPage()); flexButton.setOnClickListener(v -> editSelectedFlex()); flexManageButton.setOnClickListener(v -> manageFlexContainers()); absoluteButton.setOnClickListener(v -> manageAbsoluteKeys());
-        previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("Select a key first"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
-        modeButton.setOnClickListener(v -> cycleInputMode(modeButton)); candidateButton.setOnClickListener(v -> toggleCandidate()); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("Toolbar preview " + (model.showToolbar ? "on" : "off")); }); compositionButton.setOnClickListener(v -> toggleComposition()); pressedButton.setOnClickListener(v -> togglePressed());
-        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); dirty = false; setStatus("All changes saved"); });
+        previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("请先选择按键"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
+        modeButton.setOnClickListener(v -> cycleInputMode(modeButton)); candidateButton.setOnClickListener(v -> toggleCandidate()); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); }); compositionButton.setOnClickListener(v -> toggleComposition()); pressedButton.setOnClickListener(v -> togglePressed());
+        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); dirty = false; setStatus("所有更改已保存"); });
         contextCopy.setOnClickListener(v -> duplicateSelected()); contextLeft.setOnClickListener(v -> moveSelection(-1)); contextRight.setOnClickListener(v -> moveSelection(1)); contextStyle.setOnClickListener(v -> showStyleActions()); contextDelete.setOnClickListener(v -> deleteSelected());
         selectModeButton.setOnClickListener(v -> setCanvasMode("select")); panModeButton.setOnClickListener(v -> setCanvasMode("pan")); gridModeButton.setOnClickListener(v -> toggleGrid()); canvasPreviewButton.setOnClickListener(v -> toggleCanvasPreview()); zoomOut.setOnClickListener(v -> setCanvasZoom(model.previewZoom - .1f)); zoomIn.setOnClickListener(v -> setCanvasZoom(model.previewZoom + .1f)); fit.setOnClickListener(v -> fitCanvas());
-        chineseChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.CHINESE; canvas.invalidate(); setStatus("Preview state: Chinese"); }); asciiChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.ASCII; canvas.invalidate(); setStatus("Preview state: ASCII"); }); composeChip.setOnClickListener(v -> toggleComposition()); pagingChip.setOnClickListener(v -> { model.previewPaging = !model.previewPaging; canvas.invalidate(); setStatus("Paging state " + (model.previewPaging ? "on" : "off")); }); pressedChip.setOnClickListener(v -> togglePressed()); detailChip.setOnClickListener(v -> showPreviewState()); statisticsTab.setOnClickListener(v -> showStructurePage(0)); layersTab.setOnClickListener(v -> showStructurePage(1)); historyTab.setOnClickListener(v -> showStructurePage(2));
-        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; contextBar.setVisibility(key == null && model.selectedIds.isEmpty() ? INVISIBLE : VISIBLE); setStatus(key == null ? "No selection" : selectedKeys().size() > 1 ? "Selected " + selectedKeys().size() + " keys" : "Selected " + key.label); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("Moving selection"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } });
-        properties.setListener(new ThemePropertyEditor.Listener() { public void onPropertyChangeStarted() { changeStarted(); } public void onPropertyChanged() { canvas.invalidate(); dirty = true; setStatus("Edited " + (canvas.getSelectedKey() == null ? "theme" : canvas.getSelectedKey().label)); if (callbacks != null) callbacks.onModelChanged(model.copy()); } });
+        chineseChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.CHINESE; canvas.invalidate(); setStatus("预览状态:中文"); }); asciiChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.ASCII; canvas.invalidate(); setStatus("预览状态:ASCII"); }); composeChip.setOnClickListener(v -> toggleComposition()); pagingChip.setOnClickListener(v -> { model.previewPaging = !model.previewPaging; canvas.invalidate(); setStatus("翻页状态已" + (model.previewPaging ? "开启" : "关闭")); }); pressedChip.setOnClickListener(v -> togglePressed()); detailChip.setOnClickListener(v -> showPreviewState()); statisticsTab.setOnClickListener(v -> showStructurePage(0)); layersTab.setOnClickListener(v -> showStructurePage(1)); historyTab.setOnClickListener(v -> showStructurePage(2));
+        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; contextBar.setVisibility(key == null && model.selectedIds.isEmpty() ? INVISIBLE : VISIBLE); setStatus(key == null ? "未选择" : selectedKeys().size() > 1 ? "已选择 " + selectedKeys().size() + " 个按键" : "已选择 " + key.label); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("正在移动所选对象"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } });
+        properties.setListener(new ThemePropertyEditor.Listener() { public void onPropertyChangeStarted() { changeStarted(); } public void onPropertyChanged() { canvas.invalidate(); dirty = true; setStatus("已编辑 " + (canvas.getSelectedKey() == null ? "主题" : canvas.getSelectedKey().label)); if (callbacks != null) callbacks.onModelChanged(model.copy()); } });
         setModel(ThemeEditorModel.sample()); setCanvasMode("select"); showStructurePage(0);
     }
 
@@ -142,90 +142,108 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
     private void setCanvasMode(String mode) {
         canvasMode = mode; canvasCommand("setInteractionMode", String.class, mode); canvasCommand("setCanvasMode", String.class, mode);
-        boolean select = "select".equals(mode); selectModeButton.setText(select ? "✓ Select" : "Select"); panModeButton.setText(select ? "Pan" : "✓ Pan");
-        canvas.setReadOnly(readOnly || !select); setStatus(select ? "Select mode" : "Pan canvas mode");
+        boolean select = "select".equals(mode); selectModeButton.setText(select ? "✓ 选择" : "选择"); panModeButton.setText(select ? "平移" : "✓ 平移");
+        canvas.setReadOnly(readOnly || !select); setStatus(select ? "选择模式" : "画布平移模式");
     }
-    private void toggleGrid() { gridVisible = !gridVisible; canvasCommand("setGridVisible", boolean.class, gridVisible); gridModeButton.setText(gridVisible ? "✓ Grid" : "Grid"); setStatus("Grid " + (gridVisible ? "visible" : "hidden")); }
-    private void toggleCanvasPreview() { canvasPreviewMode = !canvasPreviewMode; canvasCommand("setPreviewMode", boolean.class, canvasPreviewMode); canvasPreviewButton.setText(canvasPreviewMode ? "✓ Preview" : "Preview"); contextBar.setVisibility(canvasPreviewMode ? INVISIBLE : selectedKeys().isEmpty() ? INVISIBLE : VISIBLE); setStatus(canvasPreviewMode ? "Clean preview mode" : "Editor preview mode"); }
-    private void setCanvasZoom(float zoom) { model.previewZoom = Math.max(.5f, Math.min(4f, zoom)); canvasCommand("setZoom", float.class, model.previewZoom); canvas.invalidate(); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); setStatus("Zoom " + zoomValue.getText()); }
-    private void fitCanvas() { model.previewZoom = 1f; model.previewPanX = 0; model.previewPanY = 0; canvasCommand("fitToViewport", boolean.class, true); canvas.invalidate(); zoomValue.setText("100%"); setStatus("Canvas fitted"); }
+    private void toggleGrid() { gridVisible = !gridVisible; canvasCommand("setGridVisible", boolean.class, gridVisible); gridModeButton.setText(gridVisible ? "✓ 网格" : "网格"); setStatus("网格已" + (gridVisible ? "显示" : "隐藏")); }
+    private void toggleCanvasPreview() { canvasPreviewMode = !canvasPreviewMode; canvasCommand("setPreviewMode", boolean.class, canvasPreviewMode); canvasPreviewButton.setText(canvasPreviewMode ? "✓ 预览" : "预览"); contextBar.setVisibility(canvasPreviewMode ? INVISIBLE : selectedKeys().isEmpty() ? INVISIBLE : VISIBLE); setStatus(canvasPreviewMode ? "纯净预览模式" : "编辑器预览模式"); }
+    private void setCanvasZoom(float zoom) { model.previewZoom = Math.max(.5f, Math.min(4f, zoom)); canvasCommand("setZoom", float.class, model.previewZoom); canvas.invalidate(); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); setStatus("缩放至 " + zoomValue.getText()); }
+    private void fitCanvas() { model.previewZoom = 1f; model.previewPanX = 0; model.previewPanY = 0; canvasCommand("fitToViewport", boolean.class, true); canvas.invalidate(); zoomValue.setText("100%"); setStatus("画布已适应窗口"); }
 
-    private void cycleInputMode(Button source) { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; source.setText(model.inputMode.name()); canvas.invalidate(); setStatus("Preview mode: " + model.inputMode.name()); }
-    private void toggleCandidate() { model.showCandidate = !model.showCandidate; canvas.invalidate(); setStatus("Candidate preview " + (model.showCandidate ? "on" : "off")); }
-    private void toggleComposition() { model.showComposition = !model.showComposition; canvas.invalidate(); setStatus("Composition preview " + (model.showComposition ? "on" : "off")); }
-    private void togglePressed() { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); setStatus("Pressed preview " + (model.pressedPreview ? "on" : "off")); }
+    private void cycleInputMode(Button source) { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; source.setText(model.inputMode.name()); canvas.invalidate(); setStatus("预览输入模式:" + model.inputMode.name()); }
+    private void toggleCandidate() { model.showCandidate = !model.showCandidate; canvas.invalidate(); setStatus("候选栏预览已" + (model.showCandidate ? "开启" : "关闭")); }
+    private void toggleComposition() { model.showComposition = !model.showComposition; canvas.invalidate(); setStatus("组合窗预览已" + (model.showComposition ? "开启" : "关闭")); }
+    private void togglePressed() { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); setStatus("按下状态预览已" + (model.pressedPreview ? "开启" : "关闭")); }
 
     private void moveSelection(int direction) {
-        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
         if (!changeStarted()) return;
         if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) for (ThemeEditorModel.Key key : keys) if (!key.editorLocked) { key.x += direction; clampAbsolute(key); }
         else { ThemeEditorModel.Key primary = canvas.getSelectedKey(); int from = model.keys.indexOf(primary), to = Math.max(0, Math.min(model.keys.size() - 1, from + direction)); if (from >= 0 && from != to) java.util.Collections.swap(model.keys, from, to); }
-        persistCurrentKeyMapPage(); notifyModelChanged(direction < 0 ? "Moved selection left" : "Moved selection right");
+        persistCurrentKeyMapPage(); notifyModelChanged(direction < 0 ? "已向左移动所选对象" : "已向右移动所选对象");
     }
     private void showStyleActions() {
-        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("Select a key first"); return; }
-        String[] actions = {"Copy complete style", "Paste style", "Batch style...", "Edit style reference in Inspector"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Style · " + key.label).setItems(actions, (dialog, which) -> {
+        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("请先选择按键"); return; }
+        String[] actions = {"复制完整样式", "粘贴样式", "批量样式...", "在属性检查器中编辑样式引用"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("样式 · " + key.label).setItems(actions, (dialog, which) -> {
             if (which == 0) copySelectedStyle(); else if (which == 1) pasteClipboard(); else if (which == 2) showBatchEditor(); else showProperties(true);
-        }).setNegativeButton("Close", null).show();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private void showStructurePage(int page) {
-        structurePage = page; statisticsTab.setText(page == 0 ? "✓ Statistics" : "Statistics"); layersTab.setText(page == 1 ? "✓ Layers" : "Layers"); historyTab.setText(page == 2 ? "✓ History" : "History"); refreshStructurePanel();
+        structurePage = page; statisticsTab.setText(page == 0 ? "✓ 统计" : "统计"); layersTab.setText(page == 1 ? "✓ 图层" : "图层"); historyTab.setText(page == 2 ? "✓ 历史" : "历史"); refreshStructurePanel();
+    }
+    private String layoutName() {
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) return "行布局(rows)";
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) return "弹性盒(flex_box)";
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) return "按键映射(key_maps)";
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) return "绝对定位按键(absolute_keys)";
+        return "无布局(none)";
     }
     private void refreshStructurePanel() {
         if (structureContent == null || model == null) return; structureContent.removeAllViews();
         if (structurePage == 0) {
-            addStructureRow("Layout", model.layoutMode.name().toLowerCase(java.util.Locale.ROOT)); addStructureRow("Keys", String.valueOf(model.keys.size())); addStructureRow("Selected", String.valueOf(selectedKeys().size()));
-            int groups = model.layoutMode == ThemeEditorModel.LayoutMode.ROWS ? model.rows.size() : model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX ? model.flexContainers.size() : model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS ? model.keyMapPages.size() : 0; addStructureRow("Groups", String.valueOf(groups)); addStructureRow("Preview", Math.round(model.previewWidth) + "×" + Math.round(model.previewHeight));
+            addStructureRow("布局", layoutName()); addStructureRow("按键数", String.valueOf(model.keys.size())); addStructureRow("已选择", String.valueOf(selectedKeys().size()));
+            int groups = model.layoutMode == ThemeEditorModel.LayoutMode.ROWS ? model.rows.size() : model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX ? model.flexContainers.size() : model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS ? model.keyMapPages.size() : 0; addStructureRow("分组数", String.valueOf(groups)); addStructureRow("预览尺寸", Math.round(model.previewWidth) + "×" + Math.round(model.previewHeight));
         } else if (structurePage == 1) {
-            addStructureRow("Candidate", model.showCandidate ? "visible" : "hidden"); addStructureRow("Toolbar", model.showToolbar ? "visible" : "hidden"); addStructureRow("Composition", model.showComposition ? "visible" : "hidden");
-            if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) for (ThemeEditorModel.Row row : model.rows) addStructureRow("↳ " + row.id, countOwner(row.id) + " keys");
-            else if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) for (ThemeEditorModel.FlexContainer flex : model.flexContainers) addStructureRow("↳ " + flex.id, countOwner(flex.id) + " keys");
-            else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) for (int i = 0; i < model.keyMapPages.size(); i++) addStructureRow((i == model.selectedKeyMapPage ? "● " : "↳ ") + model.keyMapPages.get(i).name, model.keyMapPages.get(i).keys.size() + " keys");
-        } else { addStructureRow("Current state", dirty ? "modified" : "saved"); addStructureRow("Undo steps", String.valueOf(undo.size())); addStructureRow("Redo steps", String.valueOf(redo.size())); ThemeEditorModel.Key key = canvas.getSelectedKey(); addStructureRow("Selection", key == null ? "none" : key.label); }
+            addStructureAction("候选栏", model.showCandidate ? "显示" : "隐藏", v -> toggleCandidate());
+            addStructureAction("工具栏", model.showToolbar ? "显示" : "隐藏", v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("工具栏预览已" + (model.showToolbar ? "开启" : "关闭")); });
+            addStructureAction("组合窗", model.showComposition ? "显示" : "隐藏", v -> toggleComposition());
+            if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) for (ThemeEditorModel.Row row : model.rows) addStructureAction("↳ 行(rows):" + row.id, countOwner(row.id) + " 个按键", v -> selectOwner(row.id));
+            else if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) for (ThemeEditorModel.FlexContainer flex : model.flexContainers) addStructureAction("↳ 弹性容器(flex):" + flex.id, countOwner(flex.id) + " 个按键", v -> { model.selectedFlexContainerId = flex.id; selectOwner(flex.id); });
+            else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) for (int i = 0; i < model.keyMapPages.size(); i++) { final int page = i; ThemeEditorModel.KeyMapPage item = model.keyMapPages.get(i); addStructureAction((i == model.selectedKeyMapPage ? "● " : "↳ ") + "按键映射页(key_maps):" + item.name, item.keys.size() + " 个按键", v -> selectKeyMapPage(page)); }
+        } else {
+            addStructureRow("当前状态", dirty ? "已修改" : "已保存");
+            addStructureAction("可撤销步骤", String.valueOf(undo.size()), v -> undo());
+            addStructureAction("可重做步骤", String.valueOf(redo.size()), v -> redo());
+            ThemeEditorModel.Key key = canvas.getSelectedKey(); addStructureRow("当前选择", key == null ? "无" : key.label);
+            Button undoAction = action("撤销", "撤销最近一次真实更改"); Button redoAction = action("重做", "重做最近一次真实更改"); styleCanvasAction(undoAction); styleCanvasAction(redoAction); undoAction.setEnabled(!undo.isEmpty() && !readOnly); redoAction.setEnabled(!redo.isEmpty() && !readOnly); undoAction.setOnClickListener(v -> undo()); redoAction.setOnClickListener(v -> redo()); LinearLayout actions = new LinearLayout(getContext()); actions.addView(undoAction, new LayoutParams(0, dp(32), 1)); actions.addView(redoAction, new LayoutParams(0, dp(32), 1)); structureContent.addView(actions);
+        }
     }
+    private void selectOwner(String owner) { ThemeEditorModel.Key first = null; model.selectedIds.clear(); for (ThemeEditorModel.Key key : model.keys) if (owner.equals(key.ownerId)) { model.selectedIds.add(key.id); if (first == null) first = key; } canvas.setModel(model); refreshSelectionEditor(first); setStatus(first == null ? "该结构中没有按键" : "已定位并选择 " + model.selectedIds.size() + " 个按键"); }
+    private void selectKeyMapPage(int page) { if (page < 0 || page >= model.keyMapPages.size()) return; persistCurrentKeyMapPage(); model.selectedKeyMapPage = page; model.keys.clear(); for (ThemeEditorModel.Key key : model.keyMapPages.get(page).keys) model.keys.add(key.copy()); model.selectedIds.clear(); canvas.setModel(model); ThemeEditorModel.Key first = model.keys.isEmpty() ? null : model.keys.get(0); if (first != null) model.selectedIds.add(first.id); refreshSelectionEditor(first); setStatus("已切换到按键映射页(key_maps):" + model.keyMapPages.get(page).name); }
     private int countOwner(String owner) { int count = 0; for (ThemeEditorModel.Key key : model.keys) if (owner.equals(key.ownerId)) count++; return count; }
-    private void addStructureRow(String name, String value) { LinearLayout row = new LinearLayout(getContext()); row.setGravity(Gravity.CENTER_VERTICAL); TextView left = label(name, 9), right = label(value, 9); left.setTextColor(Color.parseColor("#858da1")); right.setTextColor(Color.parseColor("#c7cedc")); right.setGravity(Gravity.END | Gravity.CENTER_VERTICAL); row.addView(left, new LayoutParams(0, dp(25), 1)); row.addView(right, new LayoutParams(-2, dp(25))); structureContent.addView(row); }
+    private void addStructureRow(String name, String value) { addStructureAction(name, value, null); }
+    private void addStructureAction(String name, String value, View.OnClickListener listener) { LinearLayout row = new LinearLayout(getContext()); row.setGravity(Gravity.CENTER_VERTICAL); TextView left = label(name, 9), right = label(value, 9); left.setTextColor(Color.parseColor("#858da1")); right.setTextColor(Color.parseColor("#c7cedc")); right.setGravity(Gravity.END | Gravity.CENTER_VERTICAL); row.addView(left, new LayoutParams(0, dp(25), 1)); row.addView(right, new LayoutParams(-2, dp(25))); if (listener != null) { row.setOnClickListener(listener); row.setClickable(true); row.setContentDescription(name + ",当前" + value + ",点击操作"); } structureContent.addView(row); }
 
     private void showPreviewState() {
         LinearLayout fields = new LinearLayout(getContext()); fields.setOrientation(VERTICAL); fields.setPadding(24, 8, 24, 8);
-        android.widget.EditText candidateCount = dialogField(fields, "Candidate count 0..20", String.valueOf(model.candidateCount)); android.widget.EditText composition = dialogField(fields, "Composition text", model.compositionText); android.widget.EditText action = dialogField(fields, "Editor action label", model.editorActionLabel); android.widget.EditText schema = dialogField(fields, "Schema name", model.schemaName);
-        android.widget.CheckBox comments = new android.widget.CheckBox(getContext()); comments.setText("Candidate comments"); comments.setChecked(model.candidateComments); fields.addView(comments); android.widget.CheckBox paging = new android.widget.CheckBox(getContext()); paging.setText("Paging state"); paging.setChecked(model.previewPaging); fields.addView(paging); android.widget.CheckBox menu = new android.widget.CheckBox(getContext()); menu.setText("Has menu state"); menu.setChecked(model.previewHasMenu); fields.addView(menu);
-        android.widget.Spinner panel = new android.widget.Spinner(getContext()); panel.setAdapter(new android.widget.ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, new String[]{"Keyboard", "Expanded candidates", "Symbol panel", "Clipboard panel"})); panel.setSelection(model.previewPanel.ordinal()); fields.addView(panel);
+        android.widget.EditText candidateCount = dialogField(fields, "候选数量(0~20)", String.valueOf(model.candidateCount)); android.widget.EditText composition = dialogField(fields, "组合窗文本", model.compositionText); android.widget.EditText action = dialogField(fields, "编辑器动作标签", model.editorActionLabel); android.widget.EditText schema = dialogField(fields, "方案名称", model.schemaName);
+        android.widget.CheckBox comments = new android.widget.CheckBox(getContext()); comments.setText("候选注释"); comments.setChecked(model.candidateComments); fields.addView(comments); android.widget.CheckBox paging = new android.widget.CheckBox(getContext()); paging.setText("翻页状态"); paging.setChecked(model.previewPaging); fields.addView(paging); android.widget.CheckBox menu = new android.widget.CheckBox(getContext()); menu.setText("存在菜单状态"); menu.setChecked(model.previewHasMenu); fields.addView(menu);
+        android.widget.Spinner panel = new android.widget.Spinner(getContext()); panel.setAdapter(new android.widget.ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, new String[]{"键盘", "展开候选", "符号面板", "剪贴板面板"})); panel.setSelection(model.previewPanel.ordinal()); fields.addView(panel);
         android.widget.ScrollView scroll = new android.widget.ScrollView(getContext()); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Preview state").setView(scroll).setNegativeButton("Cancel", null).setNeutralButton("Reset", (dialog, which) -> { model.candidateCount = 4; model.candidateComments = false; model.previewPaging = false; model.previewHasMenu = false; model.compositionText = "拼音"; model.editorActionLabel = "Enter"; model.schemaName = "方案"; model.previewPanel = ThemeEditorModel.PreviewPanel.KEYBOARD; canvas.invalidate(); setStatus("Preview state reset; theme unchanged"); }).setPositiveButton("Apply", (dialog, which) -> { model.candidateCount = Math.max(0, Math.min(20, (int) parseFloat(candidateCount, model.candidateCount))); model.candidateComments = comments.isChecked(); model.previewPaging = paging.isChecked(); model.previewHasMenu = menu.isChecked(); model.compositionText = composition.getText().toString(); model.editorActionLabel = action.getText().toString(); model.schemaName = schema.getText().toString(); model.previewPanel = ThemeEditorModel.PreviewPanel.values()[panel.getSelectedItemPosition()]; canvas.invalidate(); setStatus("Preview state applied; theme unchanged"); }).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("预览状态").setView(scroll).setNegativeButton("取消", null).setNeutralButton("重置", (dialog, which) -> { model.candidateCount = 4; model.candidateComments = false; model.previewPaging = false; model.previewHasMenu = false; model.compositionText = "拼音"; model.editorActionLabel = "回车"; model.schemaName = "方案"; model.previewPanel = ThemeEditorModel.PreviewPanel.KEYBOARD; canvas.invalidate(); setStatus("预览状态已重置;主题未更改"); }).setPositiveButton("应用", (dialog, which) -> { model.candidateCount = Math.max(0, Math.min(20, (int) parseFloat(candidateCount, model.candidateCount))); model.candidateComments = comments.isChecked(); model.previewPaging = paging.isChecked(); model.previewHasMenu = menu.isChecked(); model.compositionText = composition.getText().toString(); model.editorActionLabel = action.getText().toString(); model.schemaName = schema.getText().toString(); model.previewPanel = ThemeEditorModel.PreviewPanel.values()[panel.getSelectedItemPosition()]; canvas.invalidate(); setStatus("预览状态已应用;主题未更改"); }).show();
     }
 
     private void showSelectedEventPreview() {
-        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("Select a key first"); return; }
-        String[] labels = {"Click: " + eventName(key.click), "Long click: " + eventName(key.longClick), "Swipe left: " + eventName(key.swipeLeft), "Swipe right: " + eventName(key.swipeRight), "Swipe up: " + eventName(key.swipeUp), "Swipe down: " + eventName(key.swipeDown)};
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Simulate literal key event").setItems(labels, (dialog, which) -> { String value = which == 0 ? key.click : which == 1 ? key.longClick : which == 2 ? key.swipeLeft : which == 3 ? key.swipeRight : which == 4 ? key.swipeUp : key.swipeDown; setStatus(value.isEmpty() ? "No literal event assigned" : "Simulated event label: " + value + "; commands and scripts were not executed"); }).setNegativeButton("Close", null).show();
+        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("请先选择按键"); return; }
+        String[] labels = {"点击:" + eventName(key.click), "长按:" + eventName(key.longClick), "左滑:" + eventName(key.swipeLeft), "右滑:" + eventName(key.swipeRight), "上滑:" + eventName(key.swipeUp), "下滑:" + eventName(key.swipeDown)};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("模拟字面按键事件").setItems(labels, (dialog, which) -> { String value = which == 0 ? key.click : which == 1 ? key.longClick : which == 2 ? key.swipeLeft : which == 3 ? key.swipeRight : which == 4 ? key.swipeUp : key.swipeDown; setStatus(value.isEmpty() ? "未指定字面事件" : "已模拟事件标签:" + value + ";未执行命令和脚本"); }).setNegativeButton("关闭", null).show();
     }
-    private static String eventName(String value) { return value == null || value.isEmpty() ? "(none)" : value; }
+    private static String eventName(String value) { return value == null || value.isEmpty() ? "(无)" : value; }
 
     private void showPreviewSettings() {
         LinearLayout fields = new LinearLayout(getContext()); fields.setOrientation(VERTICAL); fields.setPadding(24, 8, 24, 8);
-        android.widget.EditText width = dialogField(fields, "Preview width dp", String.valueOf(model.previewWidth)); android.widget.EditText height = dialogField(fields, "Preview height dp", String.valueOf(model.previewHeight)); android.widget.EditText zoom = dialogField(fields, "Zoom 0.5 to 4", String.valueOf(model.previewZoom)); android.widget.EditText panX = dialogField(fields, "Pan X px", String.valueOf(model.previewPanX)); android.widget.EditText panY = dialogField(fields, "Pan Y px", String.valueOf(model.previewPanY));
-        String[] presets = {"Phone portrait 360×300", "Phone landscape 720×260", "Tablet portrait 600×420", "Tablet landscape 960×360", "Custom values", "Reset zoom and pan"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Preview device").setSingleChoiceItems(presets, 4, (dialog, which) -> {
+        android.widget.EditText width = dialogField(fields, "预览宽度(dp)", String.valueOf(model.previewWidth)); android.widget.EditText height = dialogField(fields, "预览高度(dp)", String.valueOf(model.previewHeight)); android.widget.EditText zoom = dialogField(fields, "缩放(0.5~4)", String.valueOf(model.previewZoom)); android.widget.EditText panX = dialogField(fields, "水平平移(px)", String.valueOf(model.previewPanX)); android.widget.EditText panY = dialogField(fields, "垂直平移(px)", String.valueOf(model.previewPanY));
+        String[] presets = {"手机竖屏 360×300", "手机横屏 720×260", "平板竖屏 600×420", "平板横屏 960×360", "自定义值", "重置缩放和平移"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("预览设备").setSingleChoiceItems(presets, 4, (dialog, which) -> {
             if (which == 0) { width.setText("360"); height.setText("300"); } else if (which == 1) { width.setText("720"); height.setText("260"); } else if (which == 2) { width.setText("600"); height.setText("420"); } else if (which == 3) { width.setText("960"); height.setText("360"); } else if (which == 5) { zoom.setText("1"); panX.setText("0"); panY.setText("0"); }
-        }).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
-            model.previewWidth = Math.max(120, parseFloat(width, model.previewWidth)); model.previewHeight = Math.max(100, parseFloat(height, model.previewHeight)); model.previewZoom = Math.max(.5f, Math.min(4f, parseFloat(zoom, model.previewZoom))); model.previewPanX = parseFloat(panX, model.previewPanX); model.previewPanY = parseFloat(panY, model.previewPanY); canvas.invalidate(); setStatus("Preview " + (int) model.previewWidth + "×" + (int) model.previewHeight + " at " + trimPreview(model.previewZoom) + "×; theme unchanged");
+        }).setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
+            model.previewWidth = Math.max(120, parseFloat(width, model.previewWidth)); model.previewHeight = Math.max(100, parseFloat(height, model.previewHeight)); model.previewZoom = Math.max(.5f, Math.min(4f, parseFloat(zoom, model.previewZoom))); model.previewPanX = parseFloat(panX, model.previewPanX); model.previewPanY = parseFloat(panY, model.previewPanY); canvas.invalidate(); setStatus("预览 " + (int) model.previewWidth + "×" + (int) model.previewHeight + ",缩放 " + trimPreview(model.previewZoom) + "×;主题未更改");
         }).show();
     }
     private static String trimPreview(float value) { return value == (int) value ? Integer.toString((int) value) : Float.toString(value); }
 
     private void switchKeyMapPage(int delta) {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("This is not a key_maps keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("当前不是按键映射(key_maps)键盘"); return; }
         persistCurrentKeyMapPage();
         int count = model.keyMapPages.size();
         model.selectedKeyMapPage = (model.selectedKeyMapPage + delta + count) % count;
         model.keys.clear();
         for (ThemeEditorModel.Key key : model.keyMapPages.get(model.selectedKeyMapPage).keys) model.keys.add(key.copy());
         model.selectedIds.clear(); canvas.setModel(model); canvas.setSelectedKey(null); properties.bind(null);
-        setStatus("Page " + (model.selectedKeyMapPage + 1) + ": " + model.keyMapPages.get(model.selectedKeyMapPage).name);
+        setStatus("页面 " + (model.selectedKeyMapPage + 1) + ":" + model.keyMapPages.get(model.selectedKeyMapPage).name);
     }
 
     private void persistCurrentKeyMapPage() {
@@ -237,48 +255,48 @@ public final class ThemeEditorWorkspace extends LinearLayout {
 
     private void addKeyMapPage() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS) { setStatus("This is not a key_maps keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS) { setStatus("当前不是按键映射(key_maps)键盘"); return; }
         if (!changeStarted()) return; persistCurrentKeyMapPage();
-        ThemeEditorModel.KeyMapPage page = new ThemeEditorModel.KeyMapPage("key_map_new_" + model.keyMapPages.size(), "Page " + (model.keyMapPages.size() + 1));
+        ThemeEditorModel.KeyMapPage page = new ThemeEditorModel.KeyMapPage("key_map_new_" + model.keyMapPages.size(), "页面 " + (model.keyMapPages.size() + 1));
         model.keyMapPages.add(page); model.selectedKeyMapPage = model.keyMapPages.size() - 1; model.keys.clear(); model.selectedIds.clear(); canvas.setSelectedKey(null); properties.bind(null); canvas.setModel(model);
-        if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus("Added symbol page");
+        if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus("已添加符号页");
     }
 
     private void deleteKeyMapPage() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.size() <= 1) { setStatus("At least one symbol page is required"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.size() <= 1) { setStatus("至少需要一个符号页"); return; }
         if (!changeStarted()) return; model.keyMapPages.remove(model.selectedKeyMapPage); model.selectedKeyMapPage = Math.min(model.selectedKeyMapPage, model.keyMapPages.size() - 1);
         model.keys.clear(); for (ThemeEditorModel.Key key : model.keyMapPages.get(model.selectedKeyMapPage).keys) model.keys.add(key.copy()); model.selectedIds.clear(); canvas.setSelectedKey(null); properties.bind(null); canvas.setModel(model);
-        if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus("Deleted symbol page");
+        if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus("已删除符号页");
     }
 
     private void manageKeyMapPage() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("This is not a key_maps keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("当前不是按键映射(key_maps)键盘"); return; }
         persistCurrentKeyMapPage(); ThemeEditorModel.KeyMapPage page = model.keyMapPages.get(model.selectedKeyMapPage);
-        String[] actions = {"Rename", "Duplicate", "Move before", "Move after", "Append characters or actions", "Remove duplicate keys"};
+        String[] actions = {"重命名", "复制", "前移", "后移", "追加字符或动作", "移除重复按键"};
         new android.app.AlertDialog.Builder(getContext()).setTitle(page.name).setItems(actions, (dialog, which) -> {
             if (which == 0) renameKeyMapPage(page); else if (which == 1) duplicateKeyMapPage(page); else if (which == 2 || which == 3) moveKeyMapPage(which == 2 ? -1 : 1); else if (which == 4) appendKeyMapItems(page); else removeDuplicateKeyMapItems(page);
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton("取消", null).show();
     }
 
     private void appendKeyMapItems(ThemeEditorModel.KeyMapPage page) {
-        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText input = dialogField(fields, "Characters, or comma/newline-separated actions", ""); input.setSingleLine(false); input.setMinLines(3);
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Append symbol keys").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Append", (dialog, which) -> {
+        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText input = dialogField(fields, "字符,或使用逗号/换行分隔的动作", ""); input.setSingleLine(false); input.setMinLines(3);
+        new android.app.AlertDialog.Builder(getContext()).setTitle("追加符号按键").setView(fields).setNegativeButton("取消", null).setPositiveButton("追加", (dialog, which) -> {
             String value = input.getText().toString(); if (value.trim().isEmpty() || !changeStarted()) return; persistCurrentKeyMapPage();
             java.util.ArrayList<String> items = new java.util.ArrayList<>();
             if (value.contains(",") || value.contains("\n")) for (String item : value.split("[,\n]")) { String trimmed = item.trim(); if (!trimmed.isEmpty()) items.add(trimmed); }
             else { int offset = 0; while (offset < value.length()) { int codePoint = value.codePointAt(offset); items.add(new String(Character.toChars(codePoint))); offset += Character.charCount(codePoint); } }
             for (String item : items) { ThemeEditorModel.Key key = new ThemeEditorModel.Key(page.id + "_key_new_" + System.nanoTime(), item, 0, 0, 11.5f, 9.5f); key.click = item; key.sourceClick = ""; key.ownerId = page.id; page.keys.add(key); }
-            model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); layoutCurrentKeyMap(); notifyModelChanged("Appended " + items.size() + " symbol keys");
+            model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); layoutCurrentKeyMap(); notifyModelChanged("已追加 " + items.size() + " 个符号按键");
         }).show();
     }
 
     private void removeDuplicateKeyMapItems(ThemeEditorModel.KeyMapPage page) {
         persistCurrentKeyMapPage(); java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>(); java.util.ArrayList<ThemeEditorModel.Key> unique = new java.util.ArrayList<>();
         for (ThemeEditorModel.Key key : page.keys) { String identity = key.click + "\u0000" + key.label; if (seen.add(identity)) unique.add(key); }
-        if (unique.size() == page.keys.size()) { setStatus("No duplicate symbol keys"); return; } if (!changeStarted()) return;
-        page.keys.clear(); page.keys.addAll(unique); model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); layoutCurrentKeyMap(); notifyModelChanged("Removed duplicate symbol keys");
+        if (unique.size() == page.keys.size()) { setStatus("没有重复的符号按键"); return; } if (!changeStarted()) return;
+        page.keys.clear(); page.keys.addAll(unique); model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); layoutCurrentKeyMap(); notifyModelChanged("已移除重复符号按键");
     }
 
     private void layoutCurrentKeyMap() {
@@ -287,20 +305,20 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
 
     private void renameKeyMapPage(ThemeEditorModel.KeyMapPage page) {
-        android.widget.EditText name = dialogField(new LinearLayout(getContext()), "Page name", page.name);
+        android.widget.EditText name = dialogField(new LinearLayout(getContext()), "页面名称", page.name);
         LinearLayout parent = (LinearLayout) name.getParent(); parent.setPadding(24, 8, 24, 8);
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Rename symbol page").setView(parent).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { String value = name.getText().toString().trim(); if (!value.isEmpty()) { if (!changeStarted()) return; page.name = value; notifyModelChanged("Renamed symbol page"); } }).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("重命名符号页").setView(parent).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { String value = name.getText().toString().trim(); if (!value.isEmpty()) { if (!changeStarted()) return; page.name = value; notifyModelChanged("已重命名符号页"); } }).show();
     }
 
     private void duplicateKeyMapPage(ThemeEditorModel.KeyMapPage page) {
         if (!changeStarted()) return; ThemeEditorModel.KeyMapPage copy = page.copy(); copy.id = "key_map_copy_" + System.nanoTime(); copy.name = page.name + " copy";
         for (int i = 0; i < copy.keys.size(); i++) { copy.keys.get(i).id = copy.id + "_key_" + i; copy.keys.get(i).ownerId = copy.id; }
-        model.keyMapPages.add(model.selectedKeyMapPage + 1, copy); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : copy.keys) model.keys.add(key.copy()); canvas.setModel(model); notifyModelChanged("Duplicated symbol page");
+        model.keyMapPages.add(model.selectedKeyMapPage + 1, copy); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : copy.keys) model.keys.add(key.copy()); canvas.setModel(model); notifyModelChanged("已复制符号页");
     }
 
     private void moveKeyMapPage(int delta) {
-        int target = model.selectedKeyMapPage + delta; if (target < 0 || target >= model.keyMapPages.size()) { setStatus("Symbol page is already at the edge"); return; }
-        if (!changeStarted()) return; java.util.Collections.swap(model.keyMapPages, model.selectedKeyMapPage, target); model.selectedKeyMapPage = target; notifyModelChanged("Reordered symbol pages");
+        int target = model.selectedKeyMapPage + delta; if (target < 0 || target >= model.keyMapPages.size()) { setStatus("符号页已位于边界"); return; }
+        if (!changeStarted()) return; java.util.Collections.swap(model.keyMapPages, model.selectedKeyMapPage, target); model.selectedKeyMapPage = target; notifyModelChanged("已调整符号页顺序");
     }
 
     private ThemeEditorModel.FlexContainer selectedFlex() {
@@ -312,66 +330,65 @@ public final class ThemeEditorWorkspace extends LinearLayout {
 
     private void editSelectedFlex() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX) { setStatus("This is not a flex_box keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX) { setStatus("当前不是弹性盒(flex_box)键盘"); return; }
         ThemeEditorModel.FlexContainer container = selectedFlex(); if (container == null) return;
         LinearLayout fields = new LinearLayout(getContext()); fields.setOrientation(VERTICAL); fields.setPadding(24, 8, 24, 8);
-        android.widget.EditText direction = dialogField(fields, "Direction: row or column", container.direction);
-        android.widget.EditText width = dialogField(fields, "Width dp (-1 flexible)", String.valueOf(container.width));
-        android.widget.EditText height = dialogField(fields, "Height dp (-1 flexible)", String.valueOf(container.height));
-        android.widget.EditText grow = dialogField(fields, "Grow", String.valueOf(container.grow));
-        android.widget.EditText style = dialogField(fields, "Style", container.style);
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Flex container: " + container.id).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
+        android.widget.EditText direction = dialogField(fields, "方向:行(row)或列(column)", container.direction);
+        android.widget.EditText width = dialogField(fields, "宽度(dp,-1 表示弹性)", String.valueOf(container.width));
+        android.widget.EditText height = dialogField(fields, "高度(dp,-1 表示弹性)", String.valueOf(container.height));
+        android.widget.EditText grow = dialogField(fields, "伸展系数(grow)", String.valueOf(container.grow));
+        android.widget.EditText style = dialogField(fields, "样式", container.style);
+        new android.app.AlertDialog.Builder(getContext()).setTitle("弹性容器(flex):" + container.id).setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
             if (!changeStarted()) return; container.direction = "column".equals(direction.getText().toString().trim()) ? "column" : "row";
             container.width = parseFloat(width, container.width); container.height = parseFloat(height, container.height); container.grow = Math.max(0, parseFloat(grow, container.grow)); container.style = style.getText().toString().trim();
             if (("row".equals(container.direction) && container.width > 0) || ("column".equals(container.direction) && container.height > 0)) container.grow = 0;
-            notifyModelChanged("Edited flex container");
+            notifyModelChanged("已编辑弹性容器(flex)");
         }).show();
     }
 
     private void manageFlexContainers() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || model.flexContainers.isEmpty()) { setStatus("This is not a flex_box keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || model.flexContainers.isEmpty()) { setStatus("当前不是弹性盒(flex_box)键盘"); return; }
         String[] labels = new String[model.flexContainers.size()];
-        for (int i = 0; i < labels.length; i++) { ThemeEditorModel.FlexContainer c = model.flexContainers.get(i); labels[i] = (c.id.equals(model.selectedFlexContainerId) ? "✓ " : "") + c.id + "  " + c.direction + " grow=" + c.grow; }
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Select flex container").setItems(labels, (dialog, which) -> {
+        for (int i = 0; i < labels.length; i++) { ThemeEditorModel.FlexContainer c = model.flexContainers.get(i); labels[i] = (c.id.equals(model.selectedFlexContainerId) ? "✓ " : "") + c.id + "  " + ("column".equals(c.direction) ? "列(column)" : "行(row)") + " 伸展(grow)=" + c.grow; }
+        new android.app.AlertDialog.Builder(getContext()).setTitle("选择弹性容器(flex)").setItems(labels, (dialog, which) -> {
             model.selectedFlexContainerId = model.flexContainers.get(which).id; showFlexActions();
-        }).setNegativeButton("Close", null).show();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private void showFlexActions() {
         ThemeEditorModel.FlexContainer selected = selectedFlex(); if (selected == null) return;
-        String[] actions = selected.parentId == null ? new String[]{"Edit", "Add child", "Move selected keys here"} : new String[]{"Edit", "Add child", "Move selected keys here", "Reparent container", "Duplicate subtree", "Delete subtree", "Move before", "Move after"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle(selected.id).setItems(actions, (dialog, which) -> {
-            String action = actions[which];
-            if ("Edit".equals(action)) editSelectedFlex(); else if ("Add child".equals(action)) addFlexChild(selected); else if ("Move selected keys here".equals(action)) moveSelectedKeysToFlex(selected);
-            else if ("Reparent container".equals(action)) chooseFlexParent(selected); else if ("Duplicate subtree".equals(action)) duplicateFlexSubtree(selected); else if ("Delete subtree".equals(action)) deleteFlexSubtree(selected);
-            else moveFlexSibling(selected, "Move before".equals(action) ? -1 : 1);
-        }).setNegativeButton("Cancel", null).show();
+        String[] actions = selected.parentId == null ? new String[]{"编辑", "添加子容器", "将所选按键移到此处"} : new String[]{"编辑", "添加子容器", "将所选按键移到此处", "更改容器父级", "复制子树", "删除子树", "前移", "后移"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("弹性容器(flex):" + selected.id).setItems(actions, (dialog, which) -> {
+            if (which == 0) editSelectedFlex(); else if (which == 1) addFlexChild(selected); else if (which == 2) moveSelectedKeysToFlex(selected);
+            else if (which == 3) chooseFlexParent(selected); else if (which == 4) duplicateFlexSubtree(selected); else if (which == 5) deleteFlexSubtree(selected);
+            else moveFlexSibling(selected, which == 6 ? -1 : 1);
+        }).setNegativeButton("取消", null).show();
     }
 
     private void moveSelectedKeysToFlex(ThemeEditorModel.FlexContainer target) {
-        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
         if (!changeStarted()) return;
         java.util.HashSet<String> ids = new java.util.HashSet<>(); for (ThemeEditorModel.Key key : keys) ids.add(key.id);
         for (ThemeEditorModel.FlexContainer container : model.flexContainers) for (int i = container.keyIds.size() - 1; i >= 0; i--) if (ids.contains(container.keyIds.get(i))) container.keyIds.remove(i);
         for (ThemeEditorModel.Key key : keys) { key.ownerId = target.id; target.keyIds.add(key.id); }
-        model.selectedFlexContainerId = target.id; notifyModelChanged("Moved " + keys.size() + " keys into " + target.id);
+        model.selectedFlexContainerId = target.id; notifyModelChanged("已移动 " + keys.size() + " 个按键到 " + target.id);
     }
 
     private void chooseFlexParent(ThemeEditorModel.FlexContainer child) {
-        if (child.parentId == null) { setStatus("Root flex container cannot be reparented"); return; }
+        if (child.parentId == null) { setStatus("根弹性容器(flex)不能更改父级"); return; }
         java.util.HashSet<String> subtree = flexSubtreeIds(child.id); java.util.ArrayList<ThemeEditorModel.FlexContainer> candidates = new java.util.ArrayList<>();
         for (ThemeEditorModel.FlexContainer container : model.flexContainers) if (!subtree.contains(container.id)) candidates.add(container);
         String[] labels = new String[candidates.size()]; for (int i = 0; i < labels.length; i++) labels[i] = candidates.get(i).id;
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Move container under").setItems(labels, (dialog, which) -> {
-            ThemeEditorModel.FlexContainer parent = candidates.get(which); if (parent.id.equals(child.parentId)) { setStatus("Container already has that parent"); return; }
-            if (!changeStarted()) return; child.parentId = parent.id; model.selectedFlexContainerId = child.id; notifyModelChanged("Reparented flex container");
-        }).setNegativeButton("Cancel", null).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("将容器移至此容器下").setItems(labels, (dialog, which) -> {
+            ThemeEditorModel.FlexContainer parent = candidates.get(which); if (parent.id.equals(child.parentId)) { setStatus("容器已属于该父级"); return; }
+            if (!changeStarted()) return; child.parentId = parent.id; model.selectedFlexContainerId = child.id; notifyModelChanged("已更改弹性容器(flex)父级");
+        }).setNegativeButton("取消", null).show();
     }
 
     private void addFlexChild(ThemeEditorModel.FlexContainer parent) {
         if (!changeStarted()) return; ThemeEditorModel.FlexContainer child = new ThemeEditorModel.FlexContainer("flex_new_" + System.nanoTime(), parent.id); child.direction = "row";
-        int insert = lastDescendantIndex(parent.id) + 1; model.flexContainers.add(Math.min(insert, model.flexContainers.size()), child); model.selectedFlexContainerId = child.id; notifyModelChanged("Added flex child container");
+        int insert = lastDescendantIndex(parent.id) + 1; model.flexContainers.add(Math.min(insert, model.flexContainers.size()), child); model.selectedFlexContainerId = child.id; notifyModelChanged("已添加弹性子容器(flex)");
     }
 
     private int lastDescendantIndex(String id) {
@@ -389,7 +406,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
             for (String keyId : original.keyIds) { ThemeEditorModel.Key key = model.find(keyId); if (key == null) continue; ThemeEditorModel.Key keyCopy = key.copy(); keyCopy.id = copy.id + "_key_" + copy.keyIds.size(); keyCopy.ownerId = copy.id; copy.keyIds.add(keyCopy.id); keyCopies.add(keyCopy); }
             copies.add(copy);
         }
-        int insert = lastDescendantIndex(selected.id) + 1; model.flexContainers.addAll(Math.min(insert, model.flexContainers.size()), copies); model.keys.addAll(keyCopies); model.selectedFlexContainerId = copies.get(0).id; notifyModelChanged("Duplicated flex subtree");
+        int insert = lastDescendantIndex(selected.id) + 1; model.flexContainers.addAll(Math.min(insert, model.flexContainers.size()), copies); model.keys.addAll(keyCopies); model.selectedFlexContainerId = copies.get(0).id; notifyModelChanged("已复制弹性子树(flex)");
     }
 
     private java.util.HashSet<String> flexSubtreeIds(String rootId) {
@@ -399,30 +416,30 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
 
     private void deleteFlexSubtree(ThemeEditorModel.FlexContainer selected) {
-        if (selected.parentId == null) { setStatus("Root flex container cannot be deleted"); return; }
+        if (selected.parentId == null) { setStatus("不能删除根弹性容器(flex)"); return; }
         if (!changeStarted()) return; java.util.HashSet<String> ids = flexSubtreeIds(selected.id); java.util.HashSet<String> keyIds = new java.util.HashSet<>();
         for (ThemeEditorModel.FlexContainer item : model.flexContainers) if (ids.contains(item.id)) keyIds.addAll(item.keyIds);
         for (int i = model.keys.size() - 1; i >= 0; i--) if (keyIds.contains(model.keys.get(i).id)) model.keys.remove(i);
-        for (int i = model.flexContainers.size() - 1; i >= 0; i--) if (ids.contains(model.flexContainers.get(i).id)) model.flexContainers.remove(i); model.selectedFlexContainerId = selected.parentId; canvas.setModel(model); notifyModelChanged("Deleted flex subtree");
+        for (int i = model.flexContainers.size() - 1; i >= 0; i--) if (ids.contains(model.flexContainers.get(i).id)) model.flexContainers.remove(i); model.selectedFlexContainerId = selected.parentId; canvas.setModel(model); notifyModelChanged("已删除弹性子树(flex)");
     }
 
     private void moveFlexSibling(ThemeEditorModel.FlexContainer selected, int delta) {
         java.util.ArrayList<ThemeEditorModel.FlexContainer> siblings = new java.util.ArrayList<>(); for (ThemeEditorModel.FlexContainer item : model.flexContainers) if (java.util.Objects.equals(item.parentId, selected.parentId)) siblings.add(item);
-        int index = siblings.indexOf(selected), target = index + delta; if (target < 0 || target >= siblings.size()) { setStatus("Flex container is already at the edge"); return; }
-        if (!changeStarted()) return; ThemeEditorModel.FlexContainer other = siblings.get(target); int a = model.flexContainers.indexOf(selected), b = model.flexContainers.indexOf(other); java.util.Collections.swap(model.flexContainers, a, b); notifyModelChanged("Reordered flex containers");
+        int index = siblings.indexOf(selected), target = index + delta; if (target < 0 || target >= siblings.size()) { setStatus("弹性容器(flex)已位于边界"); return; }
+        if (!changeStarted()) return; ThemeEditorModel.FlexContainer other = siblings.get(target); int a = model.flexContainers.indexOf(selected), b = model.flexContainers.indexOf(other); java.util.Collections.swap(model.flexContainers, a, b); notifyModelChanged("已调整弹性容器(flex)顺序");
     }
 
     private void selectAllKeys() {
         properties.commit(); model.selectedIds.clear();
         for (ThemeEditorModel.Key key : model.keys) model.selectedIds.add(key.id);
-        canvas.setModel(model); refreshSelectionEditor(canvas.getSelectedKey()); setStatus("Selected all " + model.selectedIds.size() + " keys");
+        canvas.setModel(model); refreshSelectionEditor(canvas.getSelectedKey()); setStatus("已选择全部 " + model.selectedIds.size() + " 个按键");
     }
 
     private void invertSelection() {
         properties.commit(); java.util.LinkedHashSet<String> inverted = new java.util.LinkedHashSet<>();
         for (ThemeEditorModel.Key key : model.keys) if (!model.selectedIds.contains(key.id)) inverted.add(key.id);
         model.selectedIds.clear(); model.selectedIds.addAll(inverted); canvas.setModel(model); refreshSelectionEditor(canvas.getSelectedKey());
-        setStatus(model.selectedIds.isEmpty() ? "Selection cleared" : "Selected " + model.selectedIds.size() + " keys after inversion");
+        setStatus(model.selectedIds.isEmpty() ? "已清除选择" : "已选择 " + model.selectedIds.size() + " 个按键(反选后)");
     }
 
     private void refreshSelectionEditor(ThemeEditorModel.Key primary) {
@@ -456,17 +473,17 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         for (int i = 1; i < keys.size(); i++) if (Float.compare(first, value.get(keys.get(i))) != 0) return null;
         return first;
     }
-    private static String valueState(String value) { return value == null ? "mixed" : value.isEmpty() ? "unset" : "uniform"; }
-    private static String numberState(Float value) { return value == null ? "mixed" : "uniform"; }
+    private static String valueState(String value) { return value == null ? "混合" : value.isEmpty() ? "未设置" : "一致"; }
+    private static String numberState(Float value) { return value == null ? "混合" : "一致"; }
 
     private void showBatchEditor() {
         properties.commit(); java.util.List<ThemeEditorModel.Key> keys = selectedKeys();
-        if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
+        if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
         LinearLayout fields = new LinearLayout(getContext()); fields.setOrientation(VERTICAL); fields.setPadding(24, 8, 24, 8);
-        TextView impact = label("Impact: " + keys.size() + " selected keys. Check only properties to replace. Empty checked text clears that property.", 14); fields.addView(impact, new LayoutParams(-1, -2));
+        TextView impact = label("影响范围:" + keys.size() + " 个所选按键。仅勾选要替换的属性;勾选后的空文本会清除该属性。", 14); fields.addView(impact, new LayoutParams(-1, -2));
         String styleValue = commonString(keys, key -> key.keyStyle), clickValue = commonString(keys, key -> key.click), longValue = commonString(keys, key -> key.longClick), leftValue = commonString(keys, key -> key.swipeLeft), rightValue = commonString(keys, key -> key.swipeRight), upValue = commonString(keys, key -> key.swipeUp), downValue = commonString(keys, key -> key.swipeDown), popupValue = commonString(keys, key -> key.popup);
         Float widthValue = commonNumber(keys, key -> key.width), heightValue = commonNumber(keys, key -> key.height);
-        BatchField style = batchField(fields, "Style", valueState(styleValue), styleValue == null ? "" : styleValue);
+        BatchField style = batchField(fields, "样式", valueState(styleValue), styleValue == null ? "" : styleValue);
         BatchField width = batchField(fields, "Width", numberState(widthValue), widthValue == null ? "" : String.valueOf(widthValue));
         BatchField height = batchField(fields, "Height", numberState(heightValue), heightValue == null ? "" : String.valueOf(heightValue));
         BatchField click = batchField(fields, "Click", valueState(clickValue), clickValue == null ? "" : clickValue);
@@ -478,19 +495,19 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         BatchField popup = batchField(fields, "Popup/resource literal", valueState(popupValue), popupValue == null ? "" : popupValue);
         BatchField background = batchField(fields, "Referenced style background", "style entity", "");
         BatchField textColor = batchField(fields, "Referenced style text color", "style entity", "");
-        TextView colors = label("Colors update the referenced style entities, not keyboard nodes. Background accepts #AARRGGBB or a project-relative resource path. Empty checked values clear the style override.", 12); fields.addView(colors, new LayoutParams(-1, -2));
+        TextView colors = label("颜色会更新引用的样式实体,而不是键盘节点。背景接受 #AARRGGBB 或项目相对资源路径;勾选后的空值会清除样式覆盖。", 12); fields.addView(colors, new LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(getContext()); scroll.addView(fields, new ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Batch properties — " + keys.size() + " keys").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Review", (dialog, which) -> reviewBatch(keys, style, width, height, click, longClick, swipeLeft, swipeRight, swipeUp, swipeDown, popup, background, textColor)).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("批量属性 — " + keys.size() + " 个按键").setView(scroll).setNegativeButton("取消", null).setPositiveButton("检查", (dialog, which) -> reviewBatch(keys, style, width, height, click, longClick, swipeLeft, swipeRight, swipeUp, swipeDown, popup, background, textColor)).show();
     }
 
     private void reviewBatch(java.util.List<ThemeEditorModel.Key> keys, BatchField style, BatchField width, BatchField height, BatchField click, BatchField longClick, BatchField swipeLeft, BatchField swipeRight, BatchField swipeUp, BatchField swipeDown, BatchField popup, BatchField background, BatchField textColor) {
         int fields = 0; for (BatchField field : new BatchField[]{style, width, height, click, longClick, swipeLeft, swipeRight, swipeUp, swipeDown, popup, background, textColor}) if (field.apply.isChecked()) fields++;
-        if (fields == 0) { setStatus("No batch properties selected"); return; }
+        if (fields == 0) { setStatus("未选择批量属性"); return; }
         Float nextWidth = width.apply.isChecked() ? positiveNumber(width.value) : null, nextHeight = height.apply.isChecked() ? positiveNumber(height.value) : null;
-        if ((width.apply.isChecked() && nextWidth == null) || (height.apply.isChecked() && nextHeight == null)) { setStatus("Batch width and height must be positive numbers"); return; }
+        if ((width.apply.isChecked() && nextWidth == null) || (height.apply.isChecked() && nextHeight == null)) { setStatus("批量宽度和高度必须为正数"); return; }
         int count = keys.size(), fieldCount = fields; boolean keyFields = style.apply.isChecked() || width.apply.isChecked() || height.apply.isChecked() || click.apply.isChecked() || longClick.apply.isChecked() || swipeLeft.apply.isChecked() || swipeRight.apply.isChecked() || swipeUp.apply.isChecked() || swipeDown.apply.isChecked() || popup.apply.isChecked();
-        String transaction = keyFields && (background.apply.isChecked() || textColor.apply.isChecked()) ? "Keyboard fields use one Undo; style entities use a separately confirmed project-file transaction." : keyFields ? "One Undo restores every affected key." : "Referenced style entities are changed in one rollback-safe project-file transaction.";
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Review batch edit").setMessage("This will replace " + fieldCount + " properties for " + count + " selected keys. " + transaction).setNegativeButton("Cancel", null).setPositiveButton("Continue", (dialog, which) -> {
+        String transaction = keyFields && (background.apply.isChecked() || textColor.apply.isChecked()) ? "键盘字段占用一个撤销步骤;样式实体使用单独确认的项目文件事务。" : keyFields ? "一次撤销可恢复所有受影响按键。" : "引用的样式实体将在一个可安全回滚的项目文件事务中更改。";
+        new android.app.AlertDialog.Builder(getContext()).setTitle("检查批量编辑").setMessage("将替换 " + fieldCount + " 个属性,涉及 " + count + " 个所选按键。" + transaction).setNegativeButton("取消", null).setPositiveButton("继续", (dialog, which) -> {
             if (keyFields) {
                 if (!changeStarted()) return;
                 for (ThemeEditorModel.Key key : keys) {
@@ -506,7 +523,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
                     if (popup.apply.isChecked()) { key.popup = popup.value.getText().toString().trim(); key.popupArray = key.popup.contains(","); }
                     if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) clampAbsolute(key);
                 }
-                persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("Batch-edited " + count + " keys as one undo step");
+                persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("已批量编辑 " + count + " 个按键(一个撤销步骤)");
             }
             if ((background.apply.isChecked() || textColor.apply.isChecked()) && callbacks != null) callbacks.onBatchStyleEntities(copyKeys(keys), background.apply.isChecked() ? background.value.getText().toString().trim() : null, textColor.apply.isChecked() ? textColor.value.getText().toString().trim() : null);
         }).show();
@@ -518,52 +535,52 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
 
     private void showClipboardActions() {
-        properties.commit(); String[] actions = {"Copy selected keys", "Copy selected row", "Copy selected Flex subtree", "Copy current symbol page", "Copy selected style", "Copy selected events", "Paste"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Internal editor clipboard").setItems(actions, (dialog, which) -> {
+        properties.commit(); String[] actions = {"复制所选按键", "复制所选行", "复制所选弹性子树(flex)", "复制当前符号页", "复制所选样式", "复制所选事件", "粘贴"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("编辑器内部剪贴板").setItems(actions, (dialog, which) -> {
             if (which == 0) copySelectedKeys(); else if (which == 1) copySelectedRow(); else if (which == 2) copySelectedFlex(); else if (which == 3) copyCurrentPage(); else if (which == 4) copySelectedStyle(); else if (which == 5) copySelectedEvents(); else pasteClipboard();
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton("取消", null).show();
     }
 
     private void copySelectedKeys() {
-        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
-        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.KEYS, clipboardScope, keys, null, null, null, null)); setStatus("Copied " + keys.size() + " keys to the private editor clipboard");
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
+        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.KEYS, clipboardScope, keys, null, null, null, null)); setStatus("已复制 " + keys.size() + " 个按键到编辑器专用剪贴板");
     }
     private void copySelectedRow() {
-        int index = selectedRowIndex(); if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS || index < 0) { setStatus("Select a key in the row to copy"); return; }
+        int index = selectedRowIndex(); if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS || index < 0) { setStatus("请在要复制的行中选择按键"); return; }
         ThemeEditorModel.Row row = model.rows.get(index); java.util.ArrayList<ThemeEditorModel.Key> keys = new java.util.ArrayList<>(); for (ThemeEditorModel.Key key : model.keys) if (row.id.equals(key.ownerId)) keys.add(key);
-        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.ROW, clipboardScope, keys, row, null, null, null)); setStatus("Copied row with " + keys.size() + " keys");
+        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.ROW, clipboardScope, keys, row, null, null, null)); setStatus("已复制行,共 " + keys.size() + " 个按键");
     }
     private void copySelectedFlex() {
-        ThemeEditorModel.FlexContainer root = selectedFlex(); if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || root == null) { setStatus("Select a Flex container first"); return; }
+        ThemeEditorModel.FlexContainer root = selectedFlex(); if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || root == null) { setStatus("请先选择弹性容器(flex)"); return; }
         java.util.HashSet<String> ids = flexSubtreeIds(root.id); java.util.ArrayList<ThemeEditorModel.FlexContainer> containers = new java.util.ArrayList<>(); java.util.ArrayList<ThemeEditorModel.Key> keys = new java.util.ArrayList<>(); containers.add(root);
         for (ThemeEditorModel.FlexContainer container : model.flexContainers) if (ids.contains(container.id) && container != root) containers.add(container);
         for (ThemeEditorModel.Key key : model.keys) if (ids.contains(key.ownerId)) keys.add(key);
-        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.FLEX_SUBTREE, clipboardScope, keys, null, containers, null, null)); setStatus("Copied Flex subtree with " + containers.size() + " containers and " + keys.size() + " keys");
+        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.FLEX_SUBTREE, clipboardScope, keys, null, containers, null, null)); setStatus("已复制弹性子树(flex),共 " + containers.size() + " 个容器和 " + keys.size() + " 个按键");
     }
     private void copyCurrentPage() {
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("This is not a key_maps keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || model.keyMapPages.isEmpty()) { setStatus("当前不是按键映射(key_maps)键盘"); return; }
         persistCurrentKeyMapPage(); ThemeEditorModel.KeyMapPage page = model.keyMapPages.get(model.selectedKeyMapPage);
-        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.KEY_MAP_PAGE, clipboardScope, null, null, null, page, null)); setStatus("Copied symbol page " + page.name);
+        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.KEY_MAP_PAGE, clipboardScope, null, null, null, page, null)); setStatus("已复制符号页 " + page.name);
     }
     private void copySelectedStyle() {
-        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("Select a key first"); return; }
-        if (callbacks == null) { setStatus("Style entity provider is unavailable"); return; }
+        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("请先选择按键"); return; }
+        if (callbacks == null) { setStatus("样式实体提供程序不可用"); return; }
         callbacks.onCopyStyleEntity(key.copy());
     }
     private void copySelectedEvents() {
-        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("Select a key first"); return; }
-        if (key.hasNonLiteralEventSource) { setStatus("This key contains inline, full-key, or Raw Lua event sources; use Event... per slot instead of lossy clipboard copy"); return; }
-        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.EVENTS, clipboardScope, java.util.Collections.singletonList(key), null, null, null, null)); setStatus("Copied all literal event and state-replacement fields; no event was executed");
+        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("请先选择按键"); return; }
+        if (key.hasNonLiteralEventSource) { setStatus("此按键包含内联、完整按键或原始 Lua(Raw Lua)事件源;请逐槽位使用‘事件...’以避免有损复制"); return; }
+        ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.EVENTS, clipboardScope, java.util.Collections.singletonList(key), null, null, null, null)); setStatus("已复制所有字面事件和状态替换字段;未执行任何事件");
     }
 
     private void pasteClipboard() {
-        ThemeEditorClipboard.Payload payload = ThemeEditorClipboard.get(); if (payload == null) { setStatus("Internal clipboard is empty"); return; }
+        ThemeEditorClipboard.Payload payload = ThemeEditorClipboard.get(); if (payload == null) { setStatus("内部剪贴板为空"); return; }
         boolean crossScope = !java.util.Objects.equals(payload.projectIdentity, clipboardScope);
         String dependencies = dependencySummary(payload);
         int targetCount = selectedKeys().size(); String warning = "Paste " + payload.type + " into the current " + model.layoutMode + " layout?" + (payload.type == ThemeEditorClipboard.Type.EVENTS ? "\nAffected target keys: " + targetCount : "");
         if (crossScope) warning += "\nCross-project copy: new node IDs will be generated. Source URIs and paths are not retained.";
         if (!dependencies.isEmpty()) warning += "\nDependencies are not auto-mapped: " + dependencies;
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Paste target confirmation").setMessage(warning).setNegativeButton("Cancel", null).setPositiveButton("Paste", (dialog, which) -> applyClipboard(payload, crossScope)).show();
+        new android.app.AlertDialog.Builder(getContext()).setTitle("确认粘贴目标").setMessage(warning).setNegativeButton("取消", null).setPositiveButton("粘贴", (dialog, which) -> applyClipboard(payload, crossScope)).show();
     }
 
     private String dependencySummary(ThemeEditorClipboard.Payload payload) {
@@ -584,19 +601,19 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         else if (payload.type == ThemeEditorClipboard.Type.FLEX_SUBTREE) pasteFlex(payload, crossScope);
         else if (payload.type == ThemeEditorClipboard.Type.KEY_MAP_PAGE) pastePage(payload, crossScope);
         else if (payload.type == ThemeEditorClipboard.Type.KEY_STYLE) pasteStyle(payload, crossScope);
-        else if (payload.type == ThemeEditorClipboard.Type.STYLE_ENTITY) { if (callbacks == null) setStatus("Style entity provider is unavailable"); else callbacks.onPasteStyleEntity(copyKeys(selectedKeys())); }
+        else if (payload.type == ThemeEditorClipboard.Type.STYLE_ENTITY) { if (callbacks == null) setStatus("样式实体提供程序不可用"); else callbacks.onPasteStyleEntity(copyKeys(selectedKeys())); }
         else pasteEvents(payload, crossScope);
     }
 
     private void pasteKeys(java.util.List<ThemeEditorModel.Key> source, boolean crossScope) {
-        if (model.layoutMode == ThemeEditorModel.LayoutMode.NONE || source.isEmpty()) { setStatus("Clipboard keys cannot be pasted into this file"); return; }
-        if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && selectedFlex() == null) { setStatus("Add or select a Flex container before pasting keys"); return; }
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.NONE || source.isEmpty()) { setStatus("剪贴板按键无法粘贴到此文件"); return; }
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && selectedFlex() == null) { setStatus("粘贴按键前请添加或选择弹性容器(flex)"); return; }
         if (!changeStarted()) return;
         if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS && model.rows.isEmpty()) model.rows.add(new ThemeEditorModel.Row("pasted_row_" + System.nanoTime(), 18));
         if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS && model.keyMapPages.isEmpty()) { model.keyMapPages.add(new ThemeEditorModel.KeyMapPage("pasted_page_" + System.nanoTime(), "Pasted")); model.selectedKeyMapPage = 0; }
         String owner = pasteOwner(); java.util.ArrayList<ThemeEditorModel.Key> pasted = new java.util.ArrayList<>();
         int index = 0; for (ThemeEditorModel.Key original : source) { ThemeEditorModel.Key key = detachedKey(original, "pasted_key_" + System.nanoTime() + "_" + index++); if (crossScope) key.keyStyle = ""; key.ownerId = owner; key.x = Math.min(100 - key.width, key.x + 2); key.y = Math.min(80 - key.height, key.y + 2); model.keys.add(key); pasted.add(key); if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) { ThemeEditorModel.FlexContainer container = selectedFlex(); if (container != null) container.keyIds.add(key.id); } }
-        selectPasted(pasted); persistCurrentKeyMapPage(); notifyModelChanged("Pasted " + pasted.size() + " keys" + (crossScope ? "; review listed dependencies" : ""));
+        selectPasted(pasted); persistCurrentKeyMapPage(); notifyModelChanged("已粘贴 " + pasted.size() + " 个按键" + (crossScope ? ";请检查列出的依赖项" : ""));
     }
     private String pasteOwner() {
         ThemeEditorModel.Key selected = canvas.getSelectedKey();
@@ -606,36 +623,36 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         return "";
     }
     private void pasteRow(ThemeEditorClipboard.Payload payload, boolean crossScope) {
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS || payload.row == null) { setStatus("A row can only be pasted into a rows keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS || payload.row == null) { setStatus("行只能粘贴到行布局(rows)键盘"); return; }
         if (!changeStarted()) return; ThemeEditorModel.Row row = payload.row.copy(); row.id = "pasted_row_" + System.nanoTime(); row.sourcePath = ""; row.sourceHeight = Float.NaN; row.sourceWidth = Float.NaN; int insert = selectedRowIndex(); insert = insert < 0 ? model.rows.size() : insert + 1; model.rows.add(insert, row);
         java.util.ArrayList<ThemeEditorModel.Key> pasted = new java.util.ArrayList<>(); int i = 0; for (ThemeEditorModel.Key original : payload.keys) { ThemeEditorModel.Key key = detachedKey(original, row.id + "_key_" + i++); if (crossScope) key.keyStyle = ""; key.ownerId = row.id; model.keys.add(key); pasted.add(key); }
-        layoutRows(); selectPasted(pasted); notifyModelChanged("Pasted row with " + pasted.size() + " keys" + (crossScope ? "; review listed dependencies" : ""));
+        layoutRows(); selectPasted(pasted); notifyModelChanged("已粘贴行,共 " + pasted.size() + " 个按键" + (crossScope ? ";请检查列出的依赖项" : ""));
     }
     private void pasteFlex(ThemeEditorClipboard.Payload payload, boolean crossScope) {
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || payload.containers.isEmpty()) { setStatus("A Flex subtree can only be pasted into a flex_box keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.FLEX_BOX || payload.containers.isEmpty()) { setStatus("弹性子树(flex)只能粘贴到弹性盒(flex_box)键盘"); return; }
         ThemeEditorModel.FlexContainer target = selectedFlex(); if (target == null || !changeStarted()) return; java.util.LinkedHashMap<String, String> ids = new java.util.LinkedHashMap<>(); long seed = System.nanoTime();
         for (ThemeEditorModel.FlexContainer original : payload.containers) ids.put(original.id, "pasted_flex_" + seed + "_" + ids.size());
         String sourceRoot = payload.containers.get(0).id; java.util.ArrayList<ThemeEditorModel.FlexContainer> pastedContainers = new java.util.ArrayList<>();
         for (ThemeEditorModel.FlexContainer original : payload.containers) { ThemeEditorModel.FlexContainer copy = original.copy(); copy.id = ids.get(original.id); copy.parentId = original.id.equals(sourceRoot) ? target.id : ids.get(original.parentId); copy.sourcePath = ""; if (crossScope) copy.style = ""; copy.keyIds.clear(); pastedContainers.add(copy); }
         java.util.ArrayList<ThemeEditorModel.Key> pastedKeys = new java.util.ArrayList<>(); int index = 0; for (ThemeEditorModel.Key original : payload.keys) { ThemeEditorModel.Key key = detachedKey(original, "pasted_flex_key_" + seed + "_" + index++); if (crossScope) key.keyStyle = ""; key.ownerId = ids.get(original.ownerId); if (key.ownerId == null) key.ownerId = pastedContainers.get(0).id; for (ThemeEditorModel.FlexContainer container : pastedContainers) if (container.id.equals(key.ownerId)) container.keyIds.add(key.id); model.keys.add(key); pastedKeys.add(key); }
-        int insert = lastDescendantIndex(target.id) + 1; model.flexContainers.addAll(Math.min(insert, model.flexContainers.size()), pastedContainers); model.selectedFlexContainerId = pastedContainers.get(0).id; selectPasted(pastedKeys); notifyModelChanged("Pasted Flex subtree" + (crossScope ? "; review listed dependencies" : ""));
+        int insert = lastDescendantIndex(target.id) + 1; model.flexContainers.addAll(Math.min(insert, model.flexContainers.size()), pastedContainers); model.selectedFlexContainerId = pastedContainers.get(0).id; selectPasted(pastedKeys); notifyModelChanged("已粘贴弹性子树(flex)" + (crossScope ? ";请检查列出的依赖项" : ""));
     }
     private void pastePage(ThemeEditorClipboard.Payload payload, boolean crossScope) {
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || payload.page == null) { setStatus("A symbol page can only be pasted into a key_maps keyboard"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.KEY_MAPS || payload.page == null) { setStatus("符号页只能粘贴到按键映射(key_maps)键盘"); return; }
         if (!changeStarted()) return; persistCurrentKeyMapPage(); ThemeEditorModel.KeyMapPage page = payload.page.copy(); page.id = "pasted_page_" + System.nanoTime(); page.name = page.name + " copy"; page.sourcePath = "";
         java.util.ArrayList<ThemeEditorModel.Key> remapped = new java.util.ArrayList<>(); int index = 0; for (ThemeEditorModel.Key original : page.keys) { ThemeEditorModel.Key key = detachedKey(original, page.id + "_key_" + index++); if (crossScope) key.keyStyle = ""; key.ownerId = page.id; remapped.add(key); } page.keys.clear(); page.keys.addAll(remapped);
-        model.keyMapPages.add(model.selectedKeyMapPage + 1, page); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); selectPasted(model.keys); notifyModelChanged("Pasted symbol page" + (crossScope ? "; review listed dependencies" : ""));
+        model.keyMapPages.add(model.selectedKeyMapPage + 1, page); model.selectedKeyMapPage++; model.keys.clear(); for (ThemeEditorModel.Key key : page.keys) model.keys.add(key.copy()); selectPasted(model.keys); notifyModelChanged("已粘贴符号页" + (crossScope ? ";请检查列出的依赖项" : ""));
     }
     private void pasteStyle(ThemeEditorClipboard.Payload payload, boolean crossScope) {
-        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select target keys first"); return; }
-        if (crossScope && !payload.keyStyle.isEmpty()) { setStatus("Cross-project style was not pasted because style IDs are not auto-mapped"); return; }
-        if (!changeStarted()) return; for (ThemeEditorModel.Key key : keys) key.keyStyle = payload.keyStyle; persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("Pasted style onto " + keys.size() + " keys as one undo step");
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择目标按键"); return; }
+        if (crossScope && !payload.keyStyle.isEmpty()) { setStatus("未粘贴跨项目样式,因为样式 ID 不会自动映射"); return; }
+        if (!changeStarted()) return; for (ThemeEditorModel.Key key : keys) key.keyStyle = payload.keyStyle; persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("已将样式粘贴到 " + keys.size() + " 个按键(一个撤销步骤)");
     }
     private void pasteEvents(ThemeEditorClipboard.Payload payload, boolean crossScope) {
-        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty() || payload.keys.isEmpty()) { setStatus("Select target keys first"); return; }
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty() || payload.keys.isEmpty()) { setStatus("请先选择目标按键"); return; }
         ThemeEditorModel.Key source = payload.keys.get(0); if (!changeStarted()) return;
         for (ThemeEditorModel.Key key : keys) { key.click = source.click; key.longClick = source.longClick; key.swipeLeft = source.swipeLeft; key.swipeRight = source.swipeRight; key.swipeUp = source.swipeUp; key.swipeDown = source.swipeDown; key.combo = source.combo; key.composing = source.composing; key.hasMenu = source.hasMenu; key.paging = source.paging; key.ascii = source.ascii; key.popup = source.popup; key.popupArray = source.popupArray; }
-        persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("Pasted literal events onto " + keys.size() + " keys" + (crossScope ? "; preset/resource names were not mapped" : ""));
+        persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("已将字面事件粘贴到 " + keys.size() + " 个按键" + (crossScope ? ";预设/资源名称未映射" : ""));
     }
     private ThemeEditorModel.Key detachedKey(ThemeEditorModel.Key source, String id) {
         ThemeEditorModel.Key key = source.copy(); key.id = id; key.sourcePath = ""; key.sourceLabel = ""; key.sourceClick = ""; key.sourceLongClick = ""; key.sourceSwipeLeft = ""; key.sourceSwipeRight = ""; key.sourceSwipeUp = ""; key.sourceSwipeDown = ""; key.sourceCombo = ""; key.sourceComposing = ""; key.sourceHasMenu = ""; key.sourcePaging = ""; key.sourceAscii = ""; key.sourceKeyStyle = ""; key.sourcePopup = ""; key.sourceX = Float.NaN; key.sourceY = Float.NaN; key.sourceWidth = Float.NaN; key.sourceHeight = Float.NaN; key.hasNonLiteralEventSource = false; key.editorLocked = false; return key;
@@ -649,19 +666,19 @@ public final class ThemeEditorWorkspace extends LinearLayout {
 
     private void manageAbsoluteKeys() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) { setStatus("This is not an absolute keys keyboard"); return; }
-        String[] actions = {"Snap to 2-unit grid", "Align left", "Align right", "Align top", "Align bottom", "Distribute horizontally", "Distribute vertically", "Toggle lock"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Absolute key tools").setItems(actions, (dialog, which) -> {
-            java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
-            if (which >= 1 && which <= 6 && keys.size() < 2) { setStatus("Select at least two keys"); return; }
-            if ((which == 5 || which == 6) && unlockedCount(keys) < 3) { setStatus("At least three unlocked keys are required for distribution"); return; }
-            if (which == 7) { if (!canEdit()) return; for (ThemeEditorModel.Key key : keys) key.editorLocked = !key.editorLocked; canvas.setModel(model); setStatus("Toggled editor-only lock; theme source unchanged"); return; }
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) { setStatus("当前不是绝对定位按键布局"); return; }
+        String[] actions = {"吸附到 2 单位网格", "左对齐", "右对齐", "顶部对齐", "底部对齐", "水平平均分布", "垂直平均分布", "切换锁定"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("绝对定位按键工具").setItems(actions, (dialog, which) -> {
+            java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("请先选择一个或多个按键"); return; }
+            if (which >= 1 && which <= 6 && keys.size() < 2) { setStatus("请至少选择两个按键"); return; }
+            if ((which == 5 || which == 6) && unlockedCount(keys) < 3) { setStatus("平均分布至少需要三个未锁定按键"); return; }
+            if (which == 7) { if (!canEdit()) return; for (ThemeEditorModel.Key key : keys) key.editorLocked = !key.editorLocked; canvas.setModel(model); setStatus("已切换仅编辑器锁定;主题源未更改"); return; }
             if (!changeStarted()) return;
             if (which == 0) for (ThemeEditorModel.Key key : keys) if (!key.editorLocked) { key.x = snap(key.x, 2); key.y = snap(key.y, 2); key.width = Math.max(2, snap(key.width, 2)); key.height = Math.max(2, snap(key.height, 2)); clampAbsolute(key); }
             else if (which == 1) alignAbsolute(keys, 0); else if (which == 2) alignAbsolute(keys, 1); else if (which == 3) alignAbsolute(keys, 2); else if (which == 4) alignAbsolute(keys, 3);
             else if (which == 5) distributeAbsolute(keys, true); else distributeAbsolute(keys, false);
-            notifyModelChanged("Applied absolute key tool");
-        }).setNegativeButton("Cancel", null).show();
+            notifyModelChanged("已应用绝对定位按键工具");
+        }).setNegativeButton("取消", null).show();
     }
 
     private static java.util.List<ThemeEditorModel.Key> copyKeys(java.util.List<ThemeEditorModel.Key> source) { java.util.ArrayList<ThemeEditorModel.Key> result = new java.util.ArrayList<>(); for (ThemeEditorModel.Key key : source) result.add(key.copy()); return result; }
@@ -694,7 +711,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) finishRowMove(key);
         else if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) finishFlexMove(key);
         else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) finishKeyMapMove(key);
-        notifyModelChanged(model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS ? "Moved absolute key" : "Reordered key");
+        notifyModelChanged(model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS ? "已移动绝对定位按键" : "已调整按键顺序");
     }
 
     private void finishRowMove(ThemeEditorModel.Key moved) {
@@ -720,16 +737,16 @@ public final class ThemeEditorWorkspace extends LinearLayout {
 
     private void selectCurrentRow() {
         ThemeEditorModel.Key selected = canvas.getSelectedKey();
-        if (selected == null) { setStatus("Select a key first"); return; }
+        if (selected == null) { setStatus("请先选择按键"); return; }
         model.selectedIds.clear();
         String row = selected.ownerId;
         for (ThemeEditorModel.Key key : model.keys) if (java.util.Objects.equals(key.ownerId, row)) model.selectedIds.add(key.id);
-        canvas.setModel(model); refreshSelectionEditor(selected); setStatus("Selected row with " + model.selectedIds.size() + " keys");
+        canvas.setModel(model); refreshSelectionEditor(selected); setStatus("已选择当前行,共 " + model.selectedIds.size() + " 个按键");
     }
 
     private void addKey() {
         properties.commit();
-        if (model.layoutMode == ThemeEditorModel.LayoutMode.NONE) { setStatus("This file has no editable keyboard layout"); return; }
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.NONE) { setStatus("此文件没有可编辑的键盘布局"); return; }
         if (!changeStarted()) return; int index = model.keys.size(); String id;
         if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) {
             if (model.rows.isEmpty()) model.rows.add(new ThemeEditorModel.Row("row_0", 18));
@@ -742,33 +759,33 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS && !model.keyMapPages.isEmpty()) key.ownerId = model.keyMapPages.get(model.selectedKeyMapPage).id;
         model.keys.add(key);
         if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) { ThemeEditorModel.FlexContainer container = selectedFlex(); if (container != null) { container.keyIds.add(key.id); key.ownerId = container.id; } }
-        persistCurrentKeyMapPage(); selectOnly(key); notifyModelChanged("Added key");
+        persistCurrentKeyMapPage(); selectOnly(key); notifyModelChanged("已添加按键");
     }
 
     private void duplicateSelected() {
         properties.commit();
-        ThemeEditorModel.Key selected = canvas.getSelectedKey(); if (selected == null) { setStatus("Select a key first"); return; }
+        ThemeEditorModel.Key selected = canvas.getSelectedKey(); if (selected == null) { setStatus("请先选择按键"); return; }
         if (!changeStarted()) return; ThemeEditorModel.Key copy = selected.copy(); copy.id = selected.id + "_copy_" + System.nanoTime(); copy.x = Math.min(100 - copy.width, copy.x + 2); model.keys.add(copy);
         if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) for (ThemeEditorModel.FlexContainer container : model.flexContainers) { int index = container.keyIds.indexOf(selected.id); if (index >= 0) { container.keyIds.add(index + 1, copy.id); break; } }
-        persistCurrentKeyMapPage(); selectOnly(copy); notifyModelChanged("Copied key");
+        persistCurrentKeyMapPage(); selectOnly(copy); notifyModelChanged("已复制按键");
     }
 
     private void deleteSelected() {
         properties.commit();
-        ThemeEditorModel.Key selected = canvas.getSelectedKey(); if (selected == null && model.selectedIds.isEmpty()) { setStatus("Select a key first"); return; }
+        ThemeEditorModel.Key selected = canvas.getSelectedKey(); if (selected == null && model.selectedIds.isEmpty()) { setStatus("请先选择按键"); return; }
         if (!changeStarted()) return; java.util.HashSet<String> deleting = new java.util.HashSet<>(model.selectedIds); if (selected != null) deleting.add(selected.id);
         for (int i = model.keys.size() - 1; i >= 0; i--) if (deleting.contains(model.keys.get(i).id)) model.keys.remove(i);
         for (ThemeEditorModel.FlexContainer container : model.flexContainers) for (int i = container.keyIds.size() - 1; i >= 0; i--) if (deleting.contains(container.keyIds.get(i))) container.keyIds.remove(i);
-        model.selectedIds.clear(); persistCurrentKeyMapPage(); canvas.setSelectedKey(null); canvas.setModel(model); properties.bind(null); notifyModelChanged("Deleted selected keys");
+        model.selectedIds.clear(); persistCurrentKeyMapPage(); canvas.setSelectedKey(null); canvas.setModel(model); properties.bind(null); notifyModelChanged("已删除所选按键");
     }
 
     private void manageRows() {
         properties.commit();
-        if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS) { setStatus("This is not a rows keyboard"); return; }
-        int selected = selectedRowIndex(); String[] actions = {"Add row", "Duplicate selected row", "Delete selected row", "Move row up", "Move row down", "Set row height", "Set default key width", "Distribute keys evenly"};
-        new android.app.AlertDialog.Builder(getContext()).setTitle(selected < 0 ? "Rows" : "Row " + (selected + 1)).setItems(actions, (dialog, which) -> {
-            if (which == 0) addRow(); else if (selected < 0) setStatus("Select a key in the target row first"); else if (which == 1) duplicateRow(selected); else if (which == 2) deleteRow(selected); else if (which == 3) moveRow(selected, -1); else if (which == 4) moveRow(selected, 1); else if (which == 5) editRowHeight(selected); else if (which == 6) editRowWidth(selected); else distributeRow(selected);
-        }).setNegativeButton("Cancel", null).show();
+        if (model.layoutMode != ThemeEditorModel.LayoutMode.ROWS) { setStatus("当前不是行布局(rows)键盘"); return; }
+        int selected = selectedRowIndex(); String[] actions = {"添加行", "复制所选行", "删除所选行", "上移行", "下移行", "设置行高", "设置默认按键宽度", "平均分布按键"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle(selected < 0 ? "行布局(rows)" : "第 " + (selected + 1) + " 行").setItems(actions, (dialog, which) -> {
+            if (which == 0) addRow(); else if (selected < 0) setStatus("请先在目标行中选择按键"); else if (which == 1) duplicateRow(selected); else if (which == 2) deleteRow(selected); else if (which == 3) moveRow(selected, -1); else if (which == 4) moveRow(selected, 1); else if (which == 5) editRowHeight(selected); else if (which == 6) editRowWidth(selected); else distributeRow(selected);
+        }).setNegativeButton("取消", null).show();
     }
 
     private int selectedRowIndex() {
@@ -777,31 +794,31 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         return -1;
     }
 
-    private void addRow() { if (!changeStarted()) return; int row = model.rows.size(); model.rows.add(new ThemeEditorModel.Row("row_new_" + System.nanoTime(), 18)); reindexRows(); notifyModelChanged("Added row"); }
+    private void addRow() { if (!changeStarted()) return; int row = model.rows.size(); model.rows.add(new ThemeEditorModel.Row("row_new_" + System.nanoTime(), 18)); reindexRows(); notifyModelChanged("已添加行"); }
     private void duplicateRow(int row) {
         if (!changeStarted()) return; ThemeEditorModel.Row copyRow = model.rows.get(row).copy(); copyRow.id = "row_copy_" + System.nanoTime(); model.rows.add(row + 1, copyRow);
         java.util.ArrayList<ThemeEditorModel.Key> copies = new java.util.ArrayList<>(); int copyIndex = 0; for (ThemeEditorModel.Key key : model.keys) if (model.rows.get(row).id.equals(key.ownerId)) { ThemeEditorModel.Key copy = key.copy(); copy.id = copyRow.id + "_key_" + copyIndex++; copy.ownerId = copyRow.id; copies.add(copy); }
-        model.keys.addAll(copies); reindexRows(); notifyModelChanged("Duplicated row");
+        model.keys.addAll(copies); reindexRows(); notifyModelChanged("已复制行");
     }
     private void deleteRow(int row) {
-        if (model.rows.size() <= 1) { setStatus("At least one row is required"); return; } if (!changeStarted()) return; String owner = model.rows.get(row).id; model.rows.remove(row);
-        for (int i = model.keys.size() - 1; i >= 0; i--) if (owner.equals(model.keys.get(i).ownerId)) model.keys.remove(i); model.selectedIds.clear(); reindexRows(); canvas.setSelectedKey(null); properties.bind(null); notifyModelChanged("Deleted row");
+        if (model.rows.size() <= 1) { setStatus("至少需要一行"); return; } if (!changeStarted()) return; String owner = model.rows.get(row).id; model.rows.remove(row);
+        for (int i = model.keys.size() - 1; i >= 0; i--) if (owner.equals(model.keys.get(i).ownerId)) model.keys.remove(i); model.selectedIds.clear(); reindexRows(); canvas.setSelectedKey(null); properties.bind(null); notifyModelChanged("已删除行");
     }
     private void moveRow(int row, int delta) {
-        int target = row + delta; if (target < 0 || target >= model.rows.size()) { setStatus("Row is already at the edge"); return; }
-        if (!changeStarted()) return; java.util.Collections.swap(model.rows, row, target); layoutRows(); notifyModelChanged("Reordered rows");
+        int target = row + delta; if (target < 0 || target >= model.rows.size()) { setStatus("行已位于边界"); return; }
+        if (!changeStarted()) return; java.util.Collections.swap(model.rows, row, target); layoutRows(); notifyModelChanged("已调整行顺序");
     }
     private void editRowHeight(int row) {
-        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText height = dialogField(fields, "Row height percent", String.valueOf(model.rows.get(row).height));
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Row height").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { if (!changeStarted()) return; model.rows.get(row).height = Math.max(1, parseFloat(height, model.rows.get(row).height)); layoutRows(); notifyModelChanged("Updated row height"); }).show();
+        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText height = dialogField(fields, "行高百分比", String.valueOf(model.rows.get(row).height));
+        new android.app.AlertDialog.Builder(getContext()).setTitle("行高").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { if (!changeStarted()) return; model.rows.get(row).height = Math.max(1, parseFloat(height, model.rows.get(row).height)); layoutRows(); notifyModelChanged("已更新行高"); }).show();
     }
     private void editRowWidth(int row) {
-        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText width = dialogField(fields, "Default key width; -1 inherits", String.valueOf(model.rows.get(row).width));
-        new android.app.AlertDialog.Builder(getContext()).setTitle("Row default width").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { if (!changeStarted()) return; model.rows.get(row).width = parseFloat(width, model.rows.get(row).width); notifyModelChanged("Updated row default width"); }).show();
+        LinearLayout fields = new LinearLayout(getContext()); android.widget.EditText width = dialogField(fields, "默认按键宽度;-1 表示继承", String.valueOf(model.rows.get(row).width));
+        new android.app.AlertDialog.Builder(getContext()).setTitle("行默认宽度").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { if (!changeStarted()) return; model.rows.get(row).width = parseFloat(width, model.rows.get(row).width); notifyModelChanged("已更新行默认宽度"); }).show();
     }
     private void distributeRow(int row) {
         java.util.ArrayList<ThemeEditorModel.Key> keys = new java.util.ArrayList<>(); String owner = model.rows.get(row).id; for (ThemeEditorModel.Key key : model.keys) if (owner.equals(key.ownerId)) keys.add(key);
-        if (keys.isEmpty()) { setStatus("Row has no keys"); return; } if (!changeStarted()) return; float width = 100f / keys.size(); for (ThemeEditorModel.Key key : keys) key.width = width; model.rows.get(row).width = width; layoutRows(); notifyModelChanged("Distributed row keys evenly");
+        if (keys.isEmpty()) { setStatus("此行没有按键"); return; } if (!changeStarted()) return; float width = 100f / keys.size(); for (ThemeEditorModel.Key key : keys) key.width = width; model.rows.get(row).width = width; layoutRows(); notifyModelChanged("已平均分布行内按键");
     }
 
     private void reindexRows() { layoutRows(); }
@@ -838,8 +855,8 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         if (view instanceof android.view.ViewGroup) { android.view.ViewGroup group = (android.view.ViewGroup) view; for (int i = 0; i < group.getChildCount(); i++) themePropertyEditor(group.getChildAt(i)); }
     }
     private void showProperties(boolean visible) { propertyPanel.setVisibility(visible ? VISIBLE : GONE); if (visible) propertyPanel.bringToFront(); }
-    private void showActionGroups(Button[] selection, Button[] structure, Button[] pages, Button[] preview, Button[] data) { String[] groups = {"Selection and batch", "Keys and layout", "Key map pages", "Preview and events", "Clipboard"}; Button[][] actions = {selection, structure, pages, preview, data}; new android.app.AlertDialog.Builder(getContext()).setTitle("Editor actions").setItems(groups, (dialog, which) -> showActionList(groups[which], actions[which])).setNegativeButton("Close", null).show(); }
-    private void showActionList(String title, Button[] actions) { String[] labels = new String[actions.length]; for (int i = 0; i < actions.length; i++) labels[i] = actions[i].getText().toString(); new android.app.AlertDialog.Builder(getContext()).setTitle(title).setItems(labels, (dialog, which) -> actions[which].performClick()).setNegativeButton("Close", null).show(); }
+    private void showActionGroups(Button[] selection, Button[] structure, Button[] pages, Button[] preview, Button[] data) { String[] groups = {"选择与批量", "按键与布局", "按键映射页(key_maps)", "预览与事件", "剪贴板"}; Button[][] actions = {selection, structure, pages, preview, data}; new android.app.AlertDialog.Builder(getContext()).setTitle("编辑操作").setItems(groups, (dialog, which) -> showActionList(groups[which], actions[which])).setNegativeButton("关闭", null).show(); }
+    private void showActionList(String title, Button[] actions) { String[] labels = new String[actions.length]; for (int i = 0; i < actions.length; i++) labels[i] = actions[i].getText().toString(); new android.app.AlertDialog.Builder(getContext()).setTitle(title).setItems(labels, (dialog, which) -> actions[which].performClick()).setNegativeButton("关闭", null).show(); }
     public void setCallbacks(ThemeEditorCallbacks callbacks) { this.callbacks = callbacks; }
     public void setClipboardScope(String value) { clipboardScope = value == null ? "" : java.util.UUID.nameUUIDFromBytes(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString(); }
 
@@ -1358,16 +1375,16 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     }
 
     private static String panelPreviewDefaultMessage() {
-        return "No static panel source supplied; showing preview defaults";
+        return "未提供静态面板源;显示预览默认值";
     }
-    void storeStyleEntityClipboard(ThemeStyleEntities.Snapshot snapshot) { ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.STYLE_ENTITY, clipboardScope, null, null, null, null, snapshot == null ? "" : snapshot.getId(), snapshot)); setStatus(snapshot == null ? "Style entity copy failed" : "Copied complete style entity " + snapshot.getId() + " to the private editor clipboard"); }
+    void storeStyleEntityClipboard(ThemeStyleEntities.Snapshot snapshot) { ThemeEditorClipboard.put(new ThemeEditorClipboard.Payload(ThemeEditorClipboard.Type.STYLE_ENTITY, clipboardScope, null, null, null, null, snapshot == null ? "" : snapshot.getId(), snapshot)); setStatus(snapshot == null ? "样式实体复制失败" : "已复制完整样式实体 " + snapshot.getId() + " 到编辑器专用剪贴板"); }
     ThemeEditorClipboard.Payload styleEntityClipboard() { ThemeEditorClipboard.Payload value = ThemeEditorClipboard.get(); return value != null && value.type == ThemeEditorClipboard.Type.STYLE_ENTITY ? value : null; }
     boolean isCrossProjectClipboard(ThemeEditorClipboard.Payload value) { return value != null && !java.util.Objects.equals(value.projectIdentity, clipboardScope); }
-    void applyStyleEntityReference(java.util.List<ThemeEditorModel.Key> keys, String styleId) { if (keys == null || keys.isEmpty()) { setStatus("Style entity created; no target keys were selected"); return; } if (!changeStarted()) return; int count = 0; for (ThemeEditorModel.Key snapshot : keys) { ThemeEditorModel.Key key = model.find(snapshot.id); if (key != null) { key.keyStyle = styleId; count++; } } persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("Applied pasted style entity " + styleId + " to " + count + " keys as one undo step"); }
-    public void setReadOnly(boolean value) { readOnly = value; canvas.setReadOnly(value || !"select".equals(canvasMode)); properties.setReadOnly(value); if (value) setStatus("Read-only session"); }
-    private boolean canEdit() { if (!readOnly) return true; setStatus("Read-only: another session owns this project"); return false; }
-    public void setModel(ThemeEditorModel value) { model = value == null ? ThemeEditorModel.sample() : value.copy(); applyPanelPreviewSource(model); undo.clear(); redo.clear(); dirty = false; canvas.setModel(model); properties.setLayoutMode(model.layoutMode); properties.bind(null); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); contextBar.setVisibility(INVISIBLE); setStatus("Ready"); }
-    public void setModelKeepingHistory(ThemeEditorModel value) { if (value == null) return; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>(model.selectedIds); model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); for (String id : selected) if (model.find(id) != null) model.selectedIds.add(id); canvas.setModel(model); ThemeEditorModel.Key key = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(key); properties.setLayoutMode(model.layoutMode); refreshSelectionEditor(key); setStatus("Workspace refreshed"); }
+    void applyStyleEntityReference(java.util.List<ThemeEditorModel.Key> keys, String styleId) { if (keys == null || keys.isEmpty()) { setStatus("已创建样式实体;未选择目标按键"); return; } if (!changeStarted()) return; int count = 0; for (ThemeEditorModel.Key snapshot : keys) { ThemeEditorModel.Key key = model.find(snapshot.id); if (key != null) { key.keyStyle = styleId; count++; } } persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("已应用粘贴的样式实体 " + styleId + " 到 " + count + " 个按键(一个撤销步骤)"); }
+    public void setReadOnly(boolean value) { readOnly = value; canvas.setReadOnly(value || !"select".equals(canvasMode)); properties.setReadOnly(value); if (value) setStatus("只读会话"); }
+    private boolean canEdit() { if (!readOnly) return true; setStatus("只读:另一个会话正在占用此项目"); return false; }
+    public void setModel(ThemeEditorModel value) { model = value == null ? ThemeEditorModel.sample() : value.copy(); applyPanelPreviewSource(model); undo.clear(); redo.clear(); dirty = false; canvas.setModel(model); properties.setLayoutMode(model.layoutMode); properties.bind(null); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); contextBar.setVisibility(INVISIBLE); setStatus("就绪"); }
+    public void setModelKeepingHistory(ThemeEditorModel value) { if (value == null) return; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>(model.selectedIds); model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); for (String id : selected) if (model.find(id) != null) model.selectedIds.add(id); canvas.setModel(model); ThemeEditorModel.Key key = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(key); properties.setLayoutMode(model.layoutMode); refreshSelectionEditor(key); setStatus("工作台已刷新"); }
     public void updatePreviewColors(ThemeEditorModel value) {
         if (value == null) return;
         model.backgroundColor = value.backgroundColor;
@@ -1397,7 +1414,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         return true;
     }
     private void restore(ThemeEditorModel value) { applying = true; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; model = value.copy(); applyPanelPreviewSource(model); canvas.setModel(model); ThemeEditorModel.Key restored = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(restored); refreshSelectionEditor(restored); applying = false; }
-    public void undo() { if (!canEdit()) return; properties.commit(); if (undo.isEmpty()) { setStatus("Nothing to undo"); return; } redo.push(model.copy()); restore(undo.pop()); if (callbacks != null) callbacks.onUndo(model.copy()); setStatus("Undone"); }
-    public void redo() { if (!canEdit()) return; properties.commit(); if (redo.isEmpty()) { setStatus("Nothing to redo"); return; } undo.push(model.copy()); restore(redo.pop()); if (callbacks != null) callbacks.onRedo(model.copy()); setStatus("Redone"); }
-    public void setStatus(String message) { status.setText((dirty ? "● Modified · " : "● Saved · ") + message); if (statusContext != null && model != null) statusContext.setText(model.layoutMode.name().toLowerCase(java.util.Locale.ROOT) + " · " + model.keys.size() + " keys · " + selectedKeys().size() + " selected   "); refreshStructurePanel(); }
+    public void undo() { if (!canEdit()) return; properties.commit(); if (undo.isEmpty()) { setStatus("没有可撤销的操作"); return; } redo.push(model.copy()); restore(undo.pop()); if (callbacks != null) callbacks.onUndo(model.copy()); setStatus("已撤销"); }
+    public void redo() { if (!canEdit()) return; properties.commit(); if (redo.isEmpty()) { setStatus("没有可重做的操作"); return; } undo.push(model.copy()); restore(redo.pop()); if (callbacks != null) callbacks.onRedo(model.copy()); setStatus("已重做"); }
+    public void setStatus(String message) { status.setText((dirty ? "● 已修改 · " : "● 已保存 · ") + message); if (statusContext != null && model != null) statusContext.setText(layoutName() + " · " + model.keys.size() + " 个按键 · 已选择 " + selectedKeys().size() + " 个   "); refreshStructurePanel(); }
 }

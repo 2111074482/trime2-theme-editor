@@ -54,6 +54,8 @@ import java.io.IOException;
 /** Native entry point for the first integrated theme editor milestone. */
 public class ThemeEditorActivity extends ComponentActivity {
     public static final String EXTRA_THEME = "com.osfans.trime.editor.ui.THEME";
+    private static final int MENU_OPEN_LUA = 10;
+    private static final int MENU_OPEN_FOLDER = 11;
     private static final int MENU_PAGES = 12;
     private static final int MENU_EXPORT = 13;
     private static final int MENU_SHARE = 14;
@@ -129,8 +131,8 @@ public class ThemeEditorActivity extends ComponentActivity {
         Intent data = result.getData();
         if (result.getResultCode() == RESULT_OK && data != null && data.getData() != null && pendingExport != null) {
             try (FileInputStream input = new FileInputStream(pendingExport); java.io.OutputStream output = getContentResolver().openOutputStream(data.getData())) {
-                if (output == null) throw new IOException("Cannot open export destination"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); workspace.setStatus("ZIP exported");
-            } catch (Exception error) { workspace.setStatus("Export failed: " + error.getMessage()); }
+                if (output == null) throw new IOException("无法打开导出目标"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); workspace.setStatus("ZIP 已导出");
+            } catch (Exception error) { workspace.setStatus("导出失败:" + error.getMessage()); }
         }
         if (pendingExport != null) pendingExport.delete(); pendingExport = null;
     });
@@ -168,10 +170,10 @@ public class ThemeEditorActivity extends ComponentActivity {
     @Override public void onBackPressed() {
         if (viewModel.getDirty()) {
             new android.app.AlertDialog.Builder(this)
-                    .setMessage("Unsaved theme changes")
-                    .setPositiveButton("Save", (dialog, which) -> saveModel(workspace.getModel()))
-                    .setNegativeButton("Discard", (dialog, which) -> { deleteRecoveryDraft(); finish(); })
-                    .setNeutralButton("Cancel", null)
+                    .setMessage("主题有未保存的更改")
+                    .setPositiveButton("保存", (dialog, which) -> saveModel(workspace.getModel()))
+                    .setNegativeButton("放弃", (dialog, which) -> { deleteRecoveryDraft(); finish(); })
+                    .setNeutralButton("取消", null)
                     .show();
             return;
         }
@@ -179,25 +181,25 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     @Override public boolean onCreateOptionsMenu(android.view.Menu menu) {
-        menu.add(0, MENU_PAGES, 1, "Editor pages").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
-        menu.add("Open Lua").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add("Open theme folder").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_EXPORT, 20, "Export ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_SHARE, 21, "Share ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_DIAGNOSTICS, 22, "Diagnostics").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_RESOURCES, 23, "Resources").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, 24, 24, "Install theme").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_CODE, 25, "Lua source").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_STYLE_EDITOR, 26, "Style properties").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_COMPONENT_EDITOR, 27, "Candidate / toolbar / panels").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_COMPOSITION_EDITOR, 28, "Preedit / composition").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-        menu.add(0, MENU_ROLLBACK_INSTALL, 29, "Rollback last install").setEnabled(lastInstallBackup != null).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_PAGES, 1, "编辑器页面").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+        menu.add(0, MENU_OPEN_LUA, 2, "打开 Lua 文件").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_OPEN_FOLDER, 3, "打开主题文件夹").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_EXPORT, 20, "导出 ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_SHARE, 21, "分享 ZIP").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_DIAGNOSTICS, 22, "诊断信息").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_RESOURCES, 23, "资源").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, 24, 24, "安装主题").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_CODE, 25, "Lua 源代码").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_STYLE_EDITOR, 26, "样式属性").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_COMPONENT_EDITOR, 27, "候选栏 / 工具栏 / 面板").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_COMPOSITION_EDITOR, 28, "预编辑 / 编码窗口").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_ROLLBACK_INSTALL, 29, "回滚上次安装").setEnabled(lastInstallBackup != null).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
         if (project != null) {
-            android.view.Menu styles = menu.addSubMenu("Style");
+            android.view.Menu styles = menu.addSubMenu("样式");
             for (int i = 0; i < project.getStyles().size(); i++) {
                 styles.add(0, MENU_STYLE_BASE + i, i, project.getStyles().get(i).getName());
             }
-            android.view.Menu keyboards = menu.addSubMenu("Keyboard");
+            android.view.Menu keyboards = menu.addSubMenu("键盘");
             for (int i = 0; i < project.getKeyboards().size(); i++) {
                 keyboards.add(0, MENU_KEYBOARD_BASE + i, i, project.getKeyboards().get(i).getName());
             }
@@ -207,11 +209,11 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     @Override public boolean onOptionsItemSelected(android.view.MenuItem item) {
         if (item.getItemId() == MENU_PAGES) { showEditorPages(); return true; }
-        if ("Open Lua".contentEquals(item.getTitle())) {
+        if (item.getItemId() == MENU_OPEN_LUA) {
             openLuaLauncher.launch(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE));
             return true;
         }
-        if ("Open theme folder".contentEquals(item.getTitle())) {
+        if (item.getItemId() == MENU_OPEN_FOLDER) {
             openTreeLauncher.launch(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION));
             return true;
         }
@@ -237,31 +239,31 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void showEditorPages() {
-        String[] pages = {"Project home", "New project", "Recent projects", "Keyboard assets", "Style assets", "Theme settings", "Keyboard structure", "Style properties", "Candidate / toolbar / panels", "Preedit / composition", "Preview workspace", "Resources", "Diagnostics", "Lua source", "Export and install", "Recovery status"};
-        new android.app.AlertDialog.Builder(this).setTitle("Theme editor pages").setItems(pages, (dialog, which) -> {
-            if (which == 0) showProjectHome(); else if (which == 1) showNewProjectWizard(); else if (which == 2) showRecentProjects(); else if (which == 3) showKeyboardAssets(); else if (which == 4) showStyleAssets(); else if (which == 5) showThemeSettings(); else if (which == 6) showStructurePage(); else if (which == 7) showStyleEditor(); else if (which == 8) showVisualComponentStyleEditor(); else if (which == 9) showCompositionStyleEditor(); else if (which == 10) workspace.setStatus("Preview workspace active; use Preview... for device controls"); else if (which == 11) showResources(); else if (which == 12) showDiagnostics(); else if (which == 13) showCodeEditor(); else if (which == 14) showExportInstallPage(); else showRecoveryStatus();
-        }).setNegativeButton("Close", null).show();
+        String[] pages = {"项目主页", "新建项目", "最近项目", "键盘资源", "样式资源", "主题设置", "键盘结构", "样式属性", "候选栏 / 工具栏 / 面板", "预编辑 / 编码窗口", "预览工作区", "资源", "诊断信息", "Lua 源代码", "导出与安装", "恢复状态"};
+        new android.app.AlertDialog.Builder(this).setTitle("主题编辑器页面").setItems(pages, (dialog, which) -> {
+            if (which == 0) showProjectHome(); else if (which == 1) showNewProjectWizard(); else if (which == 2) showRecentProjects(); else if (which == 3) showKeyboardAssets(); else if (which == 4) showStyleAssets(); else if (which == 5) showThemeSettings(); else if (which == 6) showStructurePage(); else if (which == 7) showStyleEditor(); else if (which == 8) showVisualComponentStyleEditor(); else if (which == 9) showCompositionStyleEditor(); else if (which == 10) workspace.setStatus("预览工作区已启用;请使用“预览...”控制设备"); else if (which == 11) showResources(); else if (which == 12) showDiagnostics(); else if (which == 13) showCodeEditor(); else if (which == 14) showExportInstallPage(); else showRecoveryStatus();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private void showProjectHome() {
         StringBuilder text = new StringBuilder();
-        if (project == null) text.append("Single Lua file or unsaved draft"); else text.append("Project: ").append(projectDisplayName == null ? project.getRoot().getName() : projectDisplayName).append("\nStyles: ").append(project.getStyles().size()).append("\nKeyboards: ").append(project.getKeyboards().size()).append("\nResources: ").append(project.getResources().size());
-        text.append("\nCurrent: ").append(currentUri == null ? "unsaved" : currentUri).append("\nMode: ").append(readOnlySession ? "read-only second session" : "writable").append("\nDirty: ").append(viewModel.getDirty());
-        new android.app.AlertDialog.Builder(this).setTitle("Project home").setMessage(text.toString()).setPositiveButton("Close", null).show();
+        if (project == null) text.append("单个 Lua 文件或未保存草稿"); else text.append("项目:").append(projectDisplayName == null ? project.getRoot().getName() : projectDisplayName).append("\n样式数: ").append(project.getStyles().size()).append("\n键盘数: ").append(project.getKeyboards().size()).append("\n资源数: ").append(project.getResources().size());
+        text.append("\n当前文件: ").append(currentUri == null ? "未保存" : currentUri).append("\n模式: ").append(readOnlySession ? "第二会话只读" : "可写").append("\n有未保存更改: ").append(viewModel.getDirty());
+        new android.app.AlertDialog.Builder(this).setTitle("项目主页").setMessage(text.toString()).setPositiveButton("关闭", null).show();
     }
 
     private void showNewProjectWizard() {
         if (!ensureWritable()) return;
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
-        EditText directory = simpleField(fields, "Directory ID", "my_theme"); EditText name = simpleField(fields, "Theme name", "My Theme"); EditText author = simpleField(fields, "Author", "Author"); EditText style = simpleField(fields, "Default style ID", "light"); EditText keyboard = simpleField(fields, "Default keyboard ID", "default");
-        android.widget.Spinner palette = new android.widget.Spinner(this); palette.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Light", "Dark"})); fields.addView(palette);
-        android.widget.Spinner layout = new android.widget.Spinner(this); layout.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Rows", "Flex box", "Key maps", "Absolute keys"})); fields.addView(layout);
+        EditText directory = simpleField(fields, "目录标识", "my_theme"); EditText name = simpleField(fields, "主题名称", "我的主题"); EditText author = simpleField(fields, "作者", "作者"); EditText style = simpleField(fields, "默认样式标识", "light"); EditText keyboard = simpleField(fields, "默认键盘标识", "default");
+        android.widget.Spinner palette = new android.widget.Spinner(this); palette.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"浅色", "深色"})); fields.addView(palette);
+        android.widget.Spinner layout = new android.widget.Spinner(this); layout.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"行布局(rows)", "弹性盒布局(flex_box)", "分页键映射(key_maps)", "绝对键布局(keys)"})); fields.addView(layout);
         android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle("New theme project").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Choose target", (dialog, which) -> {
+        new android.app.AlertDialog.Builder(this).setTitle("新建主题项目").setView(scroll).setNegativeButton("取消", null).setPositiveButton("选择目标", (dialog, which) -> {
             try {
                 pendingCreateSpec = new ThemeProjectCreator.Spec(directory.getText().toString().trim(), name.getText().toString().trim(), author.getText().toString().trim(), style.getText().toString().trim(), keyboard.getText().toString().trim(), palette.getSelectedItemPosition() == 0 ? ThemeProjectCreator.Palette.LIGHT : ThemeProjectCreator.Palette.DARK, ThemeProjectCreator.KeyboardTemplate.values()[layout.getSelectedItemPosition()]).validated();
                 createProjectTreeLauncher.launch(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION));
-            } catch (Exception error) { pendingCreateSpec = null; workspace.setStatus("New project validation failed: " + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
+            } catch (Exception error) { pendingCreateSpec = null; workspace.setStatus("新项目校验失败:" + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
         }).show();
     }
 
@@ -271,59 +273,78 @@ public class ThemeEditorActivity extends ComponentActivity {
         File draft = new File(getCacheDir(), "theme-editor-create-" + System.nanoTime()); DocumentFile created = null;
         try {
             ThemeProject generated = ThemeProjectCreator.create(draft, spec); ThemeProjectSnapshot snapshot = ThemeProjectSnapshot.Companion.load(generated, new ThemeLuaParser());
-            for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : ThemeProjectDiagnostics.INSTANCE.collect(snapshot, new ThemeFieldRegistry())) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("Generated project: " + diagnostic.getMessage());
-            DocumentFile tree = DocumentFile.fromTreeUri(this, treeUri); if (tree == null || !tree.canWrite()) throw new IOException("Target directory is not writable");
-            if (tree.findFile(spec.getDirectoryName()) != null) throw new IOException("A project with that directory ID already exists");
-            created = tree.createDirectory(spec.getDirectoryName()); if (created == null) throw new IOException("Cannot create project directory");
-            copyProjectToDocument(draft, created); if (!fileManifest(draft).equals(documentManifest(created))) throw new IOException("Created project verification failed");
+            for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : ThemeProjectDiagnostics.INSTANCE.collect(snapshot, new ThemeFieldRegistry())) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("生成的项目:" + diagnostic.getMessage());
+            DocumentFile tree = DocumentFile.fromTreeUri(this, treeUri); if (tree == null || !tree.canWrite()) throw new IOException("目标目录不可写");
+            if (tree.findFile(spec.getDirectoryName()) != null) throw new IOException("该目录标识对应的项目已存在");
+            created = tree.createDirectory(spec.getDirectoryName()); if (created == null) throw new IOException("无法创建项目目录");
+            copyProjectToDocument(draft, created); if (!fileManifest(draft).equals(documentManifest(created))) throw new IOException("新建项目校验失败");
             File cache = new File(getCacheDir(), "theme-editor-created-" + System.nanoTime()); copyDirectory(draft, cache);
-            importedProjectUri = treeUri; importedProjectTreeUri = treeUri; importedProjectTreePrefix = spec.getDirectoryName(); openedImportedFingerprint = null; rememberRecentProject(treeUri, spec.getDirectoryName(), spec.getDirectoryName()); loadProject(cache, spec.getDirectoryName()); workspace.setStatus("Created and verified project: " + spec.getThemeName());
-        } catch (Exception error) { if (created != null) created.delete(); workspace.setStatus("Project creation failed: " + error.getMessage()); Toast.makeText(this, "Unable to create theme project", Toast.LENGTH_LONG).show(); }
+            importedProjectUri = treeUri; importedProjectTreeUri = treeUri; importedProjectTreePrefix = spec.getDirectoryName(); openedImportedFingerprint = null; rememberRecentProject(treeUri, spec.getDirectoryName(), spec.getDirectoryName()); loadProject(cache, spec.getDirectoryName()); workspace.setStatus("项目已创建并校验:" + spec.getThemeName());
+        } catch (Exception error) { if (created != null) created.delete(); workspace.setStatus("项目创建失败:" + error.getMessage()); Toast.makeText(this, "无法创建主题项目", Toast.LENGTH_LONG).show(); }
         finally { deleteDirectory(draft); }
     }
 
     private void rememberRecentProject(Uri uri, String name, String prefix) {
-        android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("recent_uri", uri.toString()).putString("recent_name", name == null ? "Theme project" : name);
+        android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("recent_uri", uri.toString()).putString("recent_name", name == null ? "主题项目" : name);
         if (prefix == null) edit.remove("recent_prefix"); else edit.putString("recent_prefix", prefix); edit.apply();
     }
 
     private void showRecentProjects() {
-        String uri = getPreferences(MODE_PRIVATE).getString("recent_uri", null), name = getPreferences(MODE_PRIVATE).getString("recent_name", "Theme project"), prefix = getPreferences(MODE_PRIVATE).getString("recent_prefix", null);
-        if (uri == null) { new android.app.AlertDialog.Builder(this).setTitle("Recent projects").setMessage("No recent SAF project").setPositiveButton("Close", null).show(); return; }
-        new android.app.AlertDialog.Builder(this).setTitle("Recent projects").setItems(new String[]{name}, (dialog, which) -> { try { loadRecentProject(Uri.parse(uri), prefix, name); } catch (Exception error) { workspace.setStatus("Recent project permission expired; open the folder again"); } }).setNegativeButton("Close", null).setNeutralButton("Forget", (dialog, which) -> getPreferences(MODE_PRIVATE).edit().remove("recent_uri").remove("recent_name").remove("recent_prefix").apply()).show();
+        String uri = getPreferences(MODE_PRIVATE).getString("recent_uri", null), name = getPreferences(MODE_PRIVATE).getString("recent_name", "主题项目"), prefix = getPreferences(MODE_PRIVATE).getString("recent_prefix", null);
+        if (uri == null) { new android.app.AlertDialog.Builder(this).setTitle("最近项目").setMessage("没有最近打开的 SAF 项目").setPositiveButton("关闭", null).show(); return; }
+        new android.app.AlertDialog.Builder(this).setTitle("最近项目").setItems(new String[]{name}, (dialog, which) -> { try { loadRecentProject(Uri.parse(uri), prefix, name); } catch (Exception error) { workspace.setStatus("最近项目的访问权限已失效,请重新打开文件夹"); } }).setNegativeButton("关闭", null).setNeutralButton("移除记录", (dialog, which) -> getPreferences(MODE_PRIVATE).edit().remove("recent_uri").remove("recent_name").remove("recent_prefix").apply()).show();
     }
 
     private void showThemeSettings() {
-        if (project == null) { Toast.makeText(this, "Open a theme project first", Toast.LENGTH_LONG).show(); return; }
+        if (project == null) { Toast.makeText(this, "请先打开主题项目", Toast.LENGTH_LONG).show(); return; }
         try {
             com.osfans.trime.editor.core.ThemeDocument main = new ThemeLuaParser().parse(readSmallText(project.getMainFile(), 4 * 1024 * 1024)).getDocument();
             LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
-            EditText name = simpleField(fields, "Theme name", stringValue(main.get("name"), projectDisplayName)); EditText author = simpleField(fields, "Author", stringValue(main.get("author"), "Author"));
+            EditText name = simpleField(fields, "主题名称", stringValue(main.get("name"), projectDisplayName)); EditText author = simpleField(fields, "作者", stringValue(main.get("author"), "作者"));
             android.widget.Spinner style = new android.widget.Spinner(this); java.util.ArrayList<String> styles = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getStyles()) styles.add(file.getName()); style.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, styles)); style.setSelection(Math.max(0, styles.indexOf(stringValue(main.get("style"), "light")))); fields.addView(style);
             android.widget.Spinner keyboard = new android.widget.Spinner(this); java.util.ArrayList<String> keyboards = new java.util.ArrayList<>(); for (ThemeProjectFile file : project.getKeyboards()) keyboards.add(file.getName()); keyboard.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, keyboards)); keyboard.setSelection(Math.max(0, keyboards.indexOf(stringValue(main.get("keyboard"), "qwerty26")))); fields.addView(keyboard);
-            android.widget.Button actionLabels = new android.widget.Button(this); actionLabels.setText("Edit action labels"); actionLabels.setOnClickListener(view -> showActionLabelsEditor()); fields.addView(actionLabels);
-            android.widget.Button presetEvents = new android.widget.Button(this); presetEvents.setText("Manage preset events"); presetEvents.setOnClickListener(view -> showPresetEventManager()); fields.addView(presetEvents);
-            android.widget.Button toolbarKeys = new android.widget.Button(this); toolbarKeys.setText("Manage selected style toolbar keys"); toolbarKeys.setOnClickListener(view -> { ThemeProjectFile target = project.style((String) style.getSelectedItem()); if (target == null) workspace.setStatus("Selected style asset is unavailable"); else showToolbarKeyManager(target); }); fields.addView(toolbarKeys);
-            android.widget.Button panelComponents = new android.widget.Button(this); panelComponents.setText("Manage candidate / symbol / clipboard bars"); panelComponents.setOnClickListener(view -> { ThemeProjectFile target = project.style((String) style.getSelectedItem()); if (target == null) workspace.setStatus("Selected style asset is unavailable"); else showPanelComponentManager(target); }); fields.addView(panelComponents);
-            TextView note = new TextView(this); note.setText("Dynamic get_keyboard, commands, scripts and callbacks remain code-only and are never executed by the editor."); note.setPadding(0, 16, 0, 0); fields.addView(note);
-            new android.app.AlertDialog.Builder(this).setTitle("Theme settings").setView(fields).setNegativeButton("Cancel", null).setNeutralButton("Open advanced Lua", (dialog, which) -> showCodeEditor()).setPositiveButton("Apply", (dialog, which) -> {
-                if (!ensureAssetWritable()) return; try { String nextStyle = (String) style.getSelectedItem(), nextKeyboard = (String) keyboard.getSelectedItem(); mutateMainWithMirror(() -> ThemeProjectMutator.updateMetadata(project, name.getText().toString(), author.getText().toString(), nextStyle, nextKeyboard)); projectDisplayName = name.getText().toString().trim(); workspace.setStatus("Theme settings updated"); } catch (Exception error) { workspace.setStatus("Theme settings failed: " + error.getMessage()); }
+            android.widget.Button actionLabels = new android.widget.Button(this); actionLabels.setText("编辑操作标签(action_labels)"); actionLabels.setOnClickListener(view -> showActionLabelsEditor()); fields.addView(actionLabels);
+            android.widget.Button presetEvents = new android.widget.Button(this); presetEvents.setText("管理预设事件(preset_keys)"); presetEvents.setOnClickListener(view -> showPresetEventManager()); fields.addView(presetEvents);
+            android.widget.Button toolbarKeys = new android.widget.Button(this); toolbarKeys.setText("管理所选样式的工具栏按键(toolbar.keys)"); toolbarKeys.setOnClickListener(view -> { ThemeProjectFile target = project.style((String) style.getSelectedItem()); if (target == null) workspace.setStatus("所选样式资源不可用"); else showToolbarKeyManager(target); }); fields.addView(toolbarKeys);
+            android.widget.Button panelComponents = new android.widget.Button(this); panelComponents.setText("管理候选栏、符号栏和剪贴板栏"); panelComponents.setOnClickListener(view -> { ThemeProjectFile target = project.style((String) style.getSelectedItem()); if (target == null) workspace.setStatus("所选样式资源不可用"); else showPanelComponentManager(target); }); fields.addView(panelComponents);
+            TextView note = new TextView(this); note.setText("动态取键盘(get_keyboard)、命令(command)、脚本(script)和回调(callback)仅保留为代码,编辑器绝不会执行它们。"); note.setPadding(0, 16, 0, 0); fields.addView(note);
+            new android.app.AlertDialog.Builder(this).setTitle("主题设置").setView(fields).setNegativeButton("取消", null).setNeutralButton("打开高级 Lua", (dialog, which) -> showCodeEditor()).setPositiveButton("应用", (dialog, which) -> {
+                if (!ensureAssetWritable()) return; try { String nextStyle = (String) style.getSelectedItem(), nextKeyboard = (String) keyboard.getSelectedItem(); mutateMainWithMirror(() -> ThemeProjectMutator.updateMetadata(project, name.getText().toString(), author.getText().toString(), nextStyle, nextKeyboard)); projectDisplayName = name.getText().toString().trim(); workspace.setStatus("主题设置已更新"); } catch (Exception error) { workspace.setStatus("主题设置更新失败:" + error.getMessage()); }
             }).show();
-        } catch (Exception error) { workspace.setStatus("Unable to load theme settings: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("无法加载主题设置:" + error.getMessage()); }
     }
+    private static String actionLabel(String id) {
+        switch (id) {
+            case "none": return "无操作(none)";
+            case "send": return "发送(send)";
+            case "go": return "前往(go)";
+            case "done": return "完成(done)";
+            case "search": return "搜索(search)";
+            case "previous": return "上一个(previous)";
+            case "next": return "下一个(next)";
+            default: return id;
+        }
+    }
+
+    private static String[] actionDisplayLabels(String[] ids) {
+        String[] labels = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) labels[i] = actionLabel(ids[i]);
+        return labels;
+    }
+
     private void showActionLabelsEditor() {
         if (!ensureAssetWritable() || project == null) return;
         try {
             String source = new String(readFileBytes(project.getMainFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.Map<String, String> current = ThemePresetEvents.actionLabels(source);
             LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); java.util.LinkedHashMap<String, EditText> inputs = new java.util.LinkedHashMap<>();
             String[] actionIds = {"none", "send", "go", "done", "search", "previous", "next"}; java.util.LinkedHashMap<String, android.widget.CheckBox> missing = new java.util.LinkedHashMap<>();
-            for (String id : actionIds) { android.widget.CheckBox inherit = new android.widget.CheckBox(this); inherit.setText("Remove " + id + " and use runtime fallback"); inherit.setChecked(!current.containsKey(id)); fields.addView(inherit); EditText input = simpleField(fields, "action_labels." + id + " (explicit empty is preserved)", current.containsKey(id) ? current.get(id) : ""); input.setEnabled(!inherit.isChecked()); inherit.setOnCheckedChangeListener((button, checked) -> input.setEnabled(!checked)); missing.put(id, inherit); inputs.put(id, input); }
-            android.widget.Spinner previewAction = new android.widget.Spinner(this); previewAction.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, actionIds)); fields.addView(previewAction);
-            new android.app.AlertDialog.Builder(this).setTitle("Editor action labels").setMessage("Preview labels only; no editor action is sent.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
-                try { java.util.LinkedHashMap<String, String> values = new java.util.LinkedHashMap<>(); for (java.util.Map.Entry<String, EditText> input : inputs.entrySet()) values.put(input.getKey(), missing.get(input.getKey()).isChecked() ? null : input.getValue().getText().toString()); mutateMainPreset(latest -> { if (!ThemeSaveCoordinator.Companion.fingerprint(source).equals(ThemeSaveCoordinator.Companion.fingerprint(latest))) throw new IOException("main.lua changed after opening action labels; reopen editor"); return ThemePresetEvents.updateActionLabels(latest, values); }, "Updated action_labels"); String selected = actionIds[previewAction.getSelectedItemPosition()]; ThemeEditorModel previewModel = workspace.getModel(); previewModel.editorActionLabel = values.get(selected) == null ? "" : values.get(selected); workspace.setModelKeepingHistory(previewModel); workspace.setStatus("Updated action_labels and previewed " + selected + "; no action executed"); }
-                catch (Exception error) { workspace.setStatus("Action labels update blocked: " + error.getMessage()); }
+            for (String id : actionIds) { android.widget.CheckBox inherit = new android.widget.CheckBox(this); inherit.setText("移除 " + actionLabel(id) + " 并使用运行时回退值"); inherit.setChecked(!current.containsKey(id)); fields.addView(inherit); EditText input = simpleField(fields, "操作标签(action_labels)." + id + "(显式空值会保留)", current.containsKey(id) ? current.get(id) : ""); input.setEnabled(!inherit.isChecked()); inherit.setOnCheckedChangeListener((button, checked) -> input.setEnabled(!checked)); missing.put(id, inherit); inputs.put(id, input); }
+            android.widget.Spinner previewAction = new android.widget.Spinner(this); previewAction.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, actionDisplayLabels(actionIds))); fields.addView(previewAction);
+            new android.app.AlertDialog.Builder(this).setTitle("编辑器操作标签(action_labels)").setMessage("仅预览标签,不会发送任何编辑器操作。").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
+                try { java.util.LinkedHashMap<String, String> values = new java.util.LinkedHashMap<>(); for (java.util.Map.Entry<String, EditText> input : inputs.entrySet()) values.put(input.getKey(), missing.get(input.getKey()).isChecked() ? null : input.getValue().getText().toString()); mutateMainPreset(latest -> { if (!ThemeSaveCoordinator.Companion.fingerprint(source).equals(ThemeSaveCoordinator.Companion.fingerprint(latest))) throw new IOException("main.lua changed after opening action labels; reopen editor"); return ThemePresetEvents.updateActionLabels(latest, values); }, "已更新操作标签(action_labels)"); String selected = actionIds[previewAction.getSelectedItemPosition()]; ThemeEditorModel previewModel = workspace.getModel(); previewModel.editorActionLabel = values.get(selected) == null ? "" : values.get(selected); workspace.setModelKeepingHistory(previewModel); workspace.setStatus("已更新操作标签(action_labels)并预览 " + selected + ";未执行任何操作"); }
+                catch (Exception error) { workspace.setStatus("操作标签更新被阻止:" + error.getMessage()); }
             }).show();
-        } catch (Exception error) { workspace.setStatus("Action labels are code-only: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("操作标签只能通过代码编辑:" + error.getMessage()); }
     }
 
     private static final class PresetUsage {
@@ -335,22 +356,22 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void showPresetEventManager() {
         if (!ensureAssetWritable() || project == null) return;
         try {
-            String source = new String(readFileBytes(project.getMainFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.List<ThemePresetEvents.Event> events = ThemePresetEvents.list(source); String[] labels = new String[events.size() + 1]; labels[0] = "+ New preset event";
-            for (int i = 0; i < events.size(); i++) { ThemePresetEvents.Event event = events.get(i); labels[i + 1] = event.getId() + " — " + presetSummary(event) + (event.getRisky() ? " [code-only execution]" : ""); }
-            new android.app.AlertDialog.Builder(this).setTitle("Preset events — static editor").setItems(labels, (dialog, which) -> { if (which == 0) showPresetEventEditor(null); else showPresetEventActions(events.get(which - 1)); }).setNegativeButton("Close", null).show();
-        } catch (Exception error) { workspace.setStatus("preset_keys is code-only: " + error.getMessage()); }
+            String source = new String(readFileBytes(project.getMainFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.List<ThemePresetEvents.Event> events = ThemePresetEvents.list(source); String[] labels = new String[events.size() + 1]; labels[0] = "+ 新建预设事件";
+            for (int i = 0; i < events.size(); i++) { ThemePresetEvents.Event event = events.get(i); labels[i + 1] = event.getId() + " — " + presetSummary(event) + (event.getRisky() ? " [仅保留代码,绝不执行]" : ""); }
+            new android.app.AlertDialog.Builder(this).setTitle("预设事件(preset_keys)——静态编辑器").setItems(labels, (dialog, which) -> { if (which == 0) showPresetEventEditor(null); else showPresetEventActions(events.get(which - 1)); }).setNegativeButton("关闭", null).show();
+        } catch (Exception error) { workspace.setStatus("预设按键(preset_keys)只能通过代码编辑:" + error.getMessage()); }
     }
 
     private static String presetSummary(ThemePresetEvents.Event event) {
-        if (!event.getLabel().isEmpty()) return event.getLabel(); if (!event.getCommand().isEmpty()) return "command=" + event.getCommand(); if (!event.getSend().isEmpty()) return "send=" + event.getSend(); if (!event.getText().isEmpty()) return "text"; if (!event.getCommit().isEmpty()) return "commit"; return "empty event";
+        if (!event.getLabel().isEmpty()) return event.getLabel(); if (!event.getCommand().isEmpty()) return "command=" + event.getCommand(); if (!event.getSend().isEmpty()) return "send=" + event.getSend(); if (!event.getText().isEmpty()) return "文本(text)"; if (!event.getCommit().isEmpty()) return "上屏文本(commit)"; return "空事件";
     }
 
     private void showPresetEventActions(ThemePresetEvents.Event event) {
         try {
-            PresetUsage usage = collectPresetUsage(event.getId()); String details = "Static references: " + usage.total + (usage.uncertain.isEmpty() ? "" : "\nUncertain Raw Lua files: " + android.text.TextUtils.join(", ", usage.uncertain)) + "\nExecution risk: " + (event.getRisky() ? "command/script is retained but never executed" : "preview shows summary only");
-            String[] actions = {"Edit fields", "Copy", "Rename and replace references", "Delete if unreferenced", "View summary"};
-            new android.app.AlertDialog.Builder(this).setTitle(event.getId()).setMessage(details).setItems(actions, (dialog, which) -> { if (which == 0) showPresetEventEditor(event); else if (which == 1) promptCopyPreset(event); else if (which == 2) promptRenamePreset(event, usage); else if (which == 3) confirmDeletePreset(event, usage); }).setNegativeButton("Close", null).show();
-        } catch (Exception error) { workspace.setStatus("Preset reference analysis failed: " + error.getMessage()); }
+            PresetUsage usage = collectPresetUsage(event.getId()); String details = "静态引用:" + usage.total + (usage.uncertain.isEmpty() ? "" : "\n存在不确定引用的原始 Lua 文件: " + android.text.TextUtils.join(", ", usage.uncertain)) + "\n执行风险: " + (event.getRisky() ? "命令(command)/脚本(script)会保留但绝不执行" : "预览仅显示摘要");
+            String[] actions = {"编辑字段", "复制", "重命名并替换引用", "无引用时删除", "查看摘要"};
+            new android.app.AlertDialog.Builder(this).setTitle(event.getId()).setMessage(details).setItems(actions, (dialog, which) -> { if (which == 0) showPresetEventEditor(event); else if (which == 1) promptCopyPreset(event); else if (which == 2) promptRenamePreset(event, usage); else if (which == 3) confirmDeletePreset(event, usage); }).setNegativeButton("关闭", null).show();
+        } catch (Exception error) { workspace.setStatus("预设引用分析失败:" + error.getMessage()); }
     }
 
     private static String formatEventStates(java.util.List<String> values) { java.util.ArrayList<String> lines = new java.util.ArrayList<>(); for (String value : values) lines.add(value.isEmpty() ? "\\0" : value.replace("\\", "\\\\").replace("\n", "\\n")); return android.text.TextUtils.join("\n", lines); }
@@ -359,24 +380,24 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void showPresetEventEditor(ThemePresetEvents.Event event) {
         if (!ensureAssetWritable()) return; final String openedSource; ThemePresetEvents.Event initial;
         try { openedSource = new String(readFileBytes(project.getMainFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); if (event == null) initial = new ThemePresetEvents.Event("Preset_new", "", "", "", "", "", "", "", "", "", "", java.util.Collections.emptyList(), "", false, false, true, null); else { ThemePresetEvents.Event current = null; for (ThemePresetEvents.Event candidate : ThemePresetEvents.list(openedSource)) if (candidate.getId().equals(event.getId())) { current = candidate; break; } if (current == null) throw new IOException("Preset changed or was deleted; reopen manager"); initial = current; } }
-        catch (Exception error) { workspace.setStatus("Preset editor blocked: " + error.getMessage()); return; }
+        catch (Exception error) { workspace.setStatus("预设编辑被阻止:" + error.getMessage()); return; }
         final ThemePresetEvents.Event openedEvent = initial;
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
-        EditText id = simpleField(fields, "Preset ID", initial.getId()); id.setEnabled(event == null); EditText label = simpleField(fields, "label", initial.getLabel()); EditText send = simpleField(fields, "send", initial.getSend()); EditText text = simpleField(fields, "text", initial.getText()); EditText commit = simpleField(fields, "commit", initial.getCommit()); EditText command = simpleField(fields, "command (retained, never executed)", initial.getCommand()); EditText option = simpleField(fields, "option", initial.getOption()); EditText select = simpleField(fields, "select", initial.getSelect()); EditText toggle = simpleField(fields, "toggle", initial.getToggle()); EditText preview = simpleField(fields, "preview", initial.getPreview()); EditText description = simpleField(fields, "description", initial.getDescription()); EditText states = simpleField(fields, "states: one per line; \\0 empty, \\n embedded newline", formatEventStates(initial.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "shift_lock: click/double/long", initial.getShiftLock()); EditText index = simpleField(fields, "index (preserved; preset references do not consume it)", initial.getIndex() == null ? "" : trim(initial.getIndex().floatValue())); index.setEnabled(false);
-        android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("repeatable"); repeatable.setChecked(initial.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("sticky"); sticky.setChecked(initial.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("functional"); functional.setChecked(initial.getFunctional()); fields.addView(functional);
+        EditText id = simpleField(fields, "预设标识", initial.getId()); id.setEnabled(event == null); EditText label = simpleField(fields, "标签(label)", initial.getLabel()); EditText send = simpleField(fields, "发送按键(send)", initial.getSend()); EditText text = simpleField(fields, "文本(text)", initial.getText()); EditText commit = simpleField(fields, "上屏文本(commit)", initial.getCommit()); EditText command = simpleField(fields, "命令(command,保留但绝不执行)", initial.getCommand()); EditText option = simpleField(fields, "选项(option)", initial.getOption()); EditText select = simpleField(fields, "选择(select)", initial.getSelect()); EditText toggle = simpleField(fields, "切换(toggle)", initial.getToggle()); EditText preview = simpleField(fields, "预览(preview)", initial.getPreview()); EditText description = simpleField(fields, "说明(description)", initial.getDescription()); EditText states = simpleField(fields, "状态(states):每行一个;\\0 表示空值,\\n 表示内嵌换行", formatEventStates(initial.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "Shift 锁定(shift_lock):click/double/long", initial.getShiftLock()); EditText index = simpleField(fields, "索引(index,保留;预设引用不使用)", initial.getIndex() == null ? "" : trim(initial.getIndex().floatValue())); index.setEnabled(false);
+        android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("可重复(repeatable)"); repeatable.setChecked(initial.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("保持(sticky)"); sticky.setChecked(initial.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("功能键(functional)"); functional.setChecked(initial.getFunctional()); fields.addView(functional);
         android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle(event == null ? "New preset event" : "Edit preset event").setMessage("Static fields only. Apply never sends keys, commits text, invokes commands, scripts, Intents, or callbacks.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
-            try { Double nextIndex = openedEvent.getIndex(); java.util.ArrayList<String> nextStates = parseEventStates(states.getText().toString()); ThemePresetEvents.Event next = new ThemePresetEvents.Event(id.getText().toString().trim(), send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), nextStates, shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); mutateMainPreset(source -> { if (!ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(source))) throw new IOException("main.lua changed after opening preset editor; reopen it"); return ThemePresetEvents.put(source, next, event != null); }, "Updated preset " + next.getId() + "; nothing executed"); }
-            catch (Exception error) { workspace.setStatus("Preset update blocked: " + error.getMessage()); }
+        new android.app.AlertDialog.Builder(this).setTitle(event == null ? "新建预设事件" : "编辑预设事件").setMessage("仅编辑静态字段。“应用”绝不会发送按键、上屏文本,也不会调用命令、脚本、Intent 或回调。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
+            try { Double nextIndex = openedEvent.getIndex(); java.util.ArrayList<String> nextStates = parseEventStates(states.getText().toString()); ThemePresetEvents.Event next = new ThemePresetEvents.Event(id.getText().toString().trim(), send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), nextStates, shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); mutateMainPreset(source -> { if (!ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(source))) throw new IOException("main.lua changed after opening preset editor; reopen it"); return ThemePresetEvents.put(source, next, event != null); }, "已更新预设 " + next.getId() + ";未执行任何操作"); }
+            catch (Exception error) { workspace.setStatus("预设更新被阻止:" + error.getMessage()); }
         }).show();
     }
 
     private interface MainSourceMutation { String apply(String source) throws Exception; }
     private void mutateMainPreset(MainSourceMutation mutation, String success) throws Exception { String source = new String(readFileBytes(project.getMainFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(); java.util.LinkedHashMap<File, String> originals = new java.util.LinkedHashMap<>(); changes.put(project.getMainFile(), mutation.apply(source)); originals.put(project.getMainFile(), source); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success); }
 
-    private void promptCopyPreset(ThemePresetEvents.Event event) { LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "Copy ID", event.getId() + "_copy"); new android.app.AlertDialog.Builder(this).setTitle("Copy preset event").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Copy", (dialog, which) -> { try { mutateMainPreset(source -> ThemePresetEvents.copy(source, event.getId(), id.getText().toString().trim()), "Copied preset event"); } catch (Exception error) { workspace.setStatus("Preset copy blocked: " + error.getMessage()); } }).show(); }
+    private void promptCopyPreset(ThemePresetEvents.Event event) { LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "副本标识", event.getId() + "_copy"); new android.app.AlertDialog.Builder(this).setTitle("复制预设事件").setView(fields).setNegativeButton("取消", null).setPositiveButton("复制", (dialog, which) -> { try { mutateMainPreset(source -> ThemePresetEvents.copy(source, event.getId(), id.getText().toString().trim()), "已复制预设事件"); } catch (Exception error) { workspace.setStatus("预设复制被阻止:" + error.getMessage()); } }).show(); }
 
-    private void promptRenamePreset(ThemePresetEvents.Event event, PresetUsage usage) { if (!usage.uncertain.isEmpty()) { workspace.setStatus("Rename blocked by Raw Lua references: " + android.text.TextUtils.join(", ", usage.uncertain)); return; } LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "New preset ID", event.getId() + "_renamed"); new android.app.AlertDialog.Builder(this).setTitle("Rename preset and references?").setMessage("Replace " + usage.total + " static references in " + usage.references.size() + " files. No event executes.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Rename", (dialog, which) -> renamePresetTransaction(event.getId(), id.getText().toString().trim())).show(); }
+    private void promptRenamePreset(ThemePresetEvents.Event event, PresetUsage usage) { if (!usage.uncertain.isEmpty()) { workspace.setStatus("重命名被原始 Lua 引用阻止:" + android.text.TextUtils.join(", ", usage.uncertain)); return; } LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "新预设标识", event.getId() + "_renamed"); new android.app.AlertDialog.Builder(this).setTitle("重命名预设并替换引用?").setMessage("将替换 " + usage.total + " 个静态引用,涉及 " + usage.references.size() + " 个文件。不会执行任何事件。").setView(fields).setNegativeButton("取消", null).setPositiveButton("重命名", (dialog, which) -> renamePresetTransaction(event.getId(), id.getText().toString().trim())).show(); }
 
     private void renamePresetTransaction(String oldId, String newId) {
         try {
@@ -384,11 +405,11 @@ public class ThemeEditorActivity extends ComponentActivity {
             java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(usage.originals); String main = originals.get(project.getMainFile()); if (main == null) throw new IOException("main.lua was not included in the project-wide reference snapshot"); changes.put(project.getMainFile(), ThemePresetEvents.renameDefinition(main, oldId, newId)); int count = 0;
             for (File file : usage.references.keySet()) { String original = originals.get(file); if (original == null) throw new IOException("Reference source disappeared from the project snapshot: " + relativeProjectFile(file)); String base = file.equals(project.getMainFile()) ? changes.get(file) : original; ThemePresetEvents.ReferenceUpdate update = ThemePresetEvents.replaceReferences(base, oldId, newId); changes.put(file, update.getSource()); count += update.getCount(); }
             // Include unchanged Lua files and the manifest so a previously clean/new file cannot gain a reference between scan and commit.
-            applyProjectSourceTransaction(changes, originals, usage.originals.keySet()); workspace.setStatus("Renamed preset and replaced " + count + " static references");
-        } catch (Exception error) { workspace.setStatus("Preset rename blocked: " + error.getMessage()); }
+            applyProjectSourceTransaction(changes, originals, usage.originals.keySet()); workspace.setStatus("已重命名预设并替换 " + count + " 个静态引用");
+        } catch (Exception error) { workspace.setStatus("预设重命名被阻止:" + error.getMessage()); }
     }
 
-    private void confirmDeletePreset(ThemePresetEvents.Event event, PresetUsage usage) { if (usage.total > 0 || !usage.uncertain.isEmpty()) { workspace.setStatus("Preset delete blocked by " + usage.total + " references or uncertain Raw Lua"); return; } new android.app.AlertDialog.Builder(this).setTitle("Delete unreferenced preset?").setMessage(event.getId()).setNegativeButton("Cancel", null).setPositiveButton("Delete", (dialog, which) -> { try { PresetUsage current = collectPresetUsage(event.getId()); if (current.total > 0 || !current.uncertain.isEmpty()) throw new IOException("References changed after review"); String main = current.originals.get(project.getMainFile()); if (main == null) throw new IOException("main.lua was not included in the project-wide reference snapshot"); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(); changes.put(project.getMainFile(), ThemePresetEvents.deleteDefinition(main, event.getId())); applyProjectSourceTransaction(changes, current.originals, current.originals.keySet()); workspace.setStatus("Deleted unreferenced preset " + event.getId()); } catch (Exception error) { workspace.setStatus("Preset delete blocked: " + error.getMessage()); } }).show(); }
+    private void confirmDeletePreset(ThemePresetEvents.Event event, PresetUsage usage) { if (usage.total > 0 || !usage.uncertain.isEmpty()) { workspace.setStatus("预设删除被阻止:" + usage.total + " 个引用或无法确定的原始 Lua"); return; } new android.app.AlertDialog.Builder(this).setTitle("删除无引用的预设?").setMessage(event.getId()).setNegativeButton("取消", null).setPositiveButton("删除", (dialog, which) -> { try { PresetUsage current = collectPresetUsage(event.getId()); if (current.total > 0 || !current.uncertain.isEmpty()) throw new IOException("References changed after review"); String main = current.originals.get(project.getMainFile()); if (main == null) throw new IOException("main.lua was not included in the project-wide reference snapshot"); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(); changes.put(project.getMainFile(), ThemePresetEvents.deleteDefinition(main, event.getId())); applyProjectSourceTransaction(changes, current.originals, current.originals.keySet()); workspace.setStatus("已删除无引用的预设 " + event.getId()); } catch (Exception error) { workspace.setStatus("预设删除被阻止:" + error.getMessage()); } }).show(); }
 
     private PresetUsage collectPresetUsage(String id) throws IOException {
         PresetUsage usage = new PresetUsage(); java.util.ArrayList<File> files = new java.util.ArrayList<>(); collectProjectLuaFiles(project.getRoot(), project.getRoot().getCanonicalPath(), new java.util.HashSet<>(), files);
@@ -408,22 +429,22 @@ public class ThemeEditorActivity extends ComponentActivity {
     private boolean isCurrentProjectFile(ThemeProjectFile file) { return repository instanceof DirectoryThemeProjectRepository && ((DirectoryThemeProjectRepository) repository).getSelected().getFile().equals(file.getFile()); }
 
     private void showKeyboardAssets() {
-        if (project == null) { Toast.makeText(this, "Open a theme project first", Toast.LENGTH_LONG).show(); return; }
-        String[] labels = new String[project.getKeyboards().size() + 1]; labels[0] = "+ New keyboard"; for (int i = 0; i < project.getKeyboards().size(); i++) labels[i + 1] = project.getKeyboards().get(i).getName();
-        new android.app.AlertDialog.Builder(this).setTitle("Keyboard assets").setItems(labels, (dialog, which) -> { if (which == 0) createKeyboardAsset(); else showKeyboardAssetActions(project.getKeyboards().get(which - 1)); }).setNegativeButton("Close", null).show();
+        if (project == null) { Toast.makeText(this, "请先打开主题项目", Toast.LENGTH_LONG).show(); return; }
+        String[] labels = new String[project.getKeyboards().size() + 1]; labels[0] = "+ 新建键盘"; for (int i = 0; i < project.getKeyboards().size(); i++) labels[i + 1] = project.getKeyboards().get(i).getName();
+        new android.app.AlertDialog.Builder(this).setTitle("键盘资源").setItems(labels, (dialog, which) -> { if (which == 0) createKeyboardAsset(); else showKeyboardAssetActions(project.getKeyboards().get(which - 1)); }).setNegativeButton("关闭", null).show();
     }
 
     private void createKeyboardAsset() {
-        if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText id = simpleField(fields, "Keyboard ID", "keyboard_new"); android.widget.Spinner layout = new android.widget.Spinner(this); layout.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"Rows", "Flex box", "Key maps", "Absolute keys"})); fields.addView(layout);
-        new android.app.AlertDialog.Builder(this).setTitle("New keyboard").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Create", (dialog, which) -> {
-            try { String value = id.getText().toString().trim(); ThemeProjectCreator.Spec spec = new ThemeProjectCreator.Spec("template", value, "Editor", "light", value, ThemeProjectCreator.Palette.LIGHT, ThemeProjectCreator.KeyboardTemplate.values()[layout.getSelectedItemPosition()]); ThemeProjectFile created = ThemeProjectMutator.createKeyboard(project, value, ThemeProjectCreator.keyboardSource(spec)); try { mirrorCreatedProjectFile(created.getFile()); } catch (Exception error) { created.getFile().delete(); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.keyboard(value)); workspace.setStatus("Created keyboard " + value); }
-            catch (Exception error) { workspace.setStatus("Keyboard creation failed: " + error.getMessage()); }
+        if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText id = simpleField(fields, "键盘标识", "keyboard_new"); android.widget.Spinner layout = new android.widget.Spinner(this); layout.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"行布局(rows)", "弹性盒布局(flex_box)", "分页键映射(key_maps)", "绝对键布局(keys)"})); fields.addView(layout);
+        new android.app.AlertDialog.Builder(this).setTitle("新建键盘").setView(fields).setNegativeButton("取消", null).setPositiveButton("创建", (dialog, which) -> {
+            try { String value = id.getText().toString().trim(); ThemeProjectCreator.Spec spec = new ThemeProjectCreator.Spec("template", value, "Editor", "light", value, ThemeProjectCreator.Palette.LIGHT, ThemeProjectCreator.KeyboardTemplate.values()[layout.getSelectedItemPosition()]); ThemeProjectFile created = ThemeProjectMutator.createKeyboard(project, value, ThemeProjectCreator.keyboardSource(spec)); try { mirrorCreatedProjectFile(created.getFile()); } catch (Exception error) { created.getFile().delete(); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.keyboard(value)); workspace.setStatus("已创建键盘 " + value); }
+            catch (Exception error) { workspace.setStatus("键盘创建失败:" + error.getMessage()); }
         }).show();
     }
 
     private void showKeyboardAssetActions(ThemeProjectFile file) {
-        String[] actions = {"Open", "Edit top-level fields", "Copy", "Rename", "Set as default", "Delete"};
-        new android.app.AlertDialog.Builder(this).setTitle(file.getName()).setItems(actions, (dialog, which) -> { if (which == 0) requestProjectFileSwitch(file); else if (which == 1) showKeyboardMetadataEditor(file); else if (which == 2) promptCopyKeyboard(file); else if (which == 3) promptRenameKeyboard(file); else if (which == 4) setDefaultKeyboard(file); else confirmDeleteKeyboard(file); }).setNegativeButton("Close", null).show();
+        String[] actions = {"打开", "编辑顶层字段", "复制", "重命名", "设为默认", "删除"};
+        new android.app.AlertDialog.Builder(this).setTitle(file.getName()).setItems(actions, (dialog, which) -> { if (which == 0) requestProjectFileSwitch(file); else if (which == 1) showKeyboardMetadataEditor(file); else if (which == 2) promptCopyKeyboard(file); else if (which == 3) promptRenameKeyboard(file); else if (which == 4) setDefaultKeyboard(file); else confirmDeleteKeyboard(file); }).setNegativeButton("关闭", null).show();
     }
 
     private void showKeyboardMetadataEditor(ThemeProjectFile file) {
@@ -431,13 +452,13 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             ThemeProjectMutator.KeyboardMetadata metadata = ThemeProjectMutator.readKeyboardMetadata(file);
             LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
-            EditText name = simpleField(fields, "Keyboard name", metadata.getName()); EditText author = simpleField(fields, "Author", metadata.getAuthor()); EditText style = simpleField(fields, "Style reference (optional)", metadata.getStyle() == null ? "" : metadata.getStyle());
-            android.widget.CheckBox lock = new android.widget.CheckBox(this); lock.setText("lock"); lock.setChecked(metadata.getLock()); fields.addView(lock);
-            android.widget.CheckBox asciiMode = new android.widget.CheckBox(this); asciiMode.setText("ascii_mode"); asciiMode.setChecked(metadata.getAsciiMode()); fields.addView(asciiMode);
-            EditText keyWidth = simpleField(fields, "key_width (empty = inherit)", metadata.getKeyWidth() == null ? "" : trim(metadata.getKeyWidth().floatValue())); EditText keyHeight = simpleField(fields, "key_height (empty = inherit)", metadata.getKeyHeight() == null ? "" : trim(metadata.getKeyHeight().floatValue()));
-            TextView note = new TextView(this); note.setText("Dynamic values are code-only. Empty dimensions remove the top-level field and restore runtime fallback."); fields.addView(note);
+            EditText name = simpleField(fields, "键盘名称", metadata.getName()); EditText author = simpleField(fields, "作者", metadata.getAuthor()); EditText style = simpleField(fields, "样式引用(style,可选)", metadata.getStyle() == null ? "" : metadata.getStyle());
+            android.widget.CheckBox lock = new android.widget.CheckBox(this); lock.setText("锁定(lock)"); lock.setChecked(metadata.getLock()); fields.addView(lock);
+            android.widget.CheckBox asciiMode = new android.widget.CheckBox(this); asciiMode.setText("ASCII 模式(ascii_mode)"); asciiMode.setChecked(metadata.getAsciiMode()); fields.addView(asciiMode);
+            EditText keyWidth = simpleField(fields, "按键宽度(key_width,留空继承)", metadata.getKeyWidth() == null ? "" : trim(metadata.getKeyWidth().floatValue())); EditText keyHeight = simpleField(fields, "按键高度(key_height,留空继承)", metadata.getKeyHeight() == null ? "" : trim(metadata.getKeyHeight().floatValue()));
+            TextView note = new TextView(this); note.setText("动态值只能通过代码编辑。尺寸留空会移除顶层字段并恢复运行时回退值。"); fields.addView(note);
             android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-            new android.app.AlertDialog.Builder(this).setTitle("Keyboard fields: " + file.getName()).setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
+            new android.app.AlertDialog.Builder(this).setTitle("键盘字段:" + file.getName()).setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
                 try {
                     ThemeProjectMutator.KeyboardMetadata next = new ThemeProjectMutator.KeyboardMetadata(name.getText().toString().trim(), author.getText().toString().trim(), emptyToNull(style), lock.isChecked(), asciiMode.isChecked(), optionalPositiveDouble(keyWidth, "key_width"), optionalPositiveDouble(keyHeight, "key_height"));
                     byte[] backup = readFileBytes(file.getFile(), 4L * 1024 * 1024);
@@ -445,10 +466,10 @@ public class ThemeEditorActivity extends ComponentActivity {
                     try { ThemeProjectMutator.updateKeyboardMetadata(file, next); mirrorExistingProjectFile(file.getFile()); refreshProjectAfterAssetMutation(); }
                     catch (Exception error) { try (FileOutputStream output = new FileOutputStream(file.getFile(), false)) { output.write(backup); output.getFD().sync(); } if (importedProjectTreeUri != null) try { writeImportedProjectFile(file.getFile(), new String(backup, java.nio.charset.StandardCharsets.UTF_8)); } catch (Exception restoreError) { error.addSuppressed(restoreError); } throw error; }
                     if (current) loadProjectFile(project.keyboard(file.getName()));
-                    workspace.setStatus("Updated keyboard fields for " + file.getName());
-                } catch (Exception error) { workspace.setStatus("Keyboard fields failed: " + error.getMessage()); }
+                    workspace.setStatus("已更新键盘字段:" + file.getName());
+                } catch (Exception error) { workspace.setStatus("键盘字段更新失败:" + error.getMessage()); }
             }).show();
-        } catch (Exception error) { workspace.setStatus("Unable to read keyboard fields: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("无法读取键盘字段:" + error.getMessage()); }
     }
 
     private static String emptyToNull(EditText field) { String value = field.getText().toString().trim(); return value.isEmpty() ? null : value; }
@@ -457,13 +478,13 @@ public class ThemeEditorActivity extends ComponentActivity {
         double parsed = Double.parseDouble(value); if (!(parsed > 0) || Double.isInfinite(parsed) || Double.isNaN(parsed)) throw new IllegalArgumentException(name + " must be a positive number"); return parsed;
     }
 
-    private void promptCopyKeyboard(ThemeProjectFile file) { promptKeyboardId("Copy keyboard", file.getName() + "_copy", id -> { ThemeProjectFile created = ThemeProjectMutator.copyKeyboard(project, file, id); try { mirrorCreatedProjectFile(created.getFile()); } catch (Exception error) { created.getFile().delete(); throw error; } refreshProjectAfterAssetMutation(); workspace.setStatus("Copied keyboard " + id); }); }
-    private void promptRenameKeyboard(ThemeProjectFile file) { if (isCurrentProjectFile(file)) { workspace.setStatus("Open another file before renaming the current keyboard"); return; } promptKeyboardId("Rename keyboard", file.getName(), id -> { File old = file.getFile(); ThemeProjectFile renamed = ThemeProjectMutator.renameKeyboard(project, file, id); try { mirrorRenamedProjectFile(old, renamed.getFile()); } catch (Exception error) { renamed.getFile().renameTo(old); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.keyboard(id)); workspace.setStatus("Renamed keyboard to " + id); }); }
+    private void promptCopyKeyboard(ThemeProjectFile file) { promptKeyboardId("复制键盘", file.getName() + "_copy", id -> { ThemeProjectFile created = ThemeProjectMutator.copyKeyboard(project, file, id); try { mirrorCreatedProjectFile(created.getFile()); } catch (Exception error) { created.getFile().delete(); throw error; } refreshProjectAfterAssetMutation(); workspace.setStatus("已复制键盘 " + id); }); }
+    private void promptRenameKeyboard(ThemeProjectFile file) { if (isCurrentProjectFile(file)) { workspace.setStatus("重命名当前键盘前请先打开另一个文件"); return; } promptKeyboardId("重命名键盘", file.getName(), id -> { File old = file.getFile(); ThemeProjectFile renamed = ThemeProjectMutator.renameKeyboard(project, file, id); try { mirrorRenamedProjectFile(old, renamed.getFile()); } catch (Exception error) { renamed.getFile().renameTo(old); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.keyboard(id)); workspace.setStatus("键盘已重命名为 " + id); }); }
     private interface KeyboardIdAction { void run(String id) throws Exception; }
-    private void promptKeyboardId(String title, String initial, KeyboardIdAction action) { if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "Keyboard ID", initial); new android.app.AlertDialog.Builder(this).setTitle(title).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { action.run(id.getText().toString().trim()); } catch (Exception error) { workspace.setStatus(title + " failed: " + error.getMessage()); } }).show(); }
+    private void promptKeyboardId(String title, String initial, KeyboardIdAction action) { if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "键盘标识", initial); new android.app.AlertDialog.Builder(this).setTitle(title).setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { action.run(id.getText().toString().trim()); } catch (Exception error) { workspace.setStatus(title + " 失败:" + error.getMessage()); } }).show(); }
 
-    private void setDefaultKeyboard(ThemeProjectFile file) { if (!ensureAssetWritable()) return; try { mutateMainWithMirror(() -> ThemeProjectMutator.setDefaultKeyboard(project, file.getName())); workspace.setStatus("Default keyboard: " + file.getName()); } catch (Exception error) { workspace.setStatus("Default keyboard update failed: " + error.getMessage()); } }
-    private void confirmDeleteKeyboard(ThemeProjectFile file) { if (!ensureAssetWritable()) return; if (isCurrentProjectFile(file)) { workspace.setStatus("Open another file before deleting the current keyboard"); return; } new android.app.AlertDialog.Builder(this).setTitle("Delete keyboard?").setMessage(file.getName()).setNegativeButton("Cancel", null).setPositiveButton("Delete", (dialog, which) -> { try { ThemeProjectMutator.validateKeyboardDeletion(project, file); if (importedProjectTreeUri != null) deleteImportedProjectPath(file.getFile()); if (!file.getFile().delete()) throw new IOException("Cannot delete local keyboard cache"); refreshProjectAfterAssetMutation(); workspace.setStatus("Deleted keyboard " + file.getName()); } catch (Exception error) { workspace.setStatus("Keyboard delete blocked: " + error.getMessage()); } }).show(); }
+    private void setDefaultKeyboard(ThemeProjectFile file) { if (!ensureAssetWritable()) return; try { mutateMainWithMirror(() -> ThemeProjectMutator.setDefaultKeyboard(project, file.getName())); workspace.setStatus("默认键盘:" + file.getName()); } catch (Exception error) { workspace.setStatus("默认键盘更新失败:" + error.getMessage()); } }
+    private void confirmDeleteKeyboard(ThemeProjectFile file) { if (!ensureAssetWritable()) return; if (isCurrentProjectFile(file)) { workspace.setStatus("删除当前键盘前请先打开另一个文件"); return; } new android.app.AlertDialog.Builder(this).setTitle("删除键盘?").setMessage(file.getName()).setNegativeButton("取消", null).setPositiveButton("删除", (dialog, which) -> { try { ThemeProjectMutator.validateKeyboardDeletion(project, file); if (importedProjectTreeUri != null) deleteImportedProjectPath(file.getFile()); if (!file.getFile().delete()) throw new IOException("无法删除本地键盘缓存"); refreshProjectAfterAssetMutation(); workspace.setStatus("已删除键盘 " + file.getName()); } catch (Exception error) { workspace.setStatus("键盘删除被阻止:" + error.getMessage()); } }).show(); }
 
     private interface MainMutation { void run() throws Exception; }
     private void mutateMainWithMirror(MainMutation mutation) throws Exception {
@@ -473,13 +494,13 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void showStyleAssets() {
-        if (project == null) { Toast.makeText(this, "Open a theme project first", Toast.LENGTH_LONG).show(); return; }
+        if (project == null) { Toast.makeText(this, "请先打开主题项目", Toast.LENGTH_LONG).show(); return; }
         String[] labels = new String[project.getStyles().size()]; for (int i = 0; i < labels.length; i++) labels[i] = project.getStyles().get(i).getName();
-        new android.app.AlertDialog.Builder(this).setTitle("Style assets").setItems(labels, (dialog, which) -> showStyleAssetActions(project.getStyles().get(which))).setNegativeButton("Close", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle("样式资源").setItems(labels, (dialog, which) -> showStyleAssetActions(project.getStyles().get(which))).setNegativeButton("关闭", null).show();
     }
     private void showStyleAssetActions(ThemeProjectFile file) {
-        String[] actions = {"Open", "Manage entities", "Manage toolbar keys", "Manage panel bars", "Copy style asset", "Rename style asset", "Set as default", "Delete style asset"};
-        new android.app.AlertDialog.Builder(this).setTitle(file.getName()).setItems(actions, (dialog, which) -> { if (which == 0) requestProjectFileSwitch(file); else if (which == 1) showStyleEntityManager(file); else if (which == 2) showToolbarKeyManager(file); else if (which == 3) showPanelComponentManager(file); else if (which == 4) promptStyleId("Copy style", file.getName() + "_copy", id -> { ThemeProjectFile created = ThemeProjectMutator.copyStyle(project, file, id); try { mirrorCreatedProjectDirectory(created.getFile().getParentFile()); } catch (Exception error) { deleteDirectory(created.getFile().getParentFile()); throw error; } refreshProjectAfterAssetMutation(); }); else if (which == 5) { if (isCurrentProjectFile(file)) { workspace.setStatus("Open another file before renaming the current style"); return; } promptStyleId("Rename style", file.getName(), id -> { File old = file.getFile().getParentFile(); ThemeProjectFile renamed = ThemeProjectMutator.renameStyle(project, file, id); try { mirrorRenamedProjectDirectory(old, renamed.getFile().getParentFile()); } catch (Exception error) { renamed.getFile().getParentFile().renameTo(old); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.style(id)); }); } else if (which == 6) { if (!ensureAssetWritable()) return; try { mutateMainWithMirror(() -> ThemeProjectMutator.setDefaultStyle(project, file.getName())); workspace.setStatus("Default style: " + file.getName()); } catch (Exception error) { workspace.setStatus("Default style failed: " + error.getMessage()); } } else confirmDeleteStyle(file); }).setNegativeButton("Close", null).show();
+        String[] actions = {"打开", "管理样式实体", "管理工具栏按键", "管理面板栏", "复制样式资源", "重命名样式资源", "设为默认", "删除样式资源"};
+        new android.app.AlertDialog.Builder(this).setTitle(file.getName()).setItems(actions, (dialog, which) -> { if (which == 0) requestProjectFileSwitch(file); else if (which == 1) showStyleEntityManager(file); else if (which == 2) showToolbarKeyManager(file); else if (which == 3) showPanelComponentManager(file); else if (which == 4) promptStyleId("复制样式", file.getName() + "_copy", id -> { ThemeProjectFile created = ThemeProjectMutator.copyStyle(project, file, id); try { mirrorCreatedProjectDirectory(created.getFile().getParentFile()); } catch (Exception error) { deleteDirectory(created.getFile().getParentFile()); throw error; } refreshProjectAfterAssetMutation(); }); else if (which == 5) { if (isCurrentProjectFile(file)) { workspace.setStatus("重命名当前样式前请先打开另一个文件"); return; } promptStyleId("重命名样式", file.getName(), id -> { File old = file.getFile().getParentFile(); ThemeProjectFile renamed = ThemeProjectMutator.renameStyle(project, file, id); try { mirrorRenamedProjectDirectory(old, renamed.getFile().getParentFile()); } catch (Exception error) { renamed.getFile().getParentFile().renameTo(old); throw error; } refreshProjectAfterAssetMutation(); requestProjectFileSwitch(project.style(id)); }); } else if (which == 6) { if (!ensureAssetWritable()) return; try { mutateMainWithMirror(() -> ThemeProjectMutator.setDefaultStyle(project, file.getName())); workspace.setStatus("默认样式:" + file.getName()); } catch (Exception error) { workspace.setStatus("默认样式设置失败:" + error.getMessage()); } } else confirmDeleteStyle(file); }).setNegativeButton("关闭", null).show();
     }
     private void showPanelComponentManager(ThemeProjectFile styleFile) {
         if (!ensureAssetWritable()) return;
@@ -494,8 +515,8 @@ public class ThemeEditorActivity extends ComponentActivity {
                     "Clipboard toolbar — " + panelToolbarSummary(clipboard),
                     "Clipboard tab bar — " + panelTabSummary(clipboardTab)
             };
-            new android.app.AlertDialog.Builder(this).setTitle(styleFile.getName() + " panel components").setMessage("Panel toolbar arrays accept strings only. Built-in names are previewed statically and never invoked.").setItems(labels, (dialog, which) -> { if (which == 0) editCandidateFilter(styleFile, source, filter); else if (which == 1) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.CANDIDATE_EXPANDED, candidate); else if (which == 2) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.SYMBOL, symbol); else if (which == 3) editPanelTabBar(styleFile, source, ThemePanelComponents.Panel.SYMBOL, symbolTab); else if (which == 4) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.CLIPBOARD, clipboard); else editPanelTabBar(styleFile, source, ThemePanelComponents.Panel.CLIPBOARD, clipboardTab); }).setNegativeButton("Close", null).setNeutralButton("Open style source", (dialog, which) -> requestProjectFileSwitch(styleFile)).show();
-        } catch (Exception error) { workspace.setStatus("Panel component manager blocked: " + error.getMessage()); }
+            new android.app.AlertDialog.Builder(this).setTitle(styleFile.getName() + " 的面板组件").setMessage("面板工具栏数组只接受字符串。内置名称仅作静态预览,绝不会调用。").setItems(labels, (dialog, which) -> { if (which == 0) editCandidateFilter(styleFile, source, filter); else if (which == 1) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.CANDIDATE_EXPANDED, candidate); else if (which == 2) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.SYMBOL, symbol); else if (which == 3) editPanelTabBar(styleFile, source, ThemePanelComponents.Panel.SYMBOL, symbolTab); else if (which == 4) editPanelToolbar(styleFile, source, ThemePanelComponents.Panel.CLIPBOARD, clipboard); else editPanelTabBar(styleFile, source, ThemePanelComponents.Panel.CLIPBOARD, clipboardTab); }).setNegativeButton("关闭", null).setNeutralButton("打开样式源代码", (dialog, which) -> requestProjectFileSwitch(styleFile)).show();
+        } catch (Exception error) { workspace.setStatus("面板组件管理被阻止:" + error.getMessage()); }
     }
 
     private static String panelToolbarSummary(ThemePanelComponents.Toolbar value) { return "gravity=" + value.getGravity() + ", keys=" + value.getKeys().size() + (value.getHeight() == null ? "" : ", height=" + value.getHeight()) + (value.getInherited() ? " [literal override after inherited root]" : ""); }
@@ -503,40 +524,88 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     private void editCandidateFilter(ThemeProjectFile styleFile, String openedSource, ThemePanelComponents.FilterBar current) {
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); android.widget.Spinner show = nullableSpinner(fields, "show", current.getShowExplicit() ? Boolean.valueOf(current.getShow()) : null); android.widget.Spinner gravity = nullableStringSpinner(fields, "gravity", new String[]{"left", "top", "right", "bottom"}, current.getGravityExplicit() ? current.getGravity() : null);
-        new android.app.AlertDialog.Builder(this).setTitle("Candidate filter bar").setMessage("inherit removes the literal field and restores show=true / gravity=left runtime defaults.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateCandidateFilter(source, nullableSpinnerBoolean(show), nullableSpinnerString(gravity)), "Updated candidate filter bar")).show();
+        new android.app.AlertDialog.Builder(this).setTitle("候选过滤栏").setMessage("继承会移除字面字段,并恢复显示(show)=true、重力方向(gravity)=left 的运行时默认值。").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateCandidateFilter(source, nullableSpinnerBoolean(show), nullableSpinnerString(gravity)), "已更新候选过滤栏")).show();
     }
 
     private void editPanelToolbar(ThemeProjectFile styleFile, String openedSource, ThemePanelComponents.Panel panel, ThemePanelComponents.Toolbar current) {
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); android.widget.Spinner gravity = nullableStringSpinner(fields, "gravity", new String[]{"left", "top", "right", "bottom"}, current.getGravityExplicit() ? current.getGravity() : null); EditText height = null; android.widget.CheckBox inheritHeight = null;
-        if (panel != ThemePanelComponents.Panel.CANDIDATE_EXPANDED) { inheritHeight = new android.widget.CheckBox(this); inheritHeight.setText("Remove height and use runtime layout"); inheritHeight.setChecked(!current.getHeightExplicit()); fields.addView(inheritHeight); height = simpleField(fields, "height (finite nonnegative)", current.getHeight() == null ? "" : current.getHeight().toString()); height.setEnabled(!inheritHeight.isChecked()); EditText target = height; inheritHeight.setOnCheckedChangeListener((button, checked) -> target.setEnabled(!checked)); }
-        android.widget.CheckBox inheritKeys = new android.widget.CheckBox(this); inheritKeys.setText("Remove keys and use panel defaults"); inheritKeys.setChecked(!current.getKeysExplicit()); fields.addView(inheritKeys); EditText keys = simpleField(fields, "keys: one literal string per line", formatEventStates(current.getKeys())); keys.setSingleLine(false); keys.setMinLines(4); keys.setEnabled(!inheritKeys.isChecked()); inheritKeys.setOnCheckedChangeListener((button, checked) -> keys.setEnabled(!checked)); TextView defaults = new TextView(this); defaults.setText("Missing keys fallback: " + android.text.TextUtils.join(", ", current.getKeys()) + ". Tables and events are not accepted here."); fields.addView(defaults); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2)); final EditText heightField = height; final android.widget.CheckBox removeHeight = inheritHeight;
-        new android.app.AlertDialog.Builder(this).setTitle(panel + " toolbar").setMessage("hide/page_up/page_down/char_filter/undo/BackSpace are retained as static names; no action runs.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { Double nextHeight = panel == ThemePanelComponents.Panel.CANDIDATE_EXPANDED || removeHeight.isChecked() ? null : Double.valueOf(heightField.getText().toString().trim()); java.util.List<String> nextKeys = inheritKeys.isChecked() ? null : parseEventStates(keys.getText().toString()); mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateToolbar(source, panel, nullableSpinnerString(gravity), nextHeight, nextKeys), "Updated " + panel + " toolbar"); } catch (Exception error) { workspace.setStatus("Panel toolbar update blocked: " + error.getMessage()); } }).show();
+        if (panel != ThemePanelComponents.Panel.CANDIDATE_EXPANDED) { inheritHeight = new android.widget.CheckBox(this); inheritHeight.setText("移除高度并使用运行时布局"); inheritHeight.setChecked(!current.getHeightExplicit()); fields.addView(inheritHeight); height = simpleField(fields, "高度(height,有限非负数)", current.getHeight() == null ? "" : current.getHeight().toString()); height.setEnabled(!inheritHeight.isChecked()); EditText target = height; inheritHeight.setOnCheckedChangeListener((button, checked) -> target.setEnabled(!checked)); }
+        android.widget.CheckBox inheritKeys = new android.widget.CheckBox(this); inheritKeys.setText("移除按键并使用面板默认值"); inheritKeys.setChecked(!current.getKeysExplicit()); fields.addView(inheritKeys); EditText keys = simpleField(fields, "按键(keys):每行一个字面字符串", formatEventStates(current.getKeys())); keys.setSingleLine(false); keys.setMinLines(4); keys.setEnabled(!inheritKeys.isChecked()); inheritKeys.setOnCheckedChangeListener((button, checked) -> keys.setEnabled(!checked)); TextView defaults = new TextView(this); defaults.setText("缺少按键(keys)时回退为:" + android.text.TextUtils.join(", ", current.getKeys()) + "。此处不接受表或事件。"); fields.addView(defaults); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2)); final EditText heightField = height; final android.widget.CheckBox removeHeight = inheritHeight;
+        new android.app.AlertDialog.Builder(this).setTitle(panel + " 工具栏(tool_bar)").setMessage("隐藏(hide)/上翻页(page_up)/下翻页(page_down)/字符过滤(char_filter)/撤销(undo)/退格(BackSpace)仅保留为静态名称,不会执行操作。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { Double nextHeight = panel == ThemePanelComponents.Panel.CANDIDATE_EXPANDED || removeHeight.isChecked() ? null : Double.valueOf(heightField.getText().toString().trim()); java.util.List<String> nextKeys = inheritKeys.isChecked() ? null : parseEventStates(keys.getText().toString()); mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateToolbar(source, panel, nullableSpinnerString(gravity), nextHeight, nextKeys), "已更新 " + panel + " 工具栏(tool_bar)"); } catch (Exception error) { workspace.setStatus("面板工具栏更新被阻止:" + error.getMessage()); } }).show();
     }
 
     private void editPanelTabBar(ThemeProjectFile styleFile, String openedSource, ThemePanelComponents.Panel panel, ThemePanelComponents.TabBar current) {
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); android.widget.Spinner gravity = nullableStringSpinner(fields, "gravity", new String[]{"top", "bottom"}, current.getGravityExplicit() ? current.getGravity() : null); android.widget.CheckBox inheritHeight = new android.widget.CheckBox(this); inheritHeight.setText("Remove height and use runtime layout"); inheritHeight.setChecked(!current.getHeightExplicit()); fields.addView(inheritHeight); EditText height = simpleField(fields, "height (finite nonnegative)", current.getHeight() == null ? "" : current.getHeight().toString()); height.setEnabled(!inheritHeight.isChecked()); inheritHeight.setOnCheckedChangeListener((button, checked) -> height.setEnabled(!checked));
-        new android.app.AlertDialog.Builder(this).setTitle(panel + " tab bar").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { Double nextHeight = inheritHeight.isChecked() ? null : Double.valueOf(height.getText().toString().trim()); mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateTabBar(source, panel, nullableSpinnerString(gravity), nextHeight), "Updated " + panel + " tab bar"); } catch (Exception error) { workspace.setStatus("Tab bar update blocked: " + error.getMessage()); } }).show();
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); android.widget.Spinner gravity = nullableStringSpinner(fields, "gravity", new String[]{"top", "bottom"}, current.getGravityExplicit() ? current.getGravity() : null); android.widget.CheckBox inheritHeight = new android.widget.CheckBox(this); inheritHeight.setText("移除高度并使用运行时布局"); inheritHeight.setChecked(!current.getHeightExplicit()); fields.addView(inheritHeight); EditText height = simpleField(fields, "高度(height,有限非负数)", current.getHeight() == null ? "" : current.getHeight().toString()); height.setEnabled(!inheritHeight.isChecked()); inheritHeight.setOnCheckedChangeListener((button, checked) -> height.setEnabled(!checked));
+        new android.app.AlertDialog.Builder(this).setTitle(panel + " 标签栏(tab_bar)").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { Double nextHeight = inheritHeight.isChecked() ? null : Double.valueOf(height.getText().toString().trim()); mutatePanelSource(styleFile, openedSource, source -> ThemePanelComponents.updateTabBar(source, panel, nullableSpinnerString(gravity), nextHeight), "已更新 " + panel + " 标签栏(tab_bar)"); } catch (Exception error) { workspace.setStatus("标签栏更新被阻止:" + error.getMessage()); } }).show();
     }
 
-    private android.widget.Spinner nullableSpinner(LinearLayout parent, String label, Boolean selected) { TextView text = new TextView(this); text.setText(label); parent.addView(text); android.widget.Spinner spinner = new android.widget.Spinner(this); String[] values = {"inherit", "false", "true"}; spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, values)); spinner.setSelection(selected == null ? 0 : selected ? 2 : 1); parent.addView(spinner); return spinner; }
-    private android.widget.Spinner nullableStringSpinner(LinearLayout parent, String label, String[] values, String selected) { TextView text = new TextView(this); text.setText(label); parent.addView(text); String[] choices = new String[values.length + 1]; choices[0] = "inherit"; System.arraycopy(values, 0, choices, 1, values.length); android.widget.Spinner spinner = new android.widget.Spinner(this); spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, choices)); int index = 0; if (selected != null) for (int i = 0; i < values.length; i++) if (selected.equals(values[i])) index = i + 1; spinner.setSelection(index); parent.addView(spinner); return spinner; }
+    private static final class SpinnerChoice {
+        final String value;
+        final String label;
+        SpinnerChoice(String value, String label) { this.value = value; this.label = label; }
+        @Override public String toString() { return label; }
+    }
+
+    private static String spinnerChoiceLabel(String value) {
+        switch (value) {
+            case "inherit": return "继承";
+            case "false": return "否(false)";
+            case "true": return "是(true)";
+            case "left": return "左(left)";
+            case "top": return "上(top)";
+            case "right": return "右(right)";
+            case "bottom": return "下(bottom)";
+            case "left_up": return "左上(left_up)";
+            case "right_up": return "右上(right_up)";
+            case "bottom_left": return "左下(bottom_left)";
+            case "bottom_right": return "右下(bottom_right)";
+            case "top_left": return "左上(top_left)";
+            case "top_right": return "右上(top_right)";
+            case "drag": return "拖动(drag)";
+            case "fixed": return "固定(fixed)";
+            case "once": return "一次(once)";
+            case "none": return "无(none)";
+            case "input": return "输入(input)";
+            case "preedit": return "预编辑(preedit)";
+            case "composition": return "编码窗口(composition)";
+            case "preview": return "预览(preview)";
+            case "true (string)": return "是(字符串 true)";
+            case "true (boolean source; current runtime none)": return "是(布尔源值;当前运行时为 none)";
+            case "false (boolean source)": return "否(布尔源值)";
+            default: return value;
+        }
+    }
+
+    private static java.util.ArrayList<SpinnerChoice> spinnerChoices(java.util.List<String> values) {
+        java.util.ArrayList<SpinnerChoice> choices = new java.util.ArrayList<>();
+        for (String value : values) choices.add(new SpinnerChoice(value, spinnerChoiceLabel(value)));
+        return choices;
+    }
+
+    private static String spinnerInternalValue(android.widget.Spinner spinner) {
+        Object selected = spinner.getSelectedItem();
+        return selected instanceof SpinnerChoice ? ((SpinnerChoice) selected).value : selected == null ? null : selected.toString();
+    }
+
+    private android.widget.Spinner nullableSpinner(LinearLayout parent, String label, Boolean selected) { TextView text = new TextView(this); text.setText(label); parent.addView(text); android.widget.Spinner spinner = new android.widget.Spinner(this); java.util.List<String> values = java.util.Arrays.asList("inherit", "false", "true"); spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerChoices(values))); spinner.setSelection(selected == null ? 0 : selected ? 2 : 1); parent.addView(spinner); return spinner; }
+    private android.widget.Spinner nullableStringSpinner(LinearLayout parent, String label, String[] values, String selected) { TextView text = new TextView(this); text.setText(label); parent.addView(text); java.util.ArrayList<String> choices = new java.util.ArrayList<>(); choices.add("inherit"); java.util.Collections.addAll(choices, values); android.widget.Spinner spinner = new android.widget.Spinner(this); spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerChoices(choices))); int index = 0; if (selected != null) for (int i = 0; i < values.length; i++) if (selected.equals(values[i])) index = i + 1; spinner.setSelection(index); parent.addView(spinner); return spinner; }
     private static Boolean nullableSpinnerBoolean(android.widget.Spinner spinner) { return spinner.getSelectedItemPosition() == 0 ? null : spinner.getSelectedItemPosition() == 2; }
-    private static String nullableSpinnerString(android.widget.Spinner spinner) { return spinner.getSelectedItemPosition() == 0 ? null : spinner.getSelectedItem().toString(); }
+    private static String nullableSpinnerString(android.widget.Spinner spinner) { return spinner.getSelectedItemPosition() == 0 ? null : spinnerInternalValue(spinner); }
     private interface PanelSourceMutation { String apply(String source) throws Exception; }
-    private void mutatePanelSource(ThemeProjectFile styleFile, String openedSource, PanelSourceMutation mutation, String success) { try { if (!ensureAssetWritable()) return; String latest = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); if (!ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(latest))) throw new IOException("Style source changed after opening panel manager; reopen it"); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), mutation.apply(latest)); originals.put(styleFile.getFile(), latest); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success); } catch (Exception error) { workspace.setStatus("Panel component update blocked: " + error.getMessage()); } }
+    private void mutatePanelSource(ThemeProjectFile styleFile, String openedSource, PanelSourceMutation mutation, String success) { try { if (!ensureAssetWritable()) return; String latest = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); if (!ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(latest))) throw new IOException("打开面板管理器后样式源代码已更改,请重新打开"); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), mutation.apply(latest)); originals.put(styleFile.getFile(), latest); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success); } catch (Exception error) { workspace.setStatus("面板组件更新被阻止:" + error.getMessage()); } }
 
     private void showToolbarKeyManager(ThemeProjectFile styleFile) {
         if (!ensureAssetWritable()) return;
         try {
             String source = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8);
             java.util.List<ThemeToolbarKeys.Item> items = ThemeToolbarKeys.list(source);
-            String[] labels = new String[items.size() + 1]; labels[0] = "+ New toolbar key";
+            String[] labels = new String[items.size() + 1]; labels[0] = "+ 新建工具栏按键";
             for (int i = 0; i < items.size(); i++) labels[i + 1] = (i + 1) + ". " + toolbarItemSummary(items.get(i));
-            new android.app.AlertDialog.Builder(this).setTitle(styleFile.getName() + " toolbar.keys — static only").setMessage("Items are inspected only. Commands, options, scripts, callbacks and scheme switches never execute in preview.").setItems(labels, (dialog, which) -> {
+            new android.app.AlertDialog.Builder(this).setTitle(styleFile.getName() + " 工具栏按键(toolbar.keys)——仅静态").setMessage("仅检查项目。命令、选项、脚本、回调和方案切换绝不会在预览中执行。").setItems(labels, (dialog, which) -> {
                 if (which == 0) chooseToolbarItemType(styleFile, source, -1, null, true);
                 else showToolbarItemActions(styleFile, source, which - 1, items.get(which - 1), items.size());
-            }).setNegativeButton("Close", null).setNeutralButton("Open style source", (dialog, which) -> requestProjectFileSwitch(styleFile)).show();
-        } catch (Exception error) { workspace.setStatus("Toolbar key manager blocked: " + error.getMessage()); }
+            }).setNegativeButton("关闭", null).setNeutralButton("打开样式源代码", (dialog, which) -> requestProjectFileSwitch(styleFile)).show();
+        } catch (Exception error) { workspace.setStatus("工具栏按键管理被阻止:" + error.getMessage()); }
     }
 
     private static String toolbarItemSummary(ThemeToolbarKeys.Item item) {
@@ -548,42 +617,42 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void showToolbarItemActions(ThemeProjectFile styleFile, String openedSource, int index, ThemeToolbarKeys.Item item, int size) {
-        String[] actions = {"Edit", "Move up", "Move down", "Delete", "View compatibility summary"};
+        String[] actions = {"编辑", "上移", "下移", "删除", "查看兼容性摘要"};
         new android.app.AlertDialog.Builder(this).setTitle(toolbarItemSummary(item)).setItems(actions, (dialog, which) -> {
             if (which == 0) {
-                if (item.getSource() == ThemeToolbarKeys.Source.FULL_KEY || item.getSource() == ThemeToolbarKeys.Source.RAW_LUA) { workspace.setStatus("Open the style source for complete-key or Raw Lua toolbar items"); requestProjectFileSwitch(styleFile); }
+                if (item.getSource() == ThemeToolbarKeys.Source.FULL_KEY || item.getSource() == ThemeToolbarKeys.Source.RAW_LUA) { workspace.setStatus("完整按键或原始 Lua 工具栏项目请在样式源代码中编辑"); requestProjectFileSwitch(styleFile); }
                 else chooseToolbarItemType(styleFile, openedSource, index, item, false);
             } else if (which == 1 || which == 2) {
                 int target = which == 1 ? index - 1 : index + 1;
-                if (target < 0 || target >= size) { workspace.setStatus("Toolbar item is already at that edge"); return; }
-                mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.move(source, index, target), "Moved toolbar key");
+                if (target < 0 || target >= size) { workspace.setStatus("工具栏项目已位于该边缘"); return; }
+                mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.move(source, index, target), "已移动工具栏按键");
             } else if (which == 3) {
-                new android.app.AlertDialog.Builder(this).setTitle("Delete toolbar key?").setMessage(toolbarItemSummary(item)).setNegativeButton("Cancel", null).setPositiveButton("Delete", (confirm, selected) -> mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.delete(source, index), "Deleted toolbar key")).show();
+                new android.app.AlertDialog.Builder(this).setTitle("删除工具栏按键?").setMessage(toolbarItemSummary(item)).setNegativeButton("取消", null).setPositiveButton("删除", (confirm, selected) -> mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.delete(source, index), "已删除工具栏按键")).show();
             } else workspace.setStatus(toolbarItemSummary(item) + "; toolbar scheme-switch style is read but ignored by current ToolbarView construction");
-        }).setNegativeButton("Close", null).show();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private void chooseToolbarItemType(ThemeProjectFile styleFile, String openedSource, int index, ThemeToolbarKeys.Item current, boolean append) {
-        String[] types = {"String / preset key reference", "Direct static event table", "Scheme switch table"};
+        String[] types = {"字符串 / 预设按键引用", "直接静态事件表", "方案切换表"};
         int selected = current == null ? 0 : current.getSource() == ThemeToolbarKeys.Source.INLINE_EVENT ? 1 : current.getSource() == ThemeToolbarKeys.Source.SCHEMA_SWITCH ? 2 : 0;
-        new android.app.AlertDialog.Builder(this).setTitle(append ? "New toolbar key" : "Replace toolbar item type").setSingleChoiceItems(types, selected, (dialog, which) -> { dialog.dismiss(); if (which == 0) editToolbarString(styleFile, openedSource, index, current, append); else if (which == 1) editToolbarEvent(styleFile, openedSource, index, current, append); else editToolbarSchemaSwitch(styleFile, openedSource, index, current, append); }).setNegativeButton("Cancel", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle(append ? "新建工具栏按键" : "替换工具栏项目类型").setSingleChoiceItems(types, selected, (dialog, which) -> { dialog.dismiss(); if (which == 0) editToolbarString(styleFile, openedSource, index, current, append); else if (which == 1) editToolbarEvent(styleFile, openedSource, index, current, append); else editToolbarSchemaSwitch(styleFile, openedSource, index, current, append); }).setNegativeButton("取消", null).show();
     }
 
     private void editToolbarString(ThemeProjectFile styleFile, String openedSource, int index, ThemeToolbarKeys.Item current, boolean append) {
-        LinearLayout fields = new LinearLayout(this); EditText value = simpleField(fields, "Preset key ID or literal event", current != null && current.getLiteral() != null ? current.getLiteral() : "");
-        new android.app.AlertDialog.Builder(this).setTitle("Toolbar string item").setMessage("The value is retained as a static reference. It is not sent or executed.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, ThemeToolbarKeys.string(value.getText().toString()), append), "Updated toolbar string item; nothing executed")).show();
+        LinearLayout fields = new LinearLayout(this); EditText value = simpleField(fields, "预设按键标识或字面事件", current != null && current.getLiteral() != null ? current.getLiteral() : "");
+        new android.app.AlertDialog.Builder(this).setTitle("工具栏字符串项目").setMessage("该值作为静态引用保留,不会发送或执行。").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, ThemeToolbarKeys.string(value.getText().toString()), append), "已更新工具栏字符串项目;未执行任何操作")).show();
     }
 
     private void editToolbarEvent(ThemeProjectFile styleFile, String openedSource, int index, ThemeToolbarKeys.Item current, boolean append) {
         ThemePresetEvents.Event event = current != null && current.getEvent() != null ? current.getEvent() : new ThemePresetEvents.Event("ToolbarKey", "", "", "", "", "", "", "", "", "", "", java.util.Collections.emptyList(), "", false, false, true, null);
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText label = simpleField(fields, "label", event.getLabel()); EditText send = simpleField(fields, "send", event.getSend()); EditText text = simpleField(fields, "text", event.getText()); EditText commit = simpleField(fields, "commit", event.getCommit()); EditText command = simpleField(fields, "command (retained, never executed)", event.getCommand()); EditText option = simpleField(fields, "option", event.getOption()); EditText select = simpleField(fields, "select", event.getSelect()); EditText toggle = simpleField(fields, "toggle", event.getToggle()); EditText preview = simpleField(fields, "preview", event.getPreview()); EditText description = simpleField(fields, "description", event.getDescription()); EditText states = simpleField(fields, "states: one per line; \\0 empty, \\n embedded newline", formatEventStates(event.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "shift_lock: click/double/long", event.getShiftLock()); EditText eventIndex = simpleField(fields, "index (32-bit integer; no reliable effect)", event.getIndex() == null ? "" : event.getIndex().toString()); android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("repeatable"); repeatable.setChecked(event.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("sticky"); sticky.setChecked(event.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("functional"); functional.setChecked(event.getFunctional()); fields.addView(functional); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle("Toolbar direct event").setMessage("Static fields only; applying never executes the event.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { String indexText = eventIndex.getText().toString().trim(); Double nextIndex = indexText.isEmpty() ? null : Double.valueOf(indexText); ThemePresetEvents.Event next = new ThemePresetEvents.Event("ToolbarKey", send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), parseEventStates(states.getText().toString()), shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, ThemeToolbarKeys.inlineEvent(next), append), "Updated direct toolbar event; nothing executed"); } catch (Exception error) { workspace.setStatus("Toolbar event update blocked: " + error.getMessage()); } }).show();
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText label = simpleField(fields, "标签(label)", event.getLabel()); EditText send = simpleField(fields, "发送按键(send)", event.getSend()); EditText text = simpleField(fields, "文本(text)", event.getText()); EditText commit = simpleField(fields, "上屏文本(commit)", event.getCommit()); EditText command = simpleField(fields, "命令(command,保留但绝不执行)", event.getCommand()); EditText option = simpleField(fields, "选项(option)", event.getOption()); EditText select = simpleField(fields, "选择(select)", event.getSelect()); EditText toggle = simpleField(fields, "切换(toggle)", event.getToggle()); EditText preview = simpleField(fields, "预览(preview)", event.getPreview()); EditText description = simpleField(fields, "说明(description)", event.getDescription()); EditText states = simpleField(fields, "状态(states):每行一个;\\0 表示空值,\\n 表示内嵌换行", formatEventStates(event.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "Shift 锁定(shift_lock):click/double/long", event.getShiftLock()); EditText eventIndex = simpleField(fields, "索引(index,32 位整数;无可靠效果)", event.getIndex() == null ? "" : event.getIndex().toString()); android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("可重复(repeatable)"); repeatable.setChecked(event.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("保持(sticky)"); sticky.setChecked(event.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("功能键(functional)"); functional.setChecked(event.getFunctional()); fields.addView(functional); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
+        new android.app.AlertDialog.Builder(this).setTitle("工具栏直接事件").setMessage("仅编辑静态字段;应用时绝不会执行事件。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { String indexText = eventIndex.getText().toString().trim(); Double nextIndex = indexText.isEmpty() ? null : Double.valueOf(indexText); ThemePresetEvents.Event next = new ThemePresetEvents.Event("ToolbarKey", send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), parseEventStates(states.getText().toString()), shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, ThemeToolbarKeys.inlineEvent(next), append), "已更新工具栏直接事件;未执行任何操作"); } catch (Exception error) { workspace.setStatus("工具栏事件更新被阻止:" + error.getMessage()); } }).show();
     }
 
     private void editToolbarSchemaSwitch(ThemeProjectFile styleFile, String openedSource, int index, ThemeToolbarKeys.Item current, boolean append) {
-        ThemeToolbarKeys.SchemaSwitch value = current != null && current.getSchemaSwitch() != null ? current.getSchemaSwitch() : new ThemeToolbarKeys.SchemaSwitch("ascii_mode", java.util.Arrays.asList("ascii_mode"), java.util.Arrays.asList("中", "A"), 0, null);
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText name = simpleField(fields, "name", value.getName()); EditText options = simpleField(fields, "options: one per line", formatEventStates(value.getOptions())); options.setSingleLine(false); options.setMinLines(2); EditText states = simpleField(fields, "states: one per line", formatEventStates(value.getStates())); states.setSingleLine(false); states.setMinLines(2); EditText reset = simpleField(fields, "reset (32-bit integer)", Integer.toString(value.getReset())); EditText style = simpleField(fields, "style (compatibility only; ToolbarView uses toolbar.key)", value.getStyle() == null ? "" : value.getStyle()); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle("Toolbar scheme switch").setMessage("Preview is static. Applying does not toggle options, switch scheme/theme/style/keyboard, restart Trime, or invoke callbacks.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { int nextReset = Integer.parseInt(reset.getText().toString().trim()); ThemeToolbarKeys.Item next = ThemeToolbarKeys.schemaSwitch(name.getText().toString().trim(), parseEventStates(options.getText().toString()), parseEventStates(states.getText().toString()), nextReset, style.getText().toString().trim().isEmpty() ? null : style.getText().toString().trim()); mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, next, append), "Updated toolbar scheme switch; nothing executed"); } catch (Exception error) { workspace.setStatus("Scheme switch update blocked: " + error.getMessage()); } }).show();
+        ThemeToolbarKeys.SchemaSwitch value = current != null && current.getSchemaSwitch() != null ? current.getSchemaSwitch() : new ThemeToolbarKeys.SchemaSwitch("ASCII 模式(ascii_mode)", java.util.Arrays.asList("ASCII 模式(ascii_mode)"), java.util.Arrays.asList("中", "A"), 0, null);
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText name = simpleField(fields, "名称(name)", value.getName()); EditText options = simpleField(fields, "选项(options):每行一个", formatEventStates(value.getOptions())); options.setSingleLine(false); options.setMinLines(2); EditText states = simpleField(fields, "状态(states):每行一个", formatEventStates(value.getStates())); states.setSingleLine(false); states.setMinLines(2); EditText reset = simpleField(fields, "重置值(reset,32 位整数)", Integer.toString(value.getReset())); EditText style = simpleField(fields, "样式(style,仅兼容;ToolbarView 使用 toolbar.key)", value.getStyle() == null ? "" : value.getStyle()); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
+        new android.app.AlertDialog.Builder(this).setTitle("工具栏方案切换").setMessage("仅静态预览。应用时不会切换选项、方案、主题、样式或键盘,不会重启 Trime,也不会调用回调。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { int nextReset = Integer.parseInt(reset.getText().toString().trim()); ThemeToolbarKeys.Item next = ThemeToolbarKeys.schemaSwitch(name.getText().toString().trim(), parseEventStates(options.getText().toString()), parseEventStates(states.getText().toString()), nextReset, style.getText().toString().trim().isEmpty() ? null : style.getText().toString().trim()); mutateToolbarSource(styleFile, openedSource, source -> ThemeToolbarKeys.put(source, index, next, append), "已更新工具栏方案切换;未执行任何操作"); } catch (Exception error) { workspace.setStatus("方案切换更新被阻止:" + error.getMessage()); } }).show();
     }
 
     private interface ToolbarSourceMutation { String apply(String source) throws Exception; }
@@ -591,7 +660,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             if (!ensureAssetWritable()) return; String latest = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); if (!ThemeSaveCoordinator.Companion.fingerprint(openedSource).equals(ThemeSaveCoordinator.Companion.fingerprint(latest))) throw new IOException("Style source changed after opening toolbar manager; reopen it");
             java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), mutation.apply(latest)); originals.put(styleFile.getFile(), latest); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success);
-        } catch (Exception error) { workspace.setStatus("Toolbar update blocked: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("工具栏更新被阻止:" + error.getMessage()); }
     }
 
     private static final class EntityUsage {
@@ -604,45 +673,45 @@ public class ThemeEditorActivity extends ComponentActivity {
         if (!ensureAssetWritable()) return;
         try {
             String source = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.List<ThemeStyleEntities.Entry> entries = ThemeStyleEntities.list(source);
-            String[] labels = new String[entries.size() + 2]; labels[0] = "+ New entity"; labels[1] = "Paste entity from private clipboard";
+            String[] labels = new String[entries.size() + 2]; labels[0] = "+ 新建实体"; labels[1] = "从私有剪贴板粘贴实体";
             for (int i = 0; i < entries.size(); i++) { ThemeStyleEntities.Entry entry = entries.get(i); labels[i + 2] = entry.getId() + (entry.getCloneParent() == null ? "" : " ← " + entry.getCloneParent()) + (entry.getDynamic() ? " [code-only]" : ""); }
-            new android.app.AlertDialog.Builder(this).setTitle("Style entities — " + styleFile.getName()).setItems(labels, (dialog, which) -> { if (which == 0) promptCreateStyleEntity(styleFile); else if (which == 1) promptPasteEntityIntoStyle(styleFile); else showStyleEntityActions(styleFile, entries.get(which - 2)); }).setNegativeButton("Close", null).show();
-        } catch (Exception error) { workspace.setStatus("Style entity list failed: " + error.getMessage()); }
+            new android.app.AlertDialog.Builder(this).setTitle("样式实体——" + styleFile.getName()).setItems(labels, (dialog, which) -> { if (which == 0) promptCreateStyleEntity(styleFile); else if (which == 1) promptPasteEntityIntoStyle(styleFile); else showStyleEntityActions(styleFile, entries.get(which - 2)); }).setNegativeButton("关闭", null).show();
+        } catch (Exception error) { workspace.setStatus("样式实体列表加载失败:" + error.getMessage()); }
     }
 
     private void showStyleEntityActions(ThemeProjectFile styleFile, ThemeStyleEntities.Entry entry) {
         try {
             EntityUsage usage = collectEntityUsage(styleFile, entry.getId()); String details = "Entity: " + entry.getId() + (entry.getCloneParent() == null ? "" : "\nInherits: " + entry.getCloneParent()) + "\nStatic key references: " + usage.total + (usage.uncertain.isEmpty() ? "" : "\nUncertain keyboards: " + android.text.TextUtils.join(", ", usage.uncertain)) + (entry.getDynamic() ? "\nDynamic entity: structural actions are disabled; use Lua source." : "");
-            String[] actions = entry.getDynamic() ? new String[]{"Details", "Open style Lua"} : new String[]{"Details", "Copy complete entity", "Duplicate", "Rename and replace references", "Delete if unreferenced", "Open style Lua"};
+            String[] actions = entry.getDynamic() ? new String[]{"详情", "打开样式 Lua"} : new String[]{"详情", "复制完整实体", "创建副本", "重命名并替换引用", "无引用时删除", "打开样式 Lua"};
             new android.app.AlertDialog.Builder(this).setTitle(entry.getId()).setMessage(details).setItems(actions, (dialog, which) -> {
                 if (which == 0) return;
                 if (entry.getDynamic()) { requestProjectFileSwitch(styleFile); return; }
                 if (which == 1) copyEntityFromStyleAsset(styleFile, entry.getId()); else if (which == 2) promptDuplicateStyleEntity(styleFile, entry.getId()); else if (which == 3) promptRenameStyleEntity(styleFile, entry.getId(), usage); else if (which == 4) confirmDeleteStyleEntity(styleFile, entry.getId(), usage); else requestProjectFileSwitch(styleFile);
-            }).setNegativeButton("Close", null).show();
-        } catch (Exception error) { workspace.setStatus("Style entity analysis blocked: " + error.getMessage()); }
+            }).setNegativeButton("关闭", null).show();
+        } catch (Exception error) { workspace.setStatus("样式实体分析被阻止:" + error.getMessage()); }
     }
 
     private void copyEntityFromStyleAsset(ThemeProjectFile styleFile, String id) {
         try { ThemeStyleEntities.Snapshot snapshot = ThemeStyleEntities.extract(new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8), id); workspace.storeStyleEntityClipboard(snapshot); }
-        catch (Exception error) { workspace.setStatus("Style entity copy blocked: " + error.getMessage()); }
+        catch (Exception error) { workspace.setStatus("样式实体复制被阻止:" + error.getMessage()); }
     }
 
     private void promptCreateStyleEntity(ThemeProjectFile styleFile) {
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText id = simpleField(fields, "New entity ID", "style_new"); EditText parent = simpleField(fields, "Clone parent (empty for table)", "key");
-        new android.app.AlertDialog.Builder(this).setTitle("New style entity").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Create", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.create(source, id.getText().toString().trim(), emptyToNull(parent)), "Created style entity " + id.getText().toString().trim())).show();
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText id = simpleField(fields, "新实体标识", "style_new"); EditText parent = simpleField(fields, "克隆父项(clone,留空则为表)", "key");
+        new android.app.AlertDialog.Builder(this).setTitle("新建样式实体").setView(fields).setNegativeButton("取消", null).setPositiveButton("创建", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.create(source, id.getText().toString().trim(), emptyToNull(parent)), "已创建样式实体 " + id.getText().toString().trim())).show();
     }
 
     private void promptDuplicateStyleEntity(ThemeProjectFile styleFile, String sourceId) {
-        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "Duplicate entity ID", sourceId + "_copy");
-        new android.app.AlertDialog.Builder(this).setTitle("Duplicate complete entity").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Duplicate", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.paste(source, ThemeStyleEntities.extract(source, sourceId), id.getText().toString().trim()), "Duplicated style entity " + sourceId)).show();
+        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "副本实体标识", sourceId + "_copy");
+        new android.app.AlertDialog.Builder(this).setTitle("复制完整实体").setView(fields).setNegativeButton("取消", null).setPositiveButton("创建副本", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.paste(source, ThemeStyleEntities.extract(source, sourceId), id.getText().toString().trim()), "已复制样式实体 " + sourceId)).show();
     }
 
     private void promptPasteEntityIntoStyle(ThemeProjectFile styleFile) {
-        ThemeEditorClipboard.Payload payload = workspace.styleEntityClipboard(); if (payload == null || payload.styleEntity == null) { workspace.setStatus("Private clipboard does not contain a complete style entity"); return; }
-        try { java.util.ArrayList<String> missing = missingStyleEntityResources(styleFile, payload.styleEntity); if (!missing.isEmpty()) throw new IOException("Target style is missing resources: " + android.text.TextUtils.join(", ", missing)); }
-        catch (Exception error) { workspace.setStatus("Entity paste blocked: " + error.getMessage()); return; }
-        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "New entity ID", payload.styleEntity.getId() + "_copy");
-        new android.app.AlertDialog.Builder(this).setTitle("Paste complete entity").setMessage(payload.styleEntity.getCloneParent() == null ? "No clone dependency" : "Requires clone parent: " + payload.styleEntity.getCloneParent()).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Paste", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.paste(source, payload.styleEntity, id.getText().toString().trim()), "Pasted complete style entity")).show();
+        ThemeEditorClipboard.Payload payload = workspace.styleEntityClipboard(); if (payload == null || payload.styleEntity == null) { workspace.setStatus("私有剪贴板中没有完整的样式实体"); return; }
+        try { java.util.ArrayList<String> missing = missingStyleEntityResources(styleFile, payload.styleEntity); if (!missing.isEmpty()) throw new IOException("目标样式缺少资源:" + android.text.TextUtils.join(", ", missing)); }
+        catch (Exception error) { workspace.setStatus("实体粘贴被阻止:" + error.getMessage()); return; }
+        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "新实体标识", payload.styleEntity.getId() + "_copy");
+        new android.app.AlertDialog.Builder(this).setTitle("粘贴完整实体").setMessage(payload.styleEntity.getCloneParent() == null ? "无克隆依赖" : "需要克隆父项:" + payload.styleEntity.getCloneParent()).setView(fields).setNegativeButton("取消", null).setPositiveButton("粘贴", (dialog, which) -> mutateSingleStyleEntity(styleFile, source -> ThemeStyleEntities.paste(source, payload.styleEntity, id.getText().toString().trim()), "已粘贴完整样式实体")).show();
     }
 
     private interface StyleSourceMutation { String apply(String source) throws Exception; }
@@ -650,8 +719,8 @@ public class ThemeEditorActivity extends ComponentActivity {
         if (!ensureAssetWritable()) return;
         try {
             String original = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); String updated = mutation.apply(original);
-            java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), updated); originals.put(styleFile.getFile(), original); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success + "; transaction verified");
-        } catch (Exception error) { workspace.setStatus("Style entity mutation failed: " + error.getMessage()); }
+            java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), updated); originals.put(styleFile.getFile(), original); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success + ";事务已校验");
+        } catch (Exception error) { workspace.setStatus("样式实体修改失败:" + error.getMessage()); }
     }
 
     private EntityUsage collectEntityUsage(ThemeProjectFile styleFile, String entityId) throws IOException {
@@ -668,10 +737,10 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void promptRenameStyleEntity(ThemeProjectFile styleFile, String oldId, EntityUsage previewUsage) {
-        if (ThemeStyleEntities.isReserved(oldId)) { workspace.setStatus("Reserved component style cannot be renamed: " + oldId); return; }
-        if (!previewUsage.uncertain.isEmpty()) { workspace.setStatus("Rename blocked by uncertain keyboard references: " + android.text.TextUtils.join(", ", previewUsage.uncertain)); return; }
-        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "New entity ID", oldId + "_renamed"); String message = "Replace " + previewUsage.total + " static key references across " + previewUsage.references.size() + " keyboards. Style and keyboard files commit as one rollback-safe transaction.";
-        new android.app.AlertDialog.Builder(this).setTitle("Rename style entity?").setMessage(message).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Rename", (dialog, which) -> renameStyleEntityTransaction(styleFile, oldId, id.getText().toString().trim())).show();
+        if (ThemeStyleEntities.isReserved(oldId)) { workspace.setStatus("保留组件样式不能重命名:" + oldId); return; }
+        if (!previewUsage.uncertain.isEmpty()) { workspace.setStatus("重命名被无法确定的键盘引用阻止:" + android.text.TextUtils.join(", ", previewUsage.uncertain)); return; }
+        LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "新实体标识", oldId + "_renamed"); String message = "将替换 " + previewUsage.total + " 个静态按键引用,涉及 " + previewUsage.references.size() + " 个键盘。样式和键盘文件将作为一个可安全回滚的事务提交。";
+        new android.app.AlertDialog.Builder(this).setTitle("重命名样式实体?").setMessage(message).setView(fields).setNegativeButton("取消", null).setPositiveButton("重命名", (dialog, which) -> renameStyleEntityTransaction(styleFile, oldId, id.getText().toString().trim())).show();
     }
 
     private void renameStyleEntityTransaction(ThemeProjectFile styleFile, String oldId, String newId) {
@@ -680,22 +749,22 @@ public class ThemeEditorActivity extends ComponentActivity {
             EntityUsage usage = collectEntityUsage(styleFile, oldId); if (!usage.uncertain.isEmpty()) throw new IOException("References became uncertain: " + android.text.TextUtils.join(", ", usage.uncertain));
             java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); String styleSource = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); originals.put(styleFile.getFile(), styleSource); changes.put(styleFile.getFile(), ThemeStyleEntities.rename(styleSource, oldId, newId));
             int changed = 0; for (ThemeProjectFile keyboard : usage.references.keySet()) { String source = new String(readFileBytes(keyboard.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); originals.put(keyboard.getFile(), source); ThemeStyleEntities.ReferenceUpdate update = ThemeStyleEntities.replaceKeyboardReferences(source, oldId, newId); if (update.getChangedKeys() > 0) { changes.put(keyboard.getFile(), update.getSource()); changed += update.getChangedKeys(); } }
-            applyProjectSourceTransaction(changes, originals); workspace.setStatus("Renamed " + oldId + " to " + newId + " and replaced " + changed + " key references");
-        } catch (Exception error) { workspace.setStatus("Style entity rename blocked: " + error.getMessage()); }
+            applyProjectSourceTransaction(changes, originals); workspace.setStatus("已将 " + oldId + " 重命名为 " + newId + " 并替换 " + changed + " 个按键引用");
+        } catch (Exception error) { workspace.setStatus("样式实体重命名被阻止:" + error.getMessage()); }
     }
 
     private void confirmDeleteStyleEntity(ThemeProjectFile styleFile, String id, EntityUsage previewUsage) {
-        if (ThemeStyleEntities.isReserved(id)) { workspace.setStatus("Reserved component style cannot be deleted: " + id); return; }
-        if (previewUsage.total > 0 || !previewUsage.uncertain.isEmpty()) { workspace.setStatus("Delete blocked: " + previewUsage.total + " references; uncertain keyboards: " + android.text.TextUtils.join(", ", previewUsage.uncertain)); return; }
-        new android.app.AlertDialog.Builder(this).setTitle("Delete unreferenced style entity?").setMessage(id + "\nThis removes only its static style statements. Clone consumers are also checked at commit time.").setNegativeButton("Cancel", null).setPositiveButton("Delete", (dialog, which) -> deleteStyleEntityTransaction(styleFile, id)).show();
+        if (ThemeStyleEntities.isReserved(id)) { workspace.setStatus("保留组件样式不能删除:" + id); return; }
+        if (previewUsage.total > 0 || !previewUsage.uncertain.isEmpty()) { workspace.setStatus("删除被阻止:" + previewUsage.total + " 个引用;无法确定的键盘:" + android.text.TextUtils.join(", ", previewUsage.uncertain)); return; }
+        new android.app.AlertDialog.Builder(this).setTitle("删除无引用的样式实体?").setMessage(id + "\nThis removes only its static style statements. Clone consumers are also checked at commit time.").setNegativeButton("取消", null).setPositiveButton("删除", (dialog, which) -> deleteStyleEntityTransaction(styleFile, id)).show();
     }
 
     private void deleteStyleEntityTransaction(ThemeProjectFile styleFile, String id) {
         if (!ensureAssetWritable()) return;
         try {
             EntityUsage usage = collectEntityUsage(styleFile, id); if (usage.total > 0 || !usage.uncertain.isEmpty()) throw new IOException("References changed after review; reopen entity manager");
-            String source = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), ThemeStyleEntities.delete(source, id)); originals.put(styleFile.getFile(), source); applyProjectSourceTransaction(changes, originals); workspace.setStatus("Deleted unreferenced style entity " + id);
-        } catch (Exception error) { workspace.setStatus("Style entity delete blocked: " + error.getMessage()); }
+            String source = new String(readFileBytes(styleFile.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(styleFile.getFile(), ThemeStyleEntities.delete(source, id)); originals.put(styleFile.getFile(), source); applyProjectSourceTransaction(changes, originals); workspace.setStatus("已删除无引用的样式实体 " + id);
+        } catch (Exception error) { workspace.setStatus("样式实体删除被阻止:" + error.getMessage()); }
     }
 
     private void applyProjectSourceTransaction(java.util.LinkedHashMap<File, String> changes, java.util.Map<File, String> expectedOriginals) throws Exception { applyProjectSourceTransaction(changes, expectedOriginals, null); }
@@ -706,7 +775,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         validateProjectTransactionSnapshot(root, expectedOriginals, expectedLuaManifest);
         for (java.util.Map.Entry<File, String> change : changes.entrySet()) {
             File file = change.getKey(); if (!file.getCanonicalPath().startsWith(root + File.separator)) throw new IOException("Transaction file escapes project root");
-            com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(change.getValue()); for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("Updated " + file.getName() + " contains Lua errors");
+            com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(change.getValue()); for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("已更新 " + file.getName() + " contains Lua errors");
             byte[] bytes = readFileBytes(file, 4L * 1024 * 1024); String text = new String(bytes, java.nio.charset.StandardCharsets.UTF_8); String localHash = ThemeSaveCoordinator.Companion.fingerprint(text), expected = expectedOriginals == null ? null : expectedOriginals.get(file); if (expected != null && !ThemeSaveCoordinator.Companion.fingerprint(expected).equals(localHash)) throw new IOException("Project file changed while preparing transaction: " + file.getName()); String remoteHash = importedProjectTreeUri == null ? null : fingerprintImportedProjectFile(file); if (remoteHash != null && !remoteHash.equals(localHash)) throw new IOException("Imported project differs from local cache; reload before transaction: " + file.getName()); backups.put(file, new Backup(bytes, localHash, remoteHash));
         }
         validateProjectTransactionSnapshot(root, expectedOriginals, expectedLuaManifest);
@@ -741,8 +810,8 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private interface StyleIdAction { void run(String id) throws Exception; }
-    private void promptStyleId(String title, String initial, StyleIdAction action) { if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "Style ID", initial); new android.app.AlertDialog.Builder(this).setTitle(title).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { action.run(id.getText().toString().trim()); workspace.setStatus(title + " complete"); } catch (Exception error) { workspace.setStatus(title + " failed: " + error.getMessage()); } }).show(); }
-    private void confirmDeleteStyle(ThemeProjectFile file) { if (!ensureAssetWritable()) return; if (isCurrentProjectFile(file)) { workspace.setStatus("Open another file before deleting the current style"); return; } new android.app.AlertDialog.Builder(this).setTitle("Delete style?").setMessage(file.getName()).setNegativeButton("Cancel", null).setPositiveButton("Delete", (dialog, which) -> { try { ThemeProjectMutator.validateStyleDeletion(project, file); File directory = file.getFile().getParentFile(); if (importedProjectTreeUri != null) deleteImportedProjectPath(directory); deleteDirectory(directory); if (directory.exists()) throw new IOException("Cannot delete local style cache"); refreshProjectAfterAssetMutation(); workspace.setStatus("Deleted style " + file.getName()); } catch (Exception error) { workspace.setStatus("Style delete blocked: " + error.getMessage()); } }).show(); }
+    private void promptStyleId(String title, String initial, StyleIdAction action) { if (!ensureAssetWritable()) return; LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "样式标识", initial); new android.app.AlertDialog.Builder(this).setTitle(title).setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { action.run(id.getText().toString().trim()); workspace.setStatus(title + " 已完成"); } catch (Exception error) { workspace.setStatus(title + " 失败:" + error.getMessage()); } }).show(); }
+    private void confirmDeleteStyle(ThemeProjectFile file) { if (!ensureAssetWritable()) return; if (isCurrentProjectFile(file)) { workspace.setStatus("删除当前样式前请先打开另一个文件"); return; } new android.app.AlertDialog.Builder(this).setTitle("删除样式?").setMessage(file.getName()).setNegativeButton("取消", null).setPositiveButton("删除", (dialog, which) -> { try { ThemeProjectMutator.validateStyleDeletion(project, file); File directory = file.getFile().getParentFile(); if (importedProjectTreeUri != null) deleteImportedProjectPath(directory); deleteDirectory(directory); if (directory.exists()) throw new IOException("无法删除本地样式缓存"); refreshProjectAfterAssetMutation(); workspace.setStatus("已删除样式 " + file.getName()); } catch (Exception error) { workspace.setStatus("样式删除被阻止:" + error.getMessage()); } }).show(); }
 
     private void loadRecentProject(Uri uri, String prefix, String name) throws IOException {
         DocumentFile tree = DocumentFile.fromTreeUri(this, uri); if (tree == null) throw new IOException("Recent tree unavailable"); DocumentFile source = prefix == null ? tree : tree.findFile(prefix); if (source == null || !source.isDirectory()) throw new IOException("Recent project directory unavailable");
@@ -756,14 +825,14 @@ public class ThemeEditorActivity extends ComponentActivity {
         else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) text.append("\nPages: ").append(model.keyMapPages.size()).append("\nUse Page... for bulk operations.");
         else if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) text.append("\nUse Keys... for grid, alignment, distribution and locks.");
         else text.append("\nNo literal keyboard layout; use Lua source.");
-        String[] actions = model.layoutMode == ThemeEditorModel.LayoutMode.NONE ? new String[]{"Close"} : new String[]{"Migrate layout...", "Close"};
-        new android.app.AlertDialog.Builder(this).setTitle("Keyboard structure").setMessage(text.toString()).setItems(actions, (dialog, which) -> { if (model.layoutMode != ThemeEditorModel.LayoutMode.NONE && which == 0) chooseLayoutMigrationTarget(model); }).show();
+        String[] actions = model.layoutMode == ThemeEditorModel.LayoutMode.NONE ? new String[]{"关闭"} : new String[]{"迁移布局...", "关闭"};
+        new android.app.AlertDialog.Builder(this).setTitle("键盘结构").setMessage(text.toString()).setItems(actions, (dialog, which) -> { if (model.layoutMode != ThemeEditorModel.LayoutMode.NONE && which == 0) chooseLayoutMigrationTarget(model); }).show();
     }
 
     private void chooseLayoutMigrationTarget(ThemeEditorModel source) {
         java.util.ArrayList<ThemeEditorModel.LayoutMode> modes = new java.util.ArrayList<>(); java.util.ArrayList<String> labels = new java.util.ArrayList<>();
         for (ThemeEditorModel.LayoutMode mode : new ThemeEditorModel.LayoutMode[]{ThemeEditorModel.LayoutMode.ROWS, ThemeEditorModel.LayoutMode.FLEX_BOX, ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS, ThemeEditorModel.LayoutMode.KEY_MAPS}) if (mode != source.layoutMode) { modes.add(mode); labels.add(mode.name()); }
-        new android.app.AlertDialog.Builder(this).setTitle("Migrate " + source.layoutMode + " to").setItems(labels.toArray(new String[0]), (dialog, which) -> showLayoutMigrationPreview(source, modes.get(which))).setNegativeButton("Cancel", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle("迁移 " + source.layoutMode + " 到").setItems(labels.toArray(new String[0]), (dialog, which) -> showLayoutMigrationPreview(source, modes.get(which))).setNegativeButton("取消", null).show();
     }
 
     private void showLayoutMigrationPreview(ThemeEditorModel source, ThemeEditorModel.LayoutMode target) {
@@ -772,9 +841,9 @@ public class ThemeEditorActivity extends ComponentActivity {
             message.append("Convert ").append(preview.getKeyCount()).append(" keys; containers ").append(preview.getSourceContainerCount()).append(" → ").append(preview.getTargetContainerCount()).append(".\n");
             if (preview.getOmittedKeyMapPages() > 0) message.append("Non-active pages omitted: ").append(preview.getOmittedKeyMapPages()).append(".\n");
             for (String note : preview.getNotes()) message.append("\n• ").append(note);
-            String[] actions = {"Copy backup and convert", "Convert", "Hide original data and convert", "Cancel"};
-            new android.app.AlertDialog.Builder(this).setTitle("Migration preview: " + source.layoutMode + " → " + target).setMessage(message.toString()).setItems(actions, (dialog, which) -> { if (which < 3) applyLayoutMigration(source, target, which == 0, which == 2); }).show();
-        } catch (Exception error) { workspace.setStatus("Migration preview failed: " + error.getMessage()); }
+            String[] actions = {"复制备份并转换", "转换", "隐藏原数据并转换", "取消"};
+            new android.app.AlertDialog.Builder(this).setTitle("迁移预览:" + source.layoutMode + " → " + target).setMessage(message.toString()).setItems(actions, (dialog, which) -> { if (which < 3) applyLayoutMigration(source, target, which == 0, which == 2); }).show();
+        } catch (Exception error) { workspace.setStatus("迁移预览失败:" + error.getMessage()); }
     }
 
     private static void assertLayoutMigrationSafe(com.osfans.trime.editor.core.ThemeDocument document) throws IOException {
@@ -806,10 +875,10 @@ public class ThemeEditorActivity extends ComponentActivity {
             com.osfans.trime.editor.core.ParseResult verified = new ThemeLuaParser().parse(candidate); for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : verified.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("Migrated source failed parse verification");
             migrationUndoDocument = before; migrationRedoDocument = verified.getDocument(); migrationSourceMode = source.layoutMode; migrationTargetMode = target;
             editor.replaceDocument(verified.getDocument()); applyingMigration = true;
-            try { if (!workspace.replaceModelAsAtomic(toUiModel(verified.getDocument()), "Migrated " + source.layoutMode + " to " + target + " as one undo step")) throw new IOException("Workspace rejected migration"); }
+            try { if (!workspace.replaceModelAsAtomic(toUiModel(verified.getDocument()), "已将 " + source.layoutMode + " 重命名为 " + target + ",作为一个撤销步骤")) throw new IOException("工作区拒绝迁移"); }
             finally { applyingMigration = false; }
-            layoutEditable = true; viewModel.setDirty(true); if (migrationBackup != null) workspace.setStatus("Migrated " + source.layoutMode + " to " + target + "; backup: keyboards/.editor-backups/" + migrationBackup.getName());
-        } catch (Exception error) { applyingMigration = false; if (before != null) editor.replaceDocument(before); clearMigrationHistory(); workspace.setStatus("Layout migration failed; original draft retained: " + error.getMessage()); }
+            layoutEditable = true; viewModel.setDirty(true); if (migrationBackup != null) workspace.setStatus("已将 " + source.layoutMode + " 重命名为 " + target + ";备份:keyboards/.editor-backups/" + migrationBackup.getName());
+        } catch (Exception error) { applyingMigration = false; if (before != null) editor.replaceDocument(before); clearMigrationHistory(); workspace.setStatus("布局迁移失败,已保留原草稿:" + error.getMessage()); }
     }
 
     private File createLayoutMigrationBackup(com.osfans.trime.editor.core.ThemeDocument source) throws IOException {
@@ -822,24 +891,24 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void showExportInstallPage() {
-        String[] actions = {"Export verified ZIP", "Share verified ZIP", "Install to authorized directory", "Rollback last installation"};
-        new android.app.AlertDialog.Builder(this).setTitle("Export and install").setItems(actions, (dialog, which) -> { if (which == 0) exportZip(false); else if (which == 1) exportZip(true); else if (which == 2) chooseInstallTarget(); else rollbackLastInstall(true); }).setNegativeButton("Close", null).show();
+        String[] actions = {"导出已校验的 ZIP", "分享已校验的 ZIP", "安装到已授权目录", "回滚上次安装"};
+        new android.app.AlertDialog.Builder(this).setTitle("导出与安装").setItems(actions, (dialog, which) -> { if (which == 0) exportZip(false); else if (which == 1) exportZip(true); else if (which == 2) chooseInstallTarget(); else rollbackLastInstall(true); }).setNegativeButton("关闭", null).show();
     }
 
     private void showRecoveryStatus() {
-        String text = recoveryDraftFile().isFile() ? "Private draft exists for: " + recoveryIdentity() : "No private recovery draft";
+        String text = recoveryDraftFile().isFile() ? "存在私有草稿:" + recoveryIdentity() : "没有私有恢复草稿";
         File journal = new File(getFilesDir(), "theme-editor-install.journal"); if (journal.isFile()) text += "\nInstallation journal is available.";
-        new android.app.AlertDialog.Builder(this).setTitle("Recovery status").setMessage(text).setNegativeButton("Close", null).setPositiveButton("Delete private draft", (dialog, which) -> { deleteRecoveryDraft(); workspace.setStatus("Private recovery draft deleted"); }).show();
+        new android.app.AlertDialog.Builder(this).setTitle("恢复状态").setMessage(text).setNegativeButton("关闭", null).setPositiveButton("删除私有草稿", (dialog, which) -> { deleteRecoveryDraft(); workspace.setStatus("私有恢复草稿已删除"); }).show();
     }
 
     private boolean ensureWritable() {
         if (!readOnlySession) return true;
-        workspace.setStatus("Read-only: this project is already open in another editor session"); Toast.makeText(this, "Second session is read-only", Toast.LENGTH_LONG).show(); return false;
+        workspace.setStatus("只读:此项目已在另一个编辑器会话中打开"); Toast.makeText(this, "第二个会话为只读", Toast.LENGTH_LONG).show(); return false;
     }
 
     private boolean ensureAssetWritable() {
         if (!ensureWritable()) return false;
-        if (viewModel.getDirty()) { workspace.setStatus("Save or discard current file changes before modifying project assets"); Toast.makeText(this, "Save current changes first", Toast.LENGTH_LONG).show(); return false; }
+        if (viewModel.getDirty()) { workspace.setStatus("修改项目资源前,请先保存或放弃当前文件的更改"); Toast.makeText(this, "请先保存当前更改", Toast.LENGTH_LONG).show(); return false; }
         return true;
     }
 
@@ -854,7 +923,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         }
         workspace.setClipboardScope(next);
         workspace.setReadOnly(readOnlySession);
-        if (readOnlySession) workspace.setStatus("Opened read-only: another editor session owns this project");
+        if (readOnlySession) workspace.setStatus("已以只读方式打开:另一个编辑器会话正在使用此项目");
     }
 
     private String sessionIdentity() {
@@ -884,18 +953,18 @@ public class ThemeEditorActivity extends ComponentActivity {
             return;
         }
         new android.app.AlertDialog.Builder(this)
-                .setTitle("Unsaved changes")
-                .setMessage("Save the current Lua file before switching?")
-                .setPositiveButton("Save", (dialog, which) -> {
+                .setTitle("有未保存的更改")
+                .setMessage("切换前是否保存当前 Lua 文件?")
+                .setPositiveButton("保存", (dialog, which) -> {
                     saveModel(workspace.getModel());
                     if (!viewModel.getDirty()) loadProjectFile(file);
                 })
-                .setNegativeButton("Discard", (dialog, which) -> {
+                .setNegativeButton("放弃", (dialog, which) -> {
                     viewModel.setDirty(false);
                     deleteRecoveryDraft();
                     loadProjectFile(file);
                 })
-                .setNeutralButton("Cancel", null)
+                .setNeutralButton("取消", null)
                 .show();
     }
 
@@ -932,29 +1001,29 @@ public class ThemeEditorActivity extends ComponentActivity {
             openedImportedFingerprint = importedProjectTreeUri == null ? null : fingerprintImportedProjectFile(selected.getFile());
             viewModel.setDirty(false);
             int diagnosticCount = ThemeProjectDiagnostics.INSTANCE.collect(projectSnapshot, new ThemeFieldRegistry()).size() + parsed.getDiagnostics().size();
-            workspace.setStatus("Project " + root.getName() + ": " + project.getStyles().size() + " styles, " + project.getKeyboards().size() + " keyboards, " + diagnosticCount + " diagnostics");
+            workspace.setStatus("项目 " + root.getName() + ": " + project.getStyles().size() + " 个样式," + project.getKeyboards().size() + " 个键盘," + diagnosticCount + " 条诊断");
             invalidateOptionsMenu();
             offerRecoveryDraft();
         } catch (Exception error) {
             project = null;
-            workspace.setStatus("Project load failed: " + error.getMessage());
-            Toast.makeText(this, "Unable to load theme project", Toast.LENGTH_LONG).show();
+            workspace.setStatus("项目加载失败:" + error.getMessage());
+            Toast.makeText(this, "无法加载主题项目", Toast.LENGTH_LONG).show();
         }
     }
 
     private void loadTree(Uri uri) {
         try {
             DocumentFile tree = DocumentFile.fromTreeUri(this, uri);
-            if (tree == null) throw new IOException("Cannot open theme folder");
+            if (tree == null) throw new IOException("无法打开主题文件夹");
             File root = new File(getCacheDir(), "theme-editor-tree-" + System.nanoTime());
             copyDocumentTree(tree, root);
             importedProjectUri = uri; importedProjectTreeUri = uri; importedProjectTreePrefix = null;
             rememberRecentProject(uri, tree.getName(), null);
             loadProject(root, tree.getName());
-            workspace.setStatus("Imported theme folder: " + root.getName());
+            workspace.setStatus("已导入主题文件夹:" + root.getName());
         } catch (Exception error) {
-            workspace.setStatus("Folder import failed: " + error.getMessage());
-            Toast.makeText(this, "Unable to import theme folder", Toast.LENGTH_LONG).show();
+            workspace.setStatus("文件夹导入失败:" + error.getMessage());
+            Toast.makeText(this, "无法导入主题文件夹", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1005,19 +1074,19 @@ public class ThemeEditorActivity extends ComponentActivity {
             File root = new File(getCacheDir(), "theme-editor-import-" + System.nanoTime());
             root.mkdirs();
             try (InputStream input = getContentResolver().openInputStream(uri)) {
-                if (input == null) throw new IOException("Cannot open ZIP");
+                if (input == null) throw new IOException("无法打开 ZIP");
                 com.osfans.trime.editor.project.ThemeProjectArchive.extractZip(input, root);
             }
             File main = findMainLua(root);
-            if (main == null) throw new IOException("ZIP does not contain main.lua");
+            if (main == null) throw new IOException("ZIP 中不包含 main.lua");
             importedProjectUri = uri; importedProjectTreeUri = null; importedProjectTreePrefix = null; openedImportedFingerprint = null;
             String archiveName = documentName(uri); if (archiveName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")) archiveName = archiveName.substring(0, archiveName.length() - 4);
             String displayName = main.getParentFile().equals(root) ? archiveName : main.getParentFile().getName();
             loadProject(main.getParentFile(), displayName);
-            workspace.setStatus("Imported ZIP: " + main.getParentFile());
+            workspace.setStatus("已导入 ZIP:" + main.getParentFile());
         } catch (Exception error) {
-            workspace.setStatus("ZIP import failed: " + error.getMessage());
-            Toast.makeText(this, "Unable to import ZIP", Toast.LENGTH_LONG).show();
+            workspace.setStatus("ZIP 导入失败:" + error.getMessage());
+            Toast.makeText(this, "无法导入 ZIP", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1049,11 +1118,11 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (repository instanceof DirectoryThemeProjectRepository && importedProjectTreeUri != null) openedImportedFingerprint = fingerprintImportedProjectFile(((DirectoryThemeProjectRepository) repository).getSelected().getFile());
             else if (importedProjectTreeUri == null) openedImportedFingerprint = null;
             viewModel.setDirty(false);
-            workspace.setStatus("Loaded " + currentUri + " (" + parsed.getDiagnostics().size() + " diagnostics)" + (layoutEditable ? "" : "; no structured keyboard layout in this file"));
+            workspace.setStatus("已加载 " + currentUri + " (" + parsed.getDiagnostics().size() + " 条诊断)" + (layoutEditable ? "" : ";此文件中没有结构化键盘布局"));
             offerRecoveryDraft();
         } catch (Exception error) {
-            workspace.setStatus("Load failed: " + error.getMessage());
-            Toast.makeText(this, "Unable to load theme", Toast.LENGTH_LONG).show();
+            workspace.setStatus("加载失败:" + error.getMessage());
+            Toast.makeText(this, "无法加载主题", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1169,14 +1238,14 @@ public class ThemeEditorActivity extends ComponentActivity {
     private boolean syncModel(ThemeEditorModel model) {
         if (editor == null || model == null || model.layoutMode == ThemeEditorModel.LayoutMode.NONE) return false;
         String root = findLayoutRoot(editor.getDocument());
-        if (root == null || editor.getDocument().get(root) instanceof ThemeValue.RawLuaNode) { workspace.setStatus("Layout uses dynamic Lua; edit it in the Lua source"); return false; }
+        if (root == null || editor.getDocument().get(root) instanceof ThemeValue.RawLuaNode) { workspace.setStatus("布局使用动态 Lua,请在 Lua 源代码中编辑"); return false; }
         int rootAssignments = 0; for (com.osfans.trime.editor.core.ThemeSourceStatement statement : editor.getDocument().getSourceStatements()) if (root.equals(statement.getPath())) rootAssignments++;
-        if (rootAssignments > 1) { workspace.setStatus("Duplicate layout assignments require the Lua source editor"); return false; }
+        if (rootAssignments > 1) { workspace.setStatus("重复的布局赋值需要使用 Lua 源代码编辑器"); return false; }
         try {
             com.osfans.trime.editor.core.ThemeDocument updated = ThemeLayoutCodec.writeAgainstOriginal(editor.getDocument(), model);
             com.osfans.trime.editor.core.ThemeLuaWriter.INSTANCE.write(updated, com.osfans.trime.editor.core.ThemeWriteMode.HYBRID);
             editor.replaceDocument(updated); return true;
-        } catch (Exception error) { workspace.setStatus("Structured update blocked: " + error.getMessage()); return false; }
+        } catch (Exception error) { workspace.setStatus("结构化更新被阻止:" + error.getMessage()); return false; }
     }
 
     private void showKeyEventManager(ThemeEditorModel.Key key) {
@@ -1186,40 +1255,40 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (!(repository instanceof DirectoryThemeProjectRepository) || ((DirectoryThemeProjectRepository) repository).getSelected().getKind() != ThemeProjectFile.Kind.KEYBOARD || editor == null) throw new IOException("Open a project keyboard first");
             java.util.List<ThemeKeyEvents.Slot> slots = ThemeKeyEvents.read(editor.getDocument(), key.sourcePath); ThemeKeyEvents.Options options = ThemeKeyEvents.options(editor.getDocument(), key.sourcePath); ThemeKeyEvents.Hints hints = ThemeKeyEvents.hints(editor.getDocument(), key.sourcePath);
             String[] labels = new String[slots.size() + 4]; for (int i = 0; i < slots.size(); i++) { ThemeKeyEvents.Slot slot = slots.get(i); labels[i] = slot.getName() + " — " + slot.getSource() + eventSlotSummary(slot); } labels[slots.size()] = "swipe_repeatable — " + nullableBoolean(options.getSwipeRepeatable()); labels[slots.size() + 1] = "send_bindings — " + nullableBoolean(options.getSendBindings()) + "; effective=" + options.getEffectiveSendBindings() + " (" + options.getSendBindingsSource() + ")"; labels[slots.size() + 2] = "event hints — missing values fall back to event labels"; labels[slots.size() + 3] = "long/repeat click time — inherited from key style entity";
-            new android.app.AlertDialog.Builder(this).setTitle("Key events — static only").setMessage("No event, command, script, Intent, commit, or callback will execute.").setItems(labels, (dialog, which) -> { if (which < slots.size()) editKeyEventSlot(key, slots.get(which)); else if (which < slots.size() + 2) editKeyEventOptions(key, options); else if (which == slots.size() + 2) editKeyEventHints(key, hints); else workspace.setStatus("long_click_time and repeat_click_time belong to the resolved key style; edit that style entity, not this key source"); }).setNegativeButton("Close", null).setNeutralButton("View Lua", (dialog, which) -> showCodeEditor()).show();
-        } catch (Exception error) { workspace.setStatus("Key event manager blocked: " + error.getMessage()); }
+            new android.app.AlertDialog.Builder(this).setTitle("按键事件——仅静态").setMessage("不会执行任何事件、命令、脚本、Intent、上屏或回调。").setItems(labels, (dialog, which) -> { if (which < slots.size()) editKeyEventSlot(key, slots.get(which)); else if (which < slots.size() + 2) editKeyEventOptions(key, options); else if (which == slots.size() + 2) editKeyEventHints(key, hints); else workspace.setStatus("长按时间(long_click_time)和重复点击时间(repeat_click_time)属于解析后的按键样式;请编辑该样式实体,而不是此按键源"); }).setNegativeButton("关闭", null).setNeutralButton("查看 Lua", (dialog, which) -> showCodeEditor()).show();
+        } catch (Exception error) { workspace.setStatus("按键事件管理被阻止:" + error.getMessage()); }
     }
 
     private static String nullableBoolean(Boolean value) { return value == null ? "inherit" : value ? "true" : "false"; }
     private static String eventSlotSummary(ThemeKeyEvents.Slot slot) { if (slot.getLiteral() != null) return " = " + slot.getLiteral(); if (slot.getEvent() != null) return " = " + presetSummary(slot.getEvent()); return slot.getRisky() ? " [code-only]" : ""; }
 
     private void editKeyEventSlot(ThemeEditorModel.Key key, ThemeKeyEvents.Slot slot) {
-        if (slot.getSource() == ThemeKeyEvents.Source.RAW_LUA || slot.getSource() == ThemeKeyEvents.Source.FULL_KEY_REPLACEMENT) { workspace.setStatus(slot.getName() + " is " + slot.getSource() + "; use Lua source"); showCodeEditor(); return; }
+        if (slot.getSource() == ThemeKeyEvents.Source.RAW_LUA || slot.getSource() == ThemeKeyEvents.Source.FULL_KEY_REPLACEMENT) { workspace.setStatus(slot.getName() + " is " + slot.getSource() + ";请使用 Lua 源代码"); showCodeEditor(); return; }
         boolean stringOnly = java.util.Arrays.asList(ThemeKeyEvents.STRING_ONLY_SLOTS).contains(slot.getName());
         String[] modes = stringOnly ? new String[]{"String/preset reference", "Clear"} : new String[]{"String/preset reference", "Inline event table", "Clear"}; int selected = slot.getSource() == ThemeKeyEvents.Source.INLINE_EVENT ? 1 : slot.getSource() == ThemeKeyEvents.Source.MISSING ? modes.length - 1 : 0;
-        new android.app.AlertDialog.Builder(this).setTitle("Edit " + slot.getName()).setMessage(stringOnly ? "The current Trime runtime consumes this state replacement only as a string." : "Static source selection; nothing executes.").setSingleChoiceItems(modes, selected, (dialog, which) -> { dialog.dismiss(); if (which == 0) editKeyEventString(key, slot); else if (!stringOnly && which == 1) editInlineKeyEvent(key, slot); else commitKeyEventChange(key, document -> ThemeKeyEvents.updateString(document, key.sourcePath, slot.getName(), null), "Cleared " + slot.getName()); }).setNegativeButton("Cancel", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle("编辑 " + slot.getName()).setMessage(stringOnly ? "当前 Trime 运行时仅以字符串形式使用此状态替换值。" : "仅选择静态源;不会执行任何操作。").setSingleChoiceItems(modes, selected, (dialog, which) -> { dialog.dismiss(); if (which == 0) editKeyEventString(key, slot); else if (!stringOnly && which == 1) editInlineKeyEvent(key, slot); else commitKeyEventChange(key, document -> ThemeKeyEvents.updateString(document, key.sourcePath, slot.getName(), null), "已清除 " + slot.getName()); }).setNegativeButton("取消", null).show();
     }
 
     private void editKeyEventString(ThemeEditorModel.Key key, ThemeKeyEvents.Slot slot) {
-        LinearLayout fields = new LinearLayout(this); EditText value = simpleField(fields, "Literal event or preset ID", slot.getLiteral() == null ? "" : slot.getLiteral());
-        new android.app.AlertDialog.Builder(this).setTitle(slot.getName() + " string source").setMessage("A .lua suffix or command preset is retained but never executed in preview.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> commitKeyEventChange(key, document -> ThemeKeyEvents.updateString(document, key.sourcePath, slot.getName(), value.getText().toString()), "Updated " + slot.getName() + " string event")).show();
+        LinearLayout fields = new LinearLayout(this); EditText value = simpleField(fields, "字面事件或预设标识", slot.getLiteral() == null ? "" : slot.getLiteral());
+        new android.app.AlertDialog.Builder(this).setTitle(slot.getName() + " 字符串源").setMessage(".lua 后缀或命令预设会保留,但绝不会在预览中执行。").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> commitKeyEventChange(key, document -> ThemeKeyEvents.updateString(document, key.sourcePath, slot.getName(), value.getText().toString()), "已更新 " + slot.getName() + " 字符串事件")).show();
     }
 
     private void editInlineKeyEvent(ThemeEditorModel.Key key, ThemeKeyEvents.Slot slot) {
         ThemePresetEvents.Event event = slot.getEvent() == null ? new ThemePresetEvents.Event(slot.getName(), "", "", "", "", "", "", "", "", "", "", java.util.Collections.emptyList(), "", false, false, true, null) : slot.getEvent();
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText label = simpleField(fields, "label", event.getLabel()); EditText send = simpleField(fields, "send", event.getSend()); EditText text = simpleField(fields, "text", event.getText()); EditText commit = simpleField(fields, "commit", event.getCommit()); EditText command = simpleField(fields, "command (never executed)", event.getCommand()); EditText option = simpleField(fields, "option", event.getOption()); EditText select = simpleField(fields, "select", event.getSelect()); EditText toggle = simpleField(fields, "toggle", event.getToggle()); EditText preview = simpleField(fields, "preview", event.getPreview()); EditText description = simpleField(fields, "description", event.getDescription()); EditText states = simpleField(fields, "states: one per line; \\0 empty, \\n embedded newline", formatEventStates(event.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "shift_lock", event.getShiftLock()); EditText index = simpleField(fields, "index (preserved; unreliable)", event.getIndex() == null ? "" : event.getIndex().toString()); android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("repeatable"); repeatable.setChecked(event.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("sticky"); sticky.setChecked(event.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("functional"); functional.setChecked(event.getFunctional()); fields.addView(functional); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle(slot.getName() + " inline event").setMessage("Static table only; no field executes.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> { try { java.util.ArrayList<String> nextStates = parseEventStates(states.getText().toString()); Double nextIndex = index.getText().toString().trim().isEmpty() ? null : Double.valueOf(index.getText().toString().trim()); ThemePresetEvents.Event next = new ThemePresetEvents.Event(slot.getName(), send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), nextStates, shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); commitKeyEventChange(key, document -> ThemeKeyEvents.updateInline(document, key.sourcePath, slot.getName(), next), "Updated " + slot.getName() + " inline event; nothing executed"); } catch (Exception error) { workspace.setStatus("Inline event blocked: " + error.getMessage()); } }).show();
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); EditText label = simpleField(fields, "标签(label)", event.getLabel()); EditText send = simpleField(fields, "发送按键(send)", event.getSend()); EditText text = simpleField(fields, "文本(text)", event.getText()); EditText commit = simpleField(fields, "上屏文本(commit)", event.getCommit()); EditText command = simpleField(fields, "命令(command,绝不执行)", event.getCommand()); EditText option = simpleField(fields, "选项(option)", event.getOption()); EditText select = simpleField(fields, "选择(select)", event.getSelect()); EditText toggle = simpleField(fields, "切换(toggle)", event.getToggle()); EditText preview = simpleField(fields, "预览(preview)", event.getPreview()); EditText description = simpleField(fields, "说明(description)", event.getDescription()); EditText states = simpleField(fields, "状态(states):每行一个;\\0 表示空值,\\n 表示内嵌换行", formatEventStates(event.getStates())); states.setSingleLine(false); states.setMinLines(3); EditText shiftLock = simpleField(fields, "Shift 锁定(shift_lock)", event.getShiftLock()); EditText index = simpleField(fields, "索引(index,保留;效果不可靠)", event.getIndex() == null ? "" : event.getIndex().toString()); android.widget.CheckBox repeatable = new android.widget.CheckBox(this); repeatable.setText("可重复(repeatable)"); repeatable.setChecked(event.getRepeatable()); fields.addView(repeatable); android.widget.CheckBox sticky = new android.widget.CheckBox(this); sticky.setText("保持(sticky)"); sticky.setChecked(event.getSticky()); fields.addView(sticky); android.widget.CheckBox functional = new android.widget.CheckBox(this); functional.setText("功能键(functional)"); functional.setChecked(event.getFunctional()); fields.addView(functional); android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
+        new android.app.AlertDialog.Builder(this).setTitle(slot.getName() + " 内联事件").setMessage("仅静态表;任何字段都不会执行。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> { try { java.util.ArrayList<String> nextStates = parseEventStates(states.getText().toString()); Double nextIndex = index.getText().toString().trim().isEmpty() ? null : Double.valueOf(index.getText().toString().trim()); ThemePresetEvents.Event next = new ThemePresetEvents.Event(slot.getName(), send.getText().toString(), text.getText().toString(), commit.getText().toString(), command.getText().toString(), option.getText().toString(), select.getText().toString(), toggle.getText().toString(), label.getText().toString(), preview.getText().toString(), description.getText().toString(), nextStates, shiftLock.getText().toString().trim(), repeatable.isChecked(), sticky.isChecked(), functional.isChecked(), nextIndex); commitKeyEventChange(key, document -> ThemeKeyEvents.updateInline(document, key.sourcePath, slot.getName(), next), "已更新 " + slot.getName() + " 内联事件;未执行任何操作"); } catch (Exception error) { workspace.setStatus("内联事件被阻止:" + error.getMessage()); } }).show();
     }
 
     private void editKeyEventHints(ThemeEditorModel.Key key, ThemeKeyEvents.Hints hints) {
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); java.util.LinkedHashMap<String, EditText> inputs = new java.util.LinkedHashMap<>(); java.util.LinkedHashMap<String, android.widget.CheckBox> inherit = new java.util.LinkedHashMap<>();
-        for (String name : ThemeKeyEvents.HINTS) { android.widget.CheckBox useFallback = new android.widget.CheckBox(this); useFallback.setText(name + " missing → event label fallback"); useFallback.setChecked(hints.getValues().get(name) == null); fields.addView(useFallback); EditText input = simpleField(fields, name + " (empty remains explicit empty)", hints.getValues().get(name) == null ? "" : hints.getValues().get(name)); input.setEnabled(!useFallback.isChecked()); useFallback.setOnCheckedChangeListener((button, checked) -> input.setEnabled(!checked)); inherit.put(name, useFallback); inputs.put(name, input); }
-        android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2)); new android.app.AlertDialog.Builder(this).setTitle("Event hints").setMessage("A missing hint falls back to the corresponding event label; explicit empty does not.").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> commitKeyEventChange(key, document -> { java.util.LinkedHashMap<String, String> values = new java.util.LinkedHashMap<>(); for (String name : ThemeKeyEvents.HINTS) values.put(name, inherit.get(name).isChecked() ? null : inputs.get(name).getText().toString()); return ThemeKeyEvents.updateHints(document, key.sourcePath, values); }, "Updated event hints with source fallbacks preserved")).show();
+        for (String name : ThemeKeyEvents.HINTS) { android.widget.CheckBox useFallback = new android.widget.CheckBox(this); useFallback.setText(name + " 缺失 → 回退到事件标签"); useFallback.setChecked(hints.getValues().get(name) == null); fields.addView(useFallback); EditText input = simpleField(fields, name + "(空值仍为显式空值)", hints.getValues().get(name) == null ? "" : hints.getValues().get(name)); input.setEnabled(!useFallback.isChecked()); useFallback.setOnCheckedChangeListener((button, checked) -> input.setEnabled(!checked)); inherit.put(name, useFallback); inputs.put(name, input); }
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2)); new android.app.AlertDialog.Builder(this).setTitle("事件提示(event hints)").setMessage("缺失的提示会回退到对应事件标签;显式空值不会回退。").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> commitKeyEventChange(key, document -> { java.util.LinkedHashMap<String, String> values = new java.util.LinkedHashMap<>(); for (String name : ThemeKeyEvents.HINTS) values.put(name, inherit.get(name).isChecked() ? null : inputs.get(name).getText().toString()); return ThemeKeyEvents.updateHints(document, key.sourcePath, values); }, "已更新事件提示,并保留源回退行为")).show();
     }
 
     private void editKeyEventOptions(ThemeEditorModel.Key key, ThemeKeyEvents.Options options) {
-        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); String[] values = {"inherit", "false", "true"}; android.widget.Spinner swipe = new android.widget.Spinner(this); swipe.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, values)); swipe.setSelection(options.getSwipeRepeatable() == null ? 0 : options.getSwipeRepeatable() ? 2 : 1); fields.addView(swipe); android.widget.Spinner bindings = new android.widget.Spinner(this); bindings.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, values)); bindings.setSelection(options.getSendBindings() == null ? 0 : options.getSendBindings() ? 2 : 1); fields.addView(bindings);
-        new android.app.AlertDialog.Builder(this).setTitle("Key event flags").setMessage("swipe_repeatable then send_bindings; inherit preserves missing fields and Trime runtime defaults.").setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> commitKeyEventChange(key, document -> ThemeKeyEvents.updateOptions(document, key.sourcePath, spinnerBoolean(swipe), spinnerBoolean(bindings)), "Updated key event flags")).show();
+        LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); java.util.List<String> values = java.util.Arrays.asList("inherit", "false", "true"); android.widget.Spinner swipe = new android.widget.Spinner(this); swipe.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerChoices(values))); swipe.setSelection(options.getSwipeRepeatable() == null ? 0 : options.getSwipeRepeatable() ? 2 : 1); fields.addView(swipe); android.widget.Spinner bindings = new android.widget.Spinner(this); bindings.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerChoices(values))); bindings.setSelection(options.getSendBindings() == null ? 0 : options.getSendBindings() ? 2 : 1); fields.addView(bindings);
+        new android.app.AlertDialog.Builder(this).setTitle("按键事件标志").setMessage("依次为滑动重复(swipe_repeatable)与发送绑定(send_bindings);继承会保留缺失字段和 Trime 运行时默认值。").setView(fields).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> commitKeyEventChange(key, document -> ThemeKeyEvents.updateOptions(document, key.sourcePath, spinnerBoolean(swipe), spinnerBoolean(bindings)), "已更新按键事件标志")).show();
     }
 
     private static Boolean spinnerBoolean(android.widget.Spinner value) { return value.getSelectedItemPosition() == 0 ? null : value.getSelectedItemPosition() == 2; }
@@ -1227,7 +1296,7 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void commitKeyEventChange(ThemeEditorModel.Key key, KeyDocumentMutation mutation, String success) {
         try {
             if (!ensureAssetWritable() || !(repository instanceof DirectoryThemeProjectRepository)) return; ThemeProjectFile file = ((DirectoryThemeProjectRepository) repository).getSelected(); if (file.getKind() != ThemeProjectFile.Kind.KEYBOARD) throw new IOException("Open a keyboard file first"); String latest = new String(readFileBytes(file.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); String loaded = com.osfans.trime.editor.core.ThemeLuaWriter.INSTANCE.write(editor.getDocument(), com.osfans.trime.editor.core.ThemeWriteMode.HYBRID); if (!ThemeSaveCoordinator.Companion.fingerprint(latest).equals(ThemeSaveCoordinator.Companion.fingerprint(loaded))) throw new IOException("Keyboard changed outside the loaded editor; reload before editing this key"); com.osfans.trime.editor.core.ThemeDocument document = ThemeKeyEvents.parseDocument(latest); if (document.get(key.sourcePath) == null) throw new IOException("Key source path changed; reload keyboard"); String updated = ThemeKeyEvents.verifiedSource(mutation.apply(document)); java.util.LinkedHashMap<File, String> changes = new java.util.LinkedHashMap<>(), originals = new java.util.LinkedHashMap<>(); changes.put(file.getFile(), updated); originals.put(file.getFile(), latest); applyProjectSourceTransaction(changes, originals); workspace.setStatus(success);
-        } catch (Exception error) { workspace.setStatus("Key event update blocked: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("按键事件更新被阻止:" + error.getMessage()); }
     }
 
     private void copyStyleEntity(ThemeEditorModel.Key key) {
@@ -1237,7 +1306,7 @@ public class ThemeEditorActivity extends ComponentActivity {
             String source = new String(readFileBytes(styleSource.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8); java.util.ArrayList<String> entityIds = new java.util.ArrayList<>(); for (ThemeStyleEntities.Entry entry : ThemeStyleEntities.list(source)) entityIds.add(entry.getId());
             String styleId = ThemeKeyStyleBatch.effectiveStyleId(key, entityIds); ThemeStyleEntities.Snapshot snapshot = ThemeStyleEntities.extract(source, styleId);
             workspace.storeStyleEntityClipboard(snapshot);
-        } catch (Exception error) { workspace.setStatus("Style entity copy blocked: " + error.getMessage()); }
+        } catch (Exception error) { workspace.setStatus("样式实体复制被阻止:" + error.getMessage()); }
     }
 
     private void promptPasteStyleEntity(java.util.List<ThemeEditorModel.Key> keys) {
@@ -1245,7 +1314,7 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             if (keys == null || keys.isEmpty()) throw new IOException("Select one or more target keys first");
             ThemeEditorClipboard.Payload payload = workspace.styleEntityClipboard();
-            if (payload == null || payload.styleEntity == null) throw new IOException("Private clipboard does not contain a complete style entity");
+            if (payload == null || payload.styleEntity == null) throw new IOException("私有剪贴板中没有完整的样式实体");
             if (project == null || editor == null || !(repository instanceof DirectoryThemeProjectRepository) || ((DirectoryThemeProjectRepository) repository).getSelected().getKind() != ThemeProjectFile.Kind.KEYBOARD) throw new IOException("Open a target project keyboard first");
             ThemeProjectFile styleSource = resolvedStyleSource(editor.getDocument()); if (styleSource == null) throw new IOException("The target keyboard style asset cannot be resolved statically");
             boolean crossProject = workspace.isCrossProjectClipboard(payload); ThemeStyleEntities.Snapshot snapshot = payload.styleEntity;
@@ -1253,10 +1322,10 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (!missing.isEmpty()) throw new IOException("Target project is missing style resources: " + android.text.TextUtils.join(", ", missing));
             String original = new String(readFileBytes(styleSource.getFile(), 4L * 1024 * 1024), java.nio.charset.StandardCharsets.UTF_8);
             String expectedLocal = ThemeSaveCoordinator.Companion.fingerprint(original), expectedRemote = importedProjectTreeUri == null ? null : fingerprintImportedProjectFile(styleSource.getFile());
-            LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "New style entity ID", snapshot.getId() + "_copy");
-            String message = "Source entity: " + snapshot.getId() + "\nTarget style asset: " + styleSource.getName() + "\nTarget keys: " + keys.size() + (snapshot.getCloneParent() == null ? "" : "\nClone dependency: " + snapshot.getCloneParent()) + (snapshot.getReferencedResources().isEmpty() ? "" : "\nResources: " + android.text.TextUtils.join(", ", snapshot.getReferencedResources())) + (crossProject ? "\n\nCross-project paste: no URI/path metadata is retained; dependencies were verified by name." : "");
-            new android.app.AlertDialog.Builder(this).setTitle("Paste complete style entity").setMessage(message).setView(fields).setNegativeButton("Cancel", null).setPositiveButton("Paste", (dialog, which) -> pasteStyleEntity(styleSource, snapshot, id.getText().toString().trim(), keys, expectedLocal, expectedRemote)).show();
-        } catch (Exception error) { workspace.setStatus("Style entity paste blocked: " + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
+            LinearLayout fields = new LinearLayout(this); EditText id = simpleField(fields, "新样式实体标识", snapshot.getId() + "_copy");
+            String message = "Source entity: " + snapshot.getId() + "\nTarget style asset: " + styleSource.getName() + "\nTarget keys: " + keys.size() + (snapshot.getCloneParent() == null ? "" : "\nClone dependency: " + snapshot.getCloneParent()) + (snapshot.getReferencedResources().isEmpty() ? "" : "\n资源数: " + android.text.TextUtils.join(", ", snapshot.getReferencedResources())) + (crossProject ? "\n\nCross-project paste: no URI/path metadata is retained; dependencies were verified by name." : "");
+            new android.app.AlertDialog.Builder(this).setTitle("粘贴完整样式实体").setMessage(message).setView(fields).setNegativeButton("取消", null).setPositiveButton("粘贴", (dialog, which) -> pasteStyleEntity(styleSource, snapshot, id.getText().toString().trim(), keys, expectedLocal, expectedRemote)).show();
+        } catch (Exception error) { workspace.setStatus("样式实体粘贴被阻止:" + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
     }
 
     private java.util.ArrayList<String> missingStyleEntityResources(ThemeProjectFile styleSource, ThemeStyleEntities.Snapshot snapshot) throws IOException {
@@ -1277,8 +1346,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             String updated = ThemeStyleEntities.paste(original, snapshot, targetId); new FileThemeProjectRepository(styleSource.getFile()).write(updated);
             try { mirrorExistingProjectFile(styleSource.getFile()); refreshProjectAfterAssetMutation(); }
             catch (Exception error) { try (FileOutputStream output = new FileOutputStream(styleSource.getFile(), false)) { output.write(backup); output.getFD().sync(); } if (importedProjectTreeUri != null) try { writeImportedProjectFile(styleSource.getFile(), original); } catch (Exception restoreError) { error.addSuppressed(restoreError); } try { refreshProjectAfterAssetMutation(); } catch (Exception refreshError) { error.addSuppressed(refreshError); } throw error; }
-            workspace.applyStyleEntityReference(keys, targetId); workspace.setStatus("Pasted complete style entity " + targetId + " and verified dependencies");
-        } catch (Exception error) { workspace.setStatus("Style entity paste failed without overwriting newer data: " + error.getMessage()); Toast.makeText(this, "Unable to paste style entity", Toast.LENGTH_LONG).show(); }
+            workspace.applyStyleEntityReference(keys, targetId); workspace.setStatus("已粘贴完整样式实体 " + targetId + " 并校验了依赖");
+        } catch (Exception error) { workspace.setStatus("样式实体粘贴失败,未覆盖较新数据:" + error.getMessage()); Toast.makeText(this, "无法粘贴样式实体", Toast.LENGTH_LONG).show(); }
     }
 
     private void reviewBatchStyleEntities(java.util.List<ThemeEditorModel.Key> keys, String background, String textColor) {
@@ -1297,8 +1366,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             for (ThemeKeyStyleBatch.Reference reference : report.getReferences()) message.append("\n• ").append(reference.getKeyboardId()).append(": ").append(reference.getCount()).append(" key/container nodes");
             if (!report.getUncertainKeyboardIds().isEmpty()) message.append("\nDynamic/invalid layouts with uncertain references: ").append(android.text.TextUtils.join(", ", report.getUncertainKeyboardIds()));
             message.append("\n\nAll listed keys sharing these entities will inherit the changed colors/background. Static counts may be incomplete for uncertain keyboards. No Lua or callback will be executed.");
-            new android.app.AlertDialog.Builder(this).setTitle("Modify shared style entities?").setMessage(message.toString()).setNegativeButton("Cancel", null).setPositiveButton("Apply transaction", (dialog, which) -> applyBatchStyleEntities(styleSource, styleIds, background, textColor, localFingerprint, remoteFingerprint)).show();
-        } catch (Exception error) { workspace.setStatus("Style batch blocked: " + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
+            new android.app.AlertDialog.Builder(this).setTitle("修改共享样式实体?").setMessage(message.toString()).setNegativeButton("取消", null).setPositiveButton("应用事务", (dialog, which) -> applyBatchStyleEntities(styleSource, styleIds, background, textColor, localFingerprint, remoteFingerprint)).show();
+        } catch (Exception error) { workspace.setStatus("样式批量更新被阻止:" + error.getMessage()); Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show(); }
     }
 
     private ThemeProjectFile resolvedStyleSource(com.osfans.trime.editor.core.ThemeDocument keyboardDocument) {
@@ -1338,8 +1407,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             }
             if (repository instanceof DirectoryThemeProjectRepository && ((DirectoryThemeProjectRepository) repository).getSelected().getFile().equals(styleSource.getFile())) loadProjectFile(project.style(styleSource.getName()));
             else { ThemeEditorModel refreshed = workspace.getModel(); applyPreviewStyles(refreshed); workspace.setModelKeepingHistory(refreshed); }
-            workspace.setStatus("Updated " + styleIds.size() + " shared style entities in " + styleSource.getName() + "; transaction verified");
-        } catch (Exception error) { workspace.setStatus("Style batch failed without overwriting newer data: " + error.getMessage()); Toast.makeText(this, "Unable to update style entities", Toast.LENGTH_LONG).show(); }
+            workspace.setStatus("已更新 " + styleIds.size() + " 个共享样式实体,位于 " + styleSource.getName() + ";事务已校验");
+        } catch (Exception error) { workspace.setStatus("样式批量更新失败,未覆盖较新数据:" + error.getMessage()); Toast.makeText(this, "无法更新样式实体", Toast.LENGTH_LONG).show(); }
     }
 
     private boolean isCurrentStyleFile() {
@@ -1410,64 +1479,64 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void showVisualComponentStyleEditor() {
         if (!ensureWritable()) return;
         if (!isCurrentStyleFile() || editor == null) {
-            Toast.makeText(this, "Open a style file from the Style menu first", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "请先从“样式”菜单打开一个样式文件", Toast.LENGTH_LONG).show();
             return;
         }
         String source = editor.source();
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
         java.util.ArrayList<ComponentScalarInput> inputs = new java.util.ArrayList<>();
-        componentSection(fields, "Candidate and expanded candidate");
+        componentSection(fields, "候选栏与展开候选栏");
         addVisualStyleGroup(fields, inputs, source, "candidate", true, true);
-        addResourceBackgroundScalar(fields, inputs, source, "candidate.expanded.background", "Expanded candidate container background");
-        TextView expandedHeightNote = new TextView(this); expandedHeightNote.setText("candidate.expanded.height is not consumed by the current ExpandedCandidateView; edit it only in Lua source for compatibility."); fields.addView(expandedHeightNote);
+        addResourceBackgroundScalar(fields, inputs, source, "candidate.expanded.background", "展开候选容器背景(candidate.expanded.background)");
+        TextView expandedHeightNote = new TextView(this); expandedHeightNote.setText("当前 ExpandedCandidateView 不使用展开候选高度(candidate.expanded.height);仅为兼容性时在 Lua 源代码中编辑。"); fields.addView(expandedHeightNote);
         addVisualStyleGroup(fields, inputs, source, "candidate.key", false, false);
         addVisualStyleGroup(fields, inputs, source, "candidate.expanded.key", false, false);
 
-        componentSection(fields, "Toolbar");
-        addResourceBackgroundScalar(fields, inputs, source, "toolbar.background", "Toolbar background");
-        TextView toolbarHeightNote = new TextView(this); toolbarHeightNote.setText("ToolbarView fills candidate.height; toolbar.height is not consumed by the current runtime."); fields.addView(toolbarHeightNote);
-        addComponentScalar(fields, inputs, source, "toolbar.schema_switches", "Show runtime schema switches", ComponentScalarInput.BOOLEAN, null);
+        componentSection(fields, "工具栏");
+        addResourceBackgroundScalar(fields, inputs, source, "toolbar.background", "工具栏背景(toolbar.background)");
+        TextView toolbarHeightNote = new TextView(this); toolbarHeightNote.setText("ToolbarView 使用候选高度(candidate.height)填充;当前运行时不使用工具栏高度(toolbar.height)。"); fields.addView(toolbarHeightNote);
+        addComponentScalar(fields, inputs, source, "toolbar.schema_switches", "显示运行时方案切换(toolbar.schema_switches)", ComponentScalarInput.BOOLEAN, null);
         addVisualStyleGroup(fields, inputs, source, "toolbar.hide", false, false);
         addVisualStyleGroup(fields, inputs, source, "toolbar.key", false, false);
 
-        componentSection(fields, "Symbol panel");
-        addResourceBackgroundScalar(fields, inputs, source, "symbol.background", "Symbol panel background");
-        addColorScalar(fields, inputs, source, "symbol.indicator_color", "Symbol fallback indicator color");
+        componentSection(fields, "符号面板");
+        addResourceBackgroundScalar(fields, inputs, source, "symbol.background", "符号面板背景(symbol.background)");
+        addColorScalar(fields, inputs, source, "symbol.indicator_color", "符号回退指示器颜色(symbol.indicator_color)");
         addVisualStyleGroup(fields, inputs, source, "symbol.text", false, false);
         addVisualStyleGroup(fields, inputs, source, "symbol.key", false, false);
-        addColorScalar(fields, inputs, source, "symbol.tab_bar.indicator_color", "Symbol selected-tab indicator color");
-        TextView symbolToolNote = new TextView(this); symbolToolNote.setText("symbol.tool_bar visual key fields are not consumed by the current runtime; gravity, height and keys remain in the panel-bar manager / Lua source."); fields.addView(symbolToolNote);
+        addColorScalar(fields, inputs, source, "symbol.tab_bar.indicator_color", "符号选中标签指示器颜色(symbol.tab_bar.indicator_color)");
+        TextView symbolToolNote = new TextView(this); symbolToolNote.setText("当前运行时不使用符号工具栏(symbol.tool_bar)的可视按键字段;重力方向(gravity)、高度(height)和按键(keys)仍在面板栏管理器 / Lua 源代码中编辑。"); fields.addView(symbolToolNote);
 
-        componentSection(fields, "Clipboard panel");
-        addResourceBackgroundScalar(fields, inputs, source, "clipboard.background", "Clipboard panel background");
-        addColorScalar(fields, inputs, source, "clipboard.indicator_color", "Clipboard fallback indicator color");
+        componentSection(fields, "剪贴板面板");
+        addResourceBackgroundScalar(fields, inputs, source, "clipboard.background", "剪贴板面板背景(clipboard.background)");
+        addColorScalar(fields, inputs, source, "clipboard.indicator_color", "剪贴板回退指示器颜色(clipboard.indicator_color)");
         addVisualStyleGroup(fields, inputs, source, "clipboard.key", false, false);
         addVisualStyleGroup(fields, inputs, source, "clipboard.item", false, false);
         TextView compatibility = new TextView(this);
-        compatibility.setText("ClipboardKeyboardView consumes clipboard.key for tabs and tool buttons; WaterfallAdapter consumes clipboard.item for clipboard and phrase rows.");
+        compatibility.setText("ClipboardKeyboardView 使用剪贴板按键(clipboard.key)渲染标签和工具按钮;WaterfallAdapter 使用剪贴板项目(clipboard.item)渲染剪贴板及短语行。");
         fields.addView(compatibility);
-        addColorScalar(fields, inputs, source, "clipboard.tab_bar.indicator_color", "Clipboard selected-tab indicator color");
-        TextView clipboardToolNote = new TextView(this); clipboardToolNote.setText("clipboard.tool_bar visual key fields are not consumed by the current runtime; gravity, height and keys remain in the panel-bar manager / Lua source."); fields.addView(clipboardToolNote);
+        addColorScalar(fields, inputs, source, "clipboard.tab_bar.indicator_color", "剪贴板选中标签指示器颜色(clipboard.tab_bar.indicator_color)");
+        TextView clipboardToolNote = new TextView(this); clipboardToolNote.setText("当前运行时不使用剪贴板工具栏(clipboard.tool_bar)的可视按键字段;重力方向(gravity)、高度(height)和按键(keys)仍在面板栏管理器 / Lua 源代码中编辑。"); fields.addView(clipboardToolNote);
 
         android.widget.ScrollView scroll = new android.widget.ScrollView(this);
         scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        showComponentScalarDialog("Candidate / toolbar / panels — static fields", source, inputs, scroll,
-                "Candidate/toolbar/panel styles applied; save to commit");
+        showComponentScalarDialog("候选栏 / 工具栏 / 面板——静态字段", source, inputs, scroll,
+                "候选栏、工具栏和面板样式已应用;保存后生效");
     }
 
     private void addVisualStyleGroup(LinearLayout fields, java.util.List<ComponentScalarInput> inputs,
                                      String source, String path, boolean includeHeight, boolean includeComment) {
-        if (includeHeight) addIntegerScalar(fields, inputs, source, path + ".height", path + " height");
-        addResourceBackgroundScalar(fields, inputs, source, path + ".background", path + " background");
-        addColorScalar(fields, inputs, source, path + ".text_color", path + " text color");
-        addIntegerScalar(fields, inputs, source, path + ".text_size", path + " text size");
-        addResourceBackgroundScalar(fields, inputs, source, path + ".pressed.background", path + " pressed background");
-        addColorScalar(fields, inputs, source, path + ".pressed.text_color", path + " pressed text color");
+        if (includeHeight) addIntegerScalar(fields, inputs, source, path + ".height", path + " 高度(height)");
+        addResourceBackgroundScalar(fields, inputs, source, path + ".background", path + " 背景(background)");
+        addColorScalar(fields, inputs, source, path + ".text_color", path + " 文本颜色(text_color)");
+        addIntegerScalar(fields, inputs, source, path + ".text_size", path + " 文本大小(text_size)");
+        addResourceBackgroundScalar(fields, inputs, source, path + ".pressed.background", path + " 按下背景(pressed.background)");
+        addColorScalar(fields, inputs, source, path + ".pressed.text_color", path + " 按下文本颜色(pressed.text_color)");
         if (includeComment) {
-            addColorScalar(fields, inputs, source, path + ".comment.text_color", path + " comment color");
-            addIntegerScalar(fields, inputs, source, path + ".comment.text_size", path + " comment size");
-            addColorScalar(fields, inputs, source, path + ".comment.pressed.text_color", path + " pressed comment color");
-            addIntegerScalar(fields, inputs, source, path + ".comment.pressed.text_size", path + " pressed comment size");
+            addColorScalar(fields, inputs, source, path + ".comment.text_color", path + " 注释颜色(comment.text_color)");
+            addIntegerScalar(fields, inputs, source, path + ".comment.text_size", path + " 注释大小(comment.text_size)");
+            addColorScalar(fields, inputs, source, path + ".comment.pressed.text_color", path + " 按下注释颜色(comment.pressed.text_color)");
+            addIntegerScalar(fields, inputs, source, path + ".comment.pressed.text_size", path + " 按下注释大小(comment.pressed.text_size)");
         }
     }
 
@@ -1476,18 +1545,18 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void addResourceBackgroundScalar(LinearLayout fields, java.util.List<ComponentScalarInput> inputs, String source, String path, String label) {
-        addComponentScalar(fields, inputs, source, path, label + " (color or safe project-relative resource)", ComponentScalarInput.COLOR_OR_RESOURCE, null);
+        addComponentScalar(fields, inputs, source, path, label + "(颜色或安全的项目相对资源)", ComponentScalarInput.COLOR_OR_RESOURCE, null);
     }
 
     private void addIntegerScalar(LinearLayout fields, java.util.List<ComponentScalarInput> inputs, String source, String path, String label) {
-        addComponentScalar(fields, inputs, source, path, label + " (Trime2 integer size)", ComponentScalarInput.NUMBER, null);
+        addComponentScalar(fields, inputs, source, path, label + "(Trime2 整数大小)", ComponentScalarInput.NUMBER, null);
     }
 
     private void showComponentScalarDialog(String title, String source, java.util.List<ComponentScalarInput> inputs,
                                            android.widget.ScrollView scroll, String success) {
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle(title).setView(scroll).setNegativeButton("Cancel", null).setNeutralButton("Lua source", null)
-                .setPositiveButton("Apply", null).create();
+                .setTitle(title).setView(scroll).setNegativeButton("取消", null).setNeutralButton("Lua 源代码", null)
+                .setPositiveButton("应用", null).create();
         dialog.setOnShowListener(ignored -> {
             dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> { dialog.dismiss(); showCodeEditor(); });
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
@@ -1497,7 +1566,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                         String next = applyComponentScalar(updated, input);
                         if (!next.equals(updated)) { changed = true; updated = next; }
                     }
-                    if (!changed) { workspace.setStatus("No literal component fields changed"); dialog.dismiss(); return; }
+                    if (!changed) { workspace.setStatus("没有字面组件字段发生变化"); dialog.dismiss(); return; }
                     com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(updated);
                     for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics())
                         if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR)
@@ -1505,7 +1574,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                     editor.replaceDocument(parsed.getDocument()); workspace.setModel(stylePreviewModel(editor.getDocument()));
                     viewModel.setDirty(true); workspace.setStatus(success); dialog.dismiss();
                 } catch (Exception error) {
-                    workspace.setStatus("Component style update blocked: " + error.getMessage());
+                    workspace.setStatus("组件样式更新被阻止:" + error.getMessage());
                     Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
@@ -1516,72 +1585,72 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void showCompositionStyleEditor() {
         if (!ensureWritable()) return;
         if (!isCurrentStyleFile() || editor == null) {
-            Toast.makeText(this, "Open a style file from the Style menu first", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "请先从“样式”菜单打开一个样式文件", Toast.LENGTH_LONG).show();
             return;
         }
         String source = editor.source();
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
         java.util.ArrayList<ComponentScalarInput> inputs = new java.util.ArrayList<>();
-        componentSection(fields, "Preedit");
-        addComponentScalar(fields, inputs, source, "preedit.show", "Legacy show fallback used when composition.show is missing", ComponentScalarInput.BOOLEAN, null);
-        addComponentScalar(fields, inputs, source, "preedit.background", "Background color/resource", ComponentScalarInput.COLOR_OR_RESOURCE, null);
-        addComponentScalar(fields, inputs, source, "preedit.text_color", "Text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "preedit.text_size", "Text size (Trime2 size/SP semantics)", ComponentScalarInput.NUMBER, null);
-        addComponentScalar(fields, inputs, source, "preedit.inline", "Inline mode (source spelling preserved)", ComponentScalarInput.INLINE,
+        componentSection(fields, "预编辑(preedit)");
+        addComponentScalar(fields, inputs, source, "preedit.show", "编码窗口显示(composition.show)缺失时使用旧版显示回退(preedit.show)", ComponentScalarInput.BOOLEAN, null);
+        addComponentScalar(fields, inputs, source, "preedit.background", "背景颜色/资源", ComponentScalarInput.COLOR_OR_RESOURCE, null);
+        addComponentScalar(fields, inputs, source, "preedit.text_color", "文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "preedit.text_size", "文本大小(Trime2 大小/SP 语义)", ComponentScalarInput.NUMBER, null);
+        addComponentScalar(fields, inputs, source, "preedit.inline", "内联模式(preedit.inline,保留源拼写)", ComponentScalarInput.INLINE,
                 new String[]{"none", "input", "preedit", "composition", "preview", "true (string)", "true (boolean source; current runtime none)"});
 
-        componentSection(fields, "Composition window");
-        addComponentScalar(fields, inputs, source, "composition.show", "Show (runtime default true; falls back through preedit style)", ComponentScalarInput.BOOLEAN, null);
-        addComponentScalar(fields, inputs, source, "composition.background", "Background color/resource", ComponentScalarInput.COLOR_OR_RESOURCE, null);
-        addComponentScalar(fields, inputs, source, "composition.text_color", "Text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.text_size", "Text size (Trime2 size/SP semantics)", ComponentScalarInput.NUMBER, null);
-        addComponentScalar(fields, inputs, source, "composition.position", "Position (unknown source is preserved; preview uses fixed)", ComponentScalarInput.ENUM,
+        componentSection(fields, "编码窗口(composition)");
+        addComponentScalar(fields, inputs, source, "composition.show", "显示(composition.show,运行时默认 true;经 preedit 样式回退)", ComponentScalarInput.BOOLEAN, null);
+        addComponentScalar(fields, inputs, source, "composition.background", "背景颜色/资源", ComponentScalarInput.COLOR_OR_RESOURCE, null);
+        addComponentScalar(fields, inputs, source, "composition.text_color", "文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.text_size", "文本大小(Trime2 大小/SP 语义)", ComponentScalarInput.NUMBER, null);
+        addComponentScalar(fields, inputs, source, "composition.position", "位置(composition.position,保留未知源值;预览使用 fixed)", ComponentScalarInput.ENUM,
                 new String[]{"left", "right", "left_up", "right_up", "drag", "fixed", "bottom_left", "bottom_right", "top_left", "top_right"});
-        addComponentScalar(fields, inputs, source, "composition.movable", "Movable string enum", ComponentScalarInput.ENUM,
+        addComponentScalar(fields, inputs, source, "composition.movable", "可移动枚举(composition.movable)", ComponentScalarInput.ENUM,
                 new String[]{"false", "true", "once"});
 
-        componentSection(fields, "Composition filtering and entries");
+        componentSection(fields, "编码窗口过滤与条目");
         String[][] numbers = {
-                {"composition.min_length", "Minimum input length"}, {"composition.max_length", "Maximum line length"},
-                {"composition.sticky_lines", "Sticky lines"}, {"composition.max_entries", "Maximum entries (-1 means all)"},
-                {"composition.cloud_max_entries", "Maximum cloud entries (0 uses runtime behavior)"},
-                {"composition.min_width", "Minimum width"}, {"composition.min_height", "Minimum height"},
-                {"composition.max_width", "Maximum width"}, {"composition.max_height", "Maximum height"},
-                {"composition.padding.left", "Padding left"}, {"composition.padding.top", "Padding top"},
-                {"composition.padding.right", "Padding right"}, {"composition.padding.bottom", "Padding bottom"}
+                {"composition.min_length", "最小输入长度(min_length)"}, {"composition.max_length", "最大行长度(max_length)"},
+                {"composition.sticky_lines", "固定行数(sticky_lines)"}, {"composition.max_entries", "最大条目数(max_entries,-1 表示全部)"},
+                {"composition.cloud_max_entries", "最大云端条目数(cloud_max_entries,0 使用运行时行为)"},
+                {"composition.min_width", "最小宽度(min_width)"}, {"composition.min_height", "最小高度(min_height)"},
+                {"composition.max_width", "最大宽度(max_width)"}, {"composition.max_height", "最大高度(max_height)"},
+                {"composition.padding.left", "左内边距(padding.left)"}, {"composition.padding.top", "上内边距(padding.top)"},
+                {"composition.padding.right", "右内边距(padding.right)"}, {"composition.padding.bottom", "下内边距(padding.bottom)"}
         };
         for (String[] item : numbers) addComponentScalar(fields, inputs, source, item[0], item[1], ComponentScalarInput.NUMBER, null);
-        addComponentScalar(fields, inputs, source, "composition.line_spacing", "Line spacing (runtime float)", ComponentScalarInput.FLOAT, null);
-        addComponentScalar(fields, inputs, source, "composition.line_spacing_multiplier", "Line-spacing multiplier (runtime float; 0 previews as 1)", ComponentScalarInput.FLOAT, null);
-        addComponentScalar(fields, inputs, source, "composition.all_phrases", "Include all phrases", ComponentScalarInput.BOOLEAN, null);
-        addComponentScalar(fields, inputs, source, "composition.use_cursor", "Use highlighted candidate cursor (runtime default true)", ComponentScalarInput.BOOLEAN, null);
+        addComponentScalar(fields, inputs, source, "composition.line_spacing", "行间距(composition.line_spacing,运行时浮点数)", ComponentScalarInput.FLOAT, null);
+        addComponentScalar(fields, inputs, source, "composition.line_spacing_multiplier", "行间距倍数(composition.line_spacing_multiplier,运行时浮点数;0 按 1 预览)", ComponentScalarInput.FLOAT, null);
+        addComponentScalar(fields, inputs, source, "composition.all_phrases", "包含所有短语(composition.all_phrases)", ComponentScalarInput.BOOLEAN, null);
+        addComponentScalar(fields, inputs, source, "composition.use_cursor", "使用高亮候选光标(composition.use_cursor,运行时默认 true)", ComponentScalarInput.BOOLEAN, null);
 
-        componentSection(fields, "Composition pressed state");
-        addComponentScalar(fields, inputs, source, "composition.pressed.background", "Pressed background color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.pressed.text_color", "Pressed text color", ComponentScalarInput.COLOR, null);
-        componentSection(fields, "Internal composition.window key style");
-        addComponentScalar(fields, inputs, source, "composition.key.background", "Internal key background", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.text_color", "Internal key text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.text_size", "Internal key text size (integer)", ComponentScalarInput.NUMBER, null);
-        addComponentScalar(fields, inputs, source, "composition.key.pressed.background", "Internal pressed key background", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.pressed.text_color", "Internal pressed key text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.hint.text_color", "Internal label text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.hint.text_size", "Internal label text size (integer)", ComponentScalarInput.NUMBER, null);
-        addComponentScalar(fields, inputs, source, "composition.key.pressed.hint.text_color", "Internal pressed label text color", ComponentScalarInput.COLOR, null);
-        addComponentScalar(fields, inputs, source, "composition.key.pressed.hint.text_size", "Internal pressed label text size (integer)", ComponentScalarInput.NUMBER, null);
+        componentSection(fields, "编码窗口按下状态");
+        addComponentScalar(fields, inputs, source, "composition.pressed.background", "按下背景颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.pressed.text_color", "按下文本颜色", ComponentScalarInput.COLOR, null);
+        componentSection(fields, "内部编码窗口按键样式(composition.window)");
+        addComponentScalar(fields, inputs, source, "composition.key.background", "内部按键背景", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.text_color", "内部按键文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.text_size", "内部按键文本大小(整数)", ComponentScalarInput.NUMBER, null);
+        addComponentScalar(fields, inputs, source, "composition.key.pressed.background", "内部按下按键背景", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.pressed.text_color", "内部按下按键文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.hint.text_color", "内部标签文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.hint.text_size", "内部标签文本大小(整数)", ComponentScalarInput.NUMBER, null);
+        addComponentScalar(fields, inputs, source, "composition.key.pressed.hint.text_color", "内部按下标签文本颜色", ComponentScalarInput.COLOR, null);
+        addComponentScalar(fields, inputs, source, "composition.key.pressed.hint.text_size", "内部按下标签文本大小(整数)", ComponentScalarInput.NUMBER, null);
         TextView fontNote = new TextView(this);
-        fontNote.setText("preedit/composition/key font values may be a string or a fallback array. They remain source-only so arrays are not flattened.");
+        fontNote.setText("预编辑(preedit)、编码窗口(composition)和按键(key)字体值可以是字符串或回退数组。它们仅在源代码中编辑,避免数组被展平。");
         fields.addView(fontNote);
         TextView sourceOnly = new TextView(this);
-        sourceOnly.setText("composition.window remains source-only: component order, conditions, alignment, letter spacing and click events are never evaluated or generically rewritten.");
+        sourceOnly.setText("编码窗口(composition.window)仅在源代码中编辑:组件顺序、条件、对齐、字间距和点击事件绝不会被求值或通用改写。");
         sourceOnly.setPadding(0, 16, 0, 16); fields.addView(sourceOnly);
 
         android.widget.ScrollView scroll = new android.widget.ScrollView(this);
         scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("Preedit / composition — literal static fields")
-                .setView(scroll).setNegativeButton("Cancel", null).setNeutralButton("Lua source", null)
-                .setPositiveButton("Apply", null).create();
+                .setTitle("预编辑 / 编码窗口——字面静态字段")
+                .setView(scroll).setNegativeButton("取消", null).setNeutralButton("Lua 源代码", null)
+                .setPositiveButton("应用", null).create();
         dialog.setOnShowListener(ignored -> {
             dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> { dialog.dismiss(); showCodeEditor(); });
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
@@ -1592,7 +1661,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                         String next = applyComponentScalar(updated, input);
                         if (!next.equals(updated)) { changed = true; updated = next; }
                     }
-                    if (!changed) { workspace.setStatus("No preedit/composition literal fields changed"); dialog.dismiss(); return; }
+                    if (!changed) { workspace.setStatus("预编辑/编码窗口没有字面字段发生变化"); dialog.dismiss(); return; }
                     com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(updated);
                     for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics()) {
                         if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR)
@@ -1601,10 +1670,10 @@ public class ThemeEditorActivity extends ComponentActivity {
                     editor.replaceDocument(parsed.getDocument());
                     workspace.setModel(stylePreviewModel(editor.getDocument()));
                     viewModel.setDirty(true);
-                    workspace.setStatus("Preedit/composition fields applied; save to commit");
+                    workspace.setStatus("预编辑/编码窗口字段已应用;保存后生效");
                     dialog.dismiss();
                 } catch (Exception error) {
-                    workspace.setStatus("Preedit/composition update blocked: " + error.getMessage());
+                    workspace.setStatus("预编辑/编码窗口更新被阻止:" + error.getMessage());
                     Toast.makeText(this, error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
@@ -1622,10 +1691,10 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             ThemeComponentStyles.Value value = ThemeComponentStyles.read(source, path);
             if (value.getDynamic()) {
-                TextView blocked = new TextView(this); blocked.setText("Source-only: " + value.getDiagnostic()); blocked.setEnabled(false); parent.addView(blocked);
+                TextView blocked = new TextView(this); blocked.setText("仅源代码可编辑:" + value.getDiagnostic()); blocked.setEnabled(false); parent.addView(blocked);
                 return;
             }
-            String trace = value.getInheritedFrom() == null ? null : "Inherited from " + value.getInheritedFrom();
+            String trace = value.getInheritedFrom() == null ? null : "继承自 " + value.getInheritedFrom();
             if (value.getCompatibilityDiagnostic() != null) trace = (trace == null ? "" : trace + ". ") + value.getCompatibilityDiagnostic();
             if (trace != null) { TextView note = new TextView(this); note.setText(trace); parent.addView(note); }
             if (kind == ComponentScalarInput.BOOLEAN || kind == ComponentScalarInput.ENUM || kind == ComponentScalarInput.INLINE) {
@@ -1633,20 +1702,20 @@ public class ThemeEditorActivity extends ComponentActivity {
                 if (choices == null) { values.add("false"); values.add("true"); } else java.util.Collections.addAll(values, choices);
                 String current = componentScalarSelection(value, kind); String unknown = null;
                 int selection = values.indexOf(current);
-                if (selection < 0 && current != null) { unknown = "keep original: " + current; values.add(unknown); selection = values.size() - 1; }
+                if (selection < 0 && current != null) { unknown = "保留原值:" + current; values.add(unknown); selection = values.size() - 1; }
                 if (selection < 0) selection = 0;
                 android.widget.Spinner spinner = new android.widget.Spinner(this);
-                spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, values));
+                spinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerChoices(values)));
                 spinner.setSelection(value.getExplicit() ? selection : 0); parent.addView(spinner);
                 inputs.add(new ComponentScalarInput(path, kind, value, null, null, spinner, current, unknown));
             } else {
-                android.widget.CheckBox inherit = new android.widget.CheckBox(this); inherit.setText("inherit / remove explicit field"); inherit.setChecked(!value.getExplicit()); parent.addView(inherit);
+                android.widget.CheckBox inherit = new android.widget.CheckBox(this); inherit.setText("继承 / 移除显式字段"); inherit.setChecked(!value.getExplicit()); parent.addView(inherit);
                 String initial = componentScalarText(value, kind); EditText field = simpleField(parent, label, initial); field.setEnabled(!inherit.isChecked());
                 inherit.setOnCheckedChangeListener((button, checked) -> field.setEnabled(!checked));
                 inputs.add(new ComponentScalarInput(path, kind, value, inherit, field, null, initial, null));
             }
         } catch (Exception error) {
-            TextView blocked = new TextView(this); blocked.setText("Source-only: " + error.getMessage()); blocked.setEnabled(false); parent.addView(blocked);
+            TextView blocked = new TextView(this); blocked.setText("仅源代码可编辑:" + error.getMessage()); blocked.setEnabled(false); parent.addView(blocked);
         }
     }
 
@@ -1682,7 +1751,7 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     private static String applyComponentScalar(String source, ComponentScalarInput input) {
         if (input.spinner != null) {
-            String selected = input.spinner.getSelectedItem().toString();
+            String selected = spinnerInternalValue(input.spinner);
             if ("inherit".equals(selected)) return input.original.getExplicit() ? ThemeComponentStyles.remove(source, input.path) : source;
             if (input.unknownChoice != null && input.unknownChoice.equals(selected)) return source;
             if (input.original.getExplicit() && selected.equals(input.initialText)) return source;
@@ -1710,20 +1779,20 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     private void showStyleEditor() {
         if (!ensureWritable()) return;
-        if (!isCurrentStyleFile() || editor == null) { Toast.makeText(this, "Open a style file from the Style menu first", Toast.LENGTH_LONG).show(); return; }
+        if (!isCurrentStyleFile() || editor == null) { Toast.makeText(this, "请先从“样式”菜单打开一个样式文件", Toast.LENGTH_LONG).show(); return; }
         LinearLayout fields = new LinearLayout(this); fields.setOrientation(LinearLayout.VERTICAL); fields.setPadding(24, 8, 24, 8);
         java.util.ArrayList<StyleInput> inputs = new java.util.ArrayList<>();
-        addStyleInput(fields, inputs, "keyboard.background", "Keyboard background", true); addStyleInput(fields, inputs, "keyboard.height", "Keyboard height dp", false);
-        addStyleInput(fields, inputs, "key.background", "Key background", true); addStyleInput(fields, inputs, "key.text_color", "Key text color", true); addStyleInput(fields, inputs, "key.text_size", "Key text size dp", false); addStyleInput(fields, inputs, "key.corner_radius", "Key corner radius dp", false); addStyleInput(fields, inputs, "key.elevation", "Key elevation dp", false); addStyleInput(fields, inputs, "key.stroke_width", "Key stroke width dp", false);
-        addStyleInput(fields, inputs, "key.pressed.background", "Pressed key background", true); addStyleInput(fields, inputs, "key.pressed.text_color", "Pressed key text color", true); addStyleInput(fields, inputs, "key.hint.text_color", "Key hint text color", true); addStyleInput(fields, inputs, "key.hint.text_size", "Key hint text size dp", false); addStyleInput(fields, inputs, "key.long_click.text_color", "Long-click hint color", true); addStyleInput(fields, inputs, "key.long_click.text_size", "Long-click hint size dp", false);
-        addStyleInput(fields, inputs, "popup.background", "Popup background", true); addStyleInput(fields, inputs, "popup.corner_radius", "Popup corner radius dp", false); addStyleInput(fields, inputs, "popup.column_count", "Popup column count", false);
-        TextView compositionLink = new TextView(this); compositionLink.setText("Preedit and composition fields use the dedicated Preedit / composition page so inherited and source-only Lua remain lossless."); fields.addView(compositionLink);
+        addStyleInput(fields, inputs, "keyboard.background", "键盘背景(keyboard.background)", true); addStyleInput(fields, inputs, "keyboard.height", "键盘高度(keyboard.height,dp)", false);
+        addStyleInput(fields, inputs, "key.background", "按键背景(key.background)", true); addStyleInput(fields, inputs, "key.text_color", "按键文本颜色(key.text_color)", true); addStyleInput(fields, inputs, "key.text_size", "按键文本大小(key.text_size,dp)", false); addStyleInput(fields, inputs, "key.corner_radius", "按键圆角(key.corner_radius,dp)", false); addStyleInput(fields, inputs, "key.elevation", "按键海拔(key.elevation,dp)", false); addStyleInput(fields, inputs, "key.stroke_width", "按键描边宽度(key.stroke_width,dp)", false);
+        addStyleInput(fields, inputs, "key.pressed.background", "按下按键背景(key.pressed.background)", true); addStyleInput(fields, inputs, "key.pressed.text_color", "按下按键文本颜色(key.pressed.text_color)", true); addStyleInput(fields, inputs, "key.hint.text_color", "按键提示文本颜色(key.hint.text_color)", true); addStyleInput(fields, inputs, "key.hint.text_size", "按键提示文本大小(key.hint.text_size,dp)", false); addStyleInput(fields, inputs, "key.long_click.text_color", "长按提示颜色(key.long_click.text_color)", true); addStyleInput(fields, inputs, "key.long_click.text_size", "长按提示大小(key.long_click.text_size,dp)", false);
+        addStyleInput(fields, inputs, "popup.background", "弹窗背景(popup.background)", true); addStyleInput(fields, inputs, "popup.corner_radius", "弹窗圆角(popup.corner_radius,dp)", false); addStyleInput(fields, inputs, "popup.column_count", "弹窗列数(popup.column_count)", false);
+        TextView compositionLink = new TextView(this); compositionLink.setText("预编辑与编码窗口字段请使用专用页面,以确保继承值和仅源代码 Lua 无损保留。"); fields.addView(compositionLink);
         android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(fields, new android.widget.ScrollView.LayoutParams(-1, -2));
-        new android.app.AlertDialog.Builder(this).setTitle("Style properties (literal fields only)").setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Apply", (dialog, which) -> {
+        new android.app.AlertDialog.Builder(this).setTitle("样式属性(仅字面字段)").setView(scroll).setNegativeButton("取消", null).setPositiveButton("应用", (dialog, which) -> {
             boolean changed = false; for (StyleInput input : inputs) changed |= input.color ? setStyleColor(input.path, input.field) : setStyleNumber(input.path, input.field);
             workspace.setModel(stylePreviewModel(editor.getDocument()));
-            if (changed) { viewModel.setDirty(true); workspace.setStatus("Style properties applied; save to commit"); }
-            else workspace.setStatus("No literal style values changed; inherited raw paths remain code-only");
+            if (changed) { viewModel.setDirty(true); workspace.setStatus("样式属性已应用;保存后生效"); }
+            else workspace.setStatus("没有字面样式值发生变化;继承的原始路径仍只能通过代码编辑");
         }).show();
     }
 
@@ -1746,13 +1815,13 @@ public class ThemeEditorActivity extends ComponentActivity {
             long parsed = value.startsWith("#") ? Long.parseLong(value.substring(1), 16) : value.startsWith("0x") || value.startsWith("0X") ? Long.parseLong(value.substring(2), 16) : Long.parseLong(value);
             ThemeValue next = new ThemeValue.LuaNumber((double) parsed); if (next.equals(editor.getDocument().get(path))) return false;
             return applyStyleValue(path, next);
-        } catch (NumberFormatException ignored) { Toast.makeText(this, "Invalid color for " + path, Toast.LENGTH_LONG).show(); return false; }
+        } catch (NumberFormatException ignored) { Toast.makeText(this, "颜色无效:" + path, Toast.LENGTH_LONG).show(); return false; }
     }
 
     private boolean setStyleNumber(String path, EditText field) {
         String value = field.getText().toString().trim(); if (value.isEmpty()) return false;
         try { ThemeValue next = new ThemeValue.LuaNumber(Double.parseDouble(value)); if (next.equals(editor.getDocument().get(path))) return false; return applyStyleValue(path, next); }
-        catch (NumberFormatException ignored) { Toast.makeText(this, "Invalid number for " + path, Toast.LENGTH_LONG).show(); return false; }
+        catch (NumberFormatException ignored) { Toast.makeText(this, "数值无效:" + path, Toast.LENGTH_LONG).show(); return false; }
     }
 
     private boolean applyStyleValue(String path, ThemeValue value) {
@@ -1766,7 +1835,7 @@ public class ThemeEditorActivity extends ComponentActivity {
     private void showCodeEditor() {
         if (!ensureWritable()) return;
         if (repository == null || editor == null) {
-            Toast.makeText(this, "Open a Lua file before editing source", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "编辑源代码前请先打开 Lua 文件", Toast.LENGTH_LONG).show();
             return;
         }
         final EditText source = new EditText(this);
@@ -1778,10 +1847,10 @@ public class ThemeEditorActivity extends ComponentActivity {
         int padding = (int) (16 * getResources().getDisplayMetrics().density);
         source.setPadding(padding, padding, padding, padding);
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("Lua source")
+                .setTitle("Lua 源代码")
                 .setView(source)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Apply", null)
+                .setNegativeButton("取消", null)
+                .setPositiveButton("应用", null)
                 .create();
         dialog.setOnShowListener(ignored -> dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(source.getText().toString());
@@ -1790,14 +1859,14 @@ public class ThemeEditorActivity extends ComponentActivity {
                 if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) { hasErrors = true; break; }
             }
             if (hasErrors) {
-                Toast.makeText(this, "Lua source has errors; changes were not applied", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Lua 源代码有错误,未应用更改", Toast.LENGTH_LONG).show();
                 return;
             }
             editor.replaceDocument(parsed.getDocument());
             layoutEditable = findLayoutRoot(editor.getDocument()) != null;
             workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel());
             viewModel.setDirty(true);
-            workspace.setStatus("Lua source applied; save to commit");
+            workspace.setStatus("Lua 源代码已应用;保存后生效");
             dialog.dismiss();
         }));
         dialog.show();
@@ -1805,9 +1874,9 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     private void chooseInstallTarget() {
         if (!ensureWritable()) return;
-        if (project == null) { Toast.makeText(this, "Open a theme directory before installing", Toast.LENGTH_LONG).show(); return; }
+        if (project == null) { Toast.makeText(this, "安装前请先打开主题目录", Toast.LENGTH_LONG).show(); return; }
         if (viewModel.getDirty()) {
-            new android.app.AlertDialog.Builder(this).setTitle("Save before installation").setMessage("Installation uses a verified saved project snapshot.").setNegativeButton("Cancel", null).setPositiveButton("Save and continue", (dialog, which) -> {
+            new android.app.AlertDialog.Builder(this).setTitle("安装前保存").setMessage("安装将使用已校验的项目保存快照。").setNegativeButton("取消", null).setPositiveButton("保存并继续", (dialog, which) -> {
                 saveModel(workspace.getModel()); if (!viewModel.getDirty()) openInstallTargetPicker();
             }).show(); return;
         }
@@ -1825,50 +1894,50 @@ public class ThemeEditorActivity extends ComponentActivity {
         try {
             validateProjectForInstall();
             DocumentFile tree = DocumentFile.fromTreeUri(this, treeUri);
-            if (tree == null || !tree.canWrite()) throw new IOException("Install target is not writable");
+            if (tree == null || !tree.canWrite()) throw new IOException("安装目标不可写");
             String themeName = projectDisplayName == null || projectDisplayName.trim().isEmpty() ? project.getRoot().getName() : projectDisplayName;
             target = tree.findFile(themeName);
             targetExisted = target != null;
-            if (target != null && !target.isDirectory()) throw new IOException("Install target name is occupied by a file");
+            if (target != null && !target.isDirectory()) throw new IOException("安装目标名称已被文件占用");
             if (target != null) {
                 backup = tree.createDirectory(themeName + ".backup-" + System.currentTimeMillis());
-                if (backup == null) throw new IOException("Cannot create installation backup");
+                if (backup == null) throw new IOException("无法创建安装备份");
                 copyDocumentToDocument(target, backup);
                 backupManifest = documentManifest(backup);
-                if (!backupManifest.equals(documentManifest(target))) throw new IOException("Backup verification failed");
+                if (!backupManifest.equals(documentManifest(target))) throw new IOException("备份校验失败");
             } else {
                 target = tree.createDirectory(themeName);
-                if (target == null) throw new IOException("Cannot create target theme directory");
+                if (target == null) throw new IOException("无法创建目标主题目录");
             }
             writeInstallJournal("BACKUP_READY", target, backup, null);
             clearDocumentDirectory(target);
             copyProjectToDocument(project.getRoot(), target);
             java.util.Map<String, Long> expected = fileManifest(project.getRoot());
             java.util.Map<String, Long> installed = documentManifest(target);
-            if (!expected.equals(installed)) throw new IOException("Installed file verification failed");
+            if (!expected.equals(installed)) throw new IOException("已安装文件校验失败");
             writeInstallJournal("COMPLETED", target, backup, null);
             lastInstallTarget = target; lastInstallBackup = backup; lastBackupManifest = backupManifest;
             invalidateOptionsMenu();
-            workspace.setStatus("Theme installed and verified: " + themeName + (backup == null ? "" : "; backup " + backup.getName()));
+            workspace.setStatus("主题已安装并校验:" + themeName + (backup == null ? "" : ";备份 " + backup.getName()));
         } catch (Exception error) {
             boolean rolledBack = false;
             if (target != null && backup != null) rolledBack = rollbackInstall(target, backup, backupManifest);
             else if (target != null && !targetExisted) { try { rolledBack = target.delete(); } catch (Exception ignored) { } }
             writeInstallJournal(rolledBack ? "ROLLED_BACK" : "FAILED", target, backup, error.getMessage());
-            workspace.setStatus("Install failed: " + error.getMessage() + (rolledBack ? "; backup restored" : ""));
-            Toast.makeText(this, rolledBack ? "Theme install failed and was rolled back" : "Theme install failed", Toast.LENGTH_LONG).show();
+            workspace.setStatus("安装失败:" + error.getMessage() + (rolledBack ? ";备份已恢复" : ""));
+            Toast.makeText(this, rolledBack ? "主题安装失败,已回滚" : "主题安装失败", Toast.LENGTH_LONG).show();
         }
     }
 
     private void validateProjectForInstall() throws IOException {
-        if (project == null || !project.getMainFile().isFile()) throw new IOException("Theme project has no main.lua");
+        if (project == null || !project.getMainFile().isFile()) throw new IOException("主题项目没有 main.lua");
         ThemeProjectSnapshot snapshot = ThemeProjectSnapshot.Companion.load(project, new ThemeLuaParser());
         for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : ThemeProjectDiagnostics.INSTANCE.collect(snapshot, new ThemeFieldRegistry())) {
             if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException(diagnostic.getMessage());
         }
-        if (snapshot.getStyleSource() == null) throw new IOException("Default style file is missing");
-        if (snapshot.getKeyboardSource() == null) throw new IOException("Selected default keyboard file is missing or dynamic selection cannot be verified");
-        for (ThemeResource resource : ThemeResourceIndex.INSTANCE.scan(project.getRoot(), allProjectLuaSource())) if (resource.getReferenced() && resource.getSize() == 0) throw new IOException("Referenced resource is empty: " + resource.getRelativePath());
+        if (snapshot.getStyleSource() == null) throw new IOException("默认样式文件缺失");
+        if (snapshot.getKeyboardSource() == null) throw new IOException("所选默认键盘文件缺失,或无法校验动态选择");
+        for (ThemeResource resource : ThemeResourceIndex.INSTANCE.scan(project.getRoot(), allProjectLuaSource())) if (resource.getReferenced() && resource.getSize() == 0) throw new IOException("引用的资源为空:" + resource.getRelativePath());
     }
 
     private void copyProjectToDocument(File source, DocumentFile destination) throws IOException {
@@ -1914,9 +1983,9 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void rollbackLastInstall(boolean confirm) {
-        if (lastInstallTarget == null || lastInstallBackup == null) { Toast.makeText(this, "No installation backup is available", Toast.LENGTH_LONG).show(); return; }
-        if (confirm) { new android.app.AlertDialog.Builder(this).setTitle("Rollback last installation?").setMessage(lastInstallBackup.getName()).setNegativeButton("Cancel", null).setPositiveButton("Rollback", (dialog, which) -> rollbackLastInstall(false)).show(); return; }
-        boolean success = rollbackInstall(lastInstallTarget, lastInstallBackup, lastBackupManifest); writeInstallJournal(success ? "ROLLED_BACK" : "ROLLBACK_FAILED", lastInstallTarget, lastInstallBackup, null); workspace.setStatus(success ? "Installation backup restored and verified" : "Rollback verification failed"); if (success) { lastInstallBackup = null; lastInstallTarget = null; lastBackupManifest = null; invalidateOptionsMenu(); }
+        if (lastInstallTarget == null || lastInstallBackup == null) { Toast.makeText(this, "没有可用的安装备份", Toast.LENGTH_LONG).show(); return; }
+        if (confirm) { new android.app.AlertDialog.Builder(this).setTitle("回滚上次安装?").setMessage(lastInstallBackup.getName()).setNegativeButton("取消", null).setPositiveButton("回滚", (dialog, which) -> rollbackLastInstall(false)).show(); return; }
+        boolean success = rollbackInstall(lastInstallTarget, lastInstallBackup, lastBackupManifest); writeInstallJournal(success ? "ROLLED_BACK" : "ROLLBACK_FAILED", lastInstallTarget, lastInstallBackup, null); workspace.setStatus(success ? "安装备份已恢复并校验" : "回滚校验失败"); if (success) { lastInstallBackup = null; lastInstallTarget = null; lastBackupManifest = null; invalidateOptionsMenu(); }
     }
 
     private void writeInstallJournal(String state, DocumentFile target, DocumentFile backup, String error) {
@@ -1940,7 +2009,7 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (target == null || backup == null || !target.isDirectory() || !backup.isDirectory()) return;
             lastInstallTarget = target; lastInstallBackup = backup; lastBackupManifest = documentManifest(backup); invalidateOptionsMenu();
             if ("BACKUP_READY".equals(state) || "FAILED".equals(state) || "ROLLBACK_FAILED".equals(state)) {
-                new android.app.AlertDialog.Builder(this).setTitle("Incomplete theme installation").setMessage("A verified backup is available. Restore it now?").setNegativeButton("Later", null).setPositiveButton("Restore", (dialog, which) -> rollbackLastInstall(false)).show();
+                new android.app.AlertDialog.Builder(this).setTitle("主题安装未完成").setMessage("存在已校验的备份,是否立即恢复?").setNegativeButton("稍后", null).setPositiveButton("恢复备份", (dialog, which) -> rollbackLastInstall(false)).show();
             }
         } catch (Exception ignored) { }
     }
@@ -1950,26 +2019,26 @@ public class ThemeEditorActivity extends ComponentActivity {
         if (projectSnapshot != null) {
             java.util.List<com.osfans.trime.editor.core.ThemeDiagnostic> diagnostics =
                     ThemeProjectDiagnostics.INSTANCE.collect(projectSnapshot, new ThemeFieldRegistry());
-            if (diagnostics.isEmpty()) text.append("No diagnostics");
+            if (diagnostics.isEmpty()) text.append("没有诊断信息");
             for (com.osfans.trime.editor.core.ThemeDiagnostic item : diagnostics) {
                 text.append(item.getSeverity()).append("  ").append(item.getPath() == null ? "" : item.getPath() + ": ").append(item.getMessage()).append('\n');
             }
         } else if (editor != null) {
             for (com.osfans.trime.editor.core.ThemeDiagnostic item : editor.diagnostics()) text.append(item.getSeverity()).append("  ").append(item.getMessage()).append('\n');
         } else {
-            text.append("No theme loaded");
+            text.append("尚未加载主题");
         }
-        new android.app.AlertDialog.Builder(this).setTitle("Diagnostics").setMessage(text.toString()).setPositiveButton("Close", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle("诊断信息").setMessage(text.toString()).setPositiveButton("关闭", null).show();
     }
 
     private void showResources() {
-        if (project == null) { Toast.makeText(this, "Open a theme directory first", Toast.LENGTH_LONG).show(); return; }
+        if (project == null) { Toast.makeText(this, "请先打开主题目录", Toast.LENGTH_LONG).show(); return; }
         java.util.List<ThemeResource> resources = ThemeResourceIndex.INSTANCE.scan(project.getRoot(), allProjectLuaSource());
-        String[] labels = new String[resources.size() + 1]; labels[0] = "+ Import resource";
-        for (int i = 0; i < resources.size(); i++) { ThemeResource resource = resources.get(i); labels[i + 1] = (resource.getReferenced() ? "Referenced  " : resource.getReferenceUncertain() ? "Review reference  " : "Unused  ") + resource.getKind() + "  " + resource.getRelativePath() + "  " + resource.getSize() + " bytes"; }
-        new android.app.AlertDialog.Builder(this).setTitle("Theme resources").setItems(labels, (dialog, which) -> {
+        String[] labels = new String[resources.size() + 1]; labels[0] = "+ 导入资源";
+        for (int i = 0; i < resources.size(); i++) { ThemeResource resource = resources.get(i); labels[i + 1] = (resource.getReferenced() ? "已引用  " : resource.getReferenceUncertain() ? "需检查引用  " : "未使用  ") + resource.getKind() + "  " + resource.getRelativePath() + "  " + resource.getSize() + " 字节"; }
+        new android.app.AlertDialog.Builder(this).setTitle("主题资源").setItems(labels, (dialog, which) -> {
             if (which == 0) chooseResourceType(); else showResourceActions(resources.get(which - 1));
-        }).setNegativeButton("Close", null).show();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private String allProjectLuaSource() {
@@ -1989,10 +2058,10 @@ public class ThemeEditorActivity extends ComponentActivity {
 
     private void chooseResourceType() {
         if (!ensureWritable()) return;
-        String[] types = {"Image", "Font", "Sound", "Script"}; String[] folders = {"images", "fonts", "sounds", "scripts"}; String[] mime = {"image/*", "font/*", "audio/*", "text/*"};
-        new android.app.AlertDialog.Builder(this).setTitle("Import resource type").setItems(types, (dialog, which) -> {
+        String[] types = {"图片", "字体", "声音", "脚本"}; String[] folders = {"images", "fonts", "sounds", "scripts"}; String[] mime = {"image/*", "font/*", "audio/*", "text/*"};
+        new android.app.AlertDialog.Builder(this).setTitle("导入资源类型").setItems(types, (dialog, which) -> {
             pendingResourceFolder = folders[which]; importResourceLauncher.launch(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType(mime[which]).addCategory(Intent.CATEGORY_OPENABLE));
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton("取消", null).show();
     }
 
     private void importResource(Uri uri) {
@@ -2003,63 +2072,63 @@ public class ThemeEditorActivity extends ComponentActivity {
             DocumentFile document = DocumentFile.fromSingleUri(this, uri); String name = document == null ? null : document.getName();
             if (name == null || name.trim().isEmpty()) name = "resource";
             name = name.replaceAll("[^A-Za-z0-9._ -]", "_").replace("..", "_");
-            File folder = new File(project.getRoot(), pendingResourceFolder); if (!folder.exists() && !folder.mkdirs()) throw new IOException("Cannot create resource folder");
+            File folder = new File(project.getRoot(), pendingResourceFolder); if (!folder.exists() && !folder.mkdirs()) throw new IOException("无法创建资源文件夹");
             target = new File(folder, name); String base = name.contains(".") ? name.substring(0, name.lastIndexOf('.')) : name; String extension = name.contains(".") ? name.substring(name.lastIndexOf('.')) : ""; int suffix = 2;
             while (target.exists()) target = new File(folder, base + "-" + suffix++ + extension);
-            if (!target.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) throw new IOException("Invalid resource name");
-            try (InputStream input = getContentResolver().openInputStream(uri); FileOutputStream output = new FileOutputStream(target)) { if (input == null) throw new IOException("Cannot read resource"); byte[] buffer = new byte[8192]; int count; long total = 0; while ((count = input.read(buffer)) != -1) { total += count; if (total > 64L * 1024 * 1024) throw new IOException("Resource exceeds 64 MiB limit"); output.write(buffer, 0, count); } output.getFD().sync(); }
+            if (!target.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) throw new IOException("资源名称无效");
+            try (InputStream input = getContentResolver().openInputStream(uri); FileOutputStream output = new FileOutputStream(target)) { if (input == null) throw new IOException("无法读取资源"); byte[] buffer = new byte[8192]; int count; long total = 0; while ((count = input.read(buffer)) != -1) { total += count; if (total > 64L * 1024 * 1024) throw new IOException("资源超过 64 MiB 限制"); output.write(buffer, 0, count); } output.getFD().sync(); }
             if (importedProjectTreeUri != null) mirrorNewResourceToImportedTree(target);
-            project = ThemeProject.Companion.discover(project.getRoot()); projectSnapshot = ThemeProjectSnapshot.Companion.load(project, new ThemeLuaParser()); workspace.setStatus("Imported " + target.getName());
-        } catch (Exception error) { if (target != null && target.exists()) target.delete(); workspace.setStatus("Resource import failed: " + error.getMessage()); Toast.makeText(this, "Unable to import resource", Toast.LENGTH_LONG).show(); }
+            project = ThemeProject.Companion.discover(project.getRoot()); projectSnapshot = ThemeProjectSnapshot.Companion.load(project, new ThemeLuaParser()); workspace.setStatus("已导入 " + target.getName());
+        } catch (Exception error) { if (target != null && target.exists()) target.delete(); workspace.setStatus("资源导入失败:" + error.getMessage()); Toast.makeText(this, "无法导入资源", Toast.LENGTH_LONG).show(); }
         finally { pendingResourceFolder = null; }
     }
 
     private void mirrorNewResourceToImportedTree(File local) throws IOException {
-        ImportedDocumentRef ref = importedDocumentRef(local, true); if (ref == null || ref.file == null) throw new IOException("Cannot create imported resource");
-        try (FileInputStream input = new FileInputStream(local); java.io.OutputStream output = getContentResolver().openOutputStream(ref.file.getUri(), "wt")) { if (output == null) throw new IOException("Cannot write imported resource"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); }
-        try (FileInputStream input = new FileInputStream(local)) { if (!fingerprintStream(input).equals(fingerprintDocument(ref.file))) { ref.file.delete(); throw new IOException("Imported resource verification failed"); } }
+        ImportedDocumentRef ref = importedDocumentRef(local, true); if (ref == null || ref.file == null) throw new IOException("无法创建导入资源");
+        try (FileInputStream input = new FileInputStream(local); java.io.OutputStream output = getContentResolver().openOutputStream(ref.file.getUri(), "wt")) { if (output == null) throw new IOException("无法写入导入资源"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); }
+        try (FileInputStream input = new FileInputStream(local)) { if (!fingerprintStream(input).equals(fingerprintDocument(ref.file))) { ref.file.delete(); throw new IOException("导入资源校验失败"); } }
     }
 
     private void deleteImportedResource(File local) throws IOException {
         ImportedDocumentRef ref = importedDocumentRef(local, false); if (ref == null || ref.file == null) return;
         File backup = new File(getCacheDir(), "theme-editor-resource-delete-" + System.nanoTime());
-        try (InputStream input = getContentResolver().openInputStream(ref.file.getUri()); FileOutputStream output = new FileOutputStream(backup)) { if (input == null) throw new IOException("Cannot back up imported resource"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); output.getFD().sync(); }
+        try (InputStream input = getContentResolver().openInputStream(ref.file.getUri()); FileOutputStream output = new FileOutputStream(backup)) { if (input == null) throw new IOException("无法备份导入资源"); byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); output.getFD().sync(); }
         if (!ref.file.delete() || ref.parent.findFile(ref.name) != null) {
             DocumentFile restore = ref.parent.findFile(ref.name); if (restore == null) restore = ref.parent.createFile(mimeForName(ref.name), ref.name);
             if (restore != null) try (FileInputStream input = new FileInputStream(backup); java.io.OutputStream output = getContentResolver().openOutputStream(restore.getUri(), "wt")) { if (output != null) { byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); } }
-            backup.delete(); throw new IOException("Imported resource deletion failed");
+            backup.delete(); throw new IOException("导入资源删除失败");
         }
         backup.delete();
     }
 
     private static byte[] readFileBytes(File file, long limit) throws IOException {
-        if (file.length() > limit) throw new IOException("File exceeds backup limit");
-        try (FileInputStream input = new FileInputStream(file); java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) { byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) { if (output.size() + count > limit) throw new IOException("File exceeds backup limit"); output.write(buffer, 0, count); } return output.toByteArray(); }
+        if (file.length() > limit) throw new IOException("文件超过备份限制");
+        try (FileInputStream input = new FileInputStream(file); java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) { byte[] buffer = new byte[8192]; int count; while ((count = input.read(buffer)) != -1) { if (output.size() + count > limit) throw new IOException("文件超过备份限制"); output.write(buffer, 0, count); } return output.toByteArray(); }
     }
 
     private void showResourceActions(ThemeResource resource) {
-        String[] actions = {"Copy relative path", "Delete"};
-        new android.app.AlertDialog.Builder(this).setTitle(resource.getRelativePath()).setMessage(resource.getKind() + " • " + resource.getSize() + " bytes • " + (resource.getReferenced() ? "referenced" : resource.getReferenceUncertain() ? "dynamic reference possible" : "unused")).setItems(actions, (dialog, which) -> {
-            if (which == 0) { android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE); clipboard.setPrimaryClip(android.content.ClipData.newPlainText("theme resource", resource.getRelativePath())); workspace.setStatus("Resource path copied"); }
+        String[] actions = {"复制相对路径", "删除"};
+        new android.app.AlertDialog.Builder(this).setTitle(resource.getRelativePath()).setMessage(resource.getKind() + " • " + resource.getSize() + " 字节 • " + (resource.getReferenced() ? "已引用" : resource.getReferenceUncertain() ? "可能动态引用" : "未使用")).setItems(actions, (dialog, which) -> {
+            if (which == 0) { android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE); clipboard.setPrimaryClip(android.content.ClipData.newPlainText("theme resource", resource.getRelativePath())); workspace.setStatus("资源路径已复制"); }
             else confirmResourceDelete(resource);
-        }).setNegativeButton("Close", null).show();
+        }).setNegativeButton("关闭", null).show();
     }
 
     private void confirmResourceDelete(ThemeResource resource) {
         if (!ensureWritable()) return;
-        if (resource.getReferenced() || resource.getReferenceUncertain()) { Toast.makeText(this, "Referenced or dynamically resolved resources cannot be deleted", Toast.LENGTH_LONG).show(); return; }
-        new android.app.AlertDialog.Builder(this).setTitle("Delete unused resource?").setMessage(resource.getRelativePath()).setNegativeButton("Cancel", null).setPositiveButton("Delete", (dialog, which) -> {
+        if (resource.getReferenced() || resource.getReferenceUncertain()) { Toast.makeText(this, "被引用或动态解析的资源不能删除", Toast.LENGTH_LONG).show(); return; }
+        new android.app.AlertDialog.Builder(this).setTitle("删除未使用的资源?").setMessage(resource.getRelativePath()).setNegativeButton("取消", null).setPositiveButton("删除", (dialog, which) -> {
             File local = new File(project.getRoot(), resource.getRelativePath()); byte[] backup = null; try { if (local.isFile() && local.length() <= 64L * 1024 * 1024) backup = readFileBytes(local, 64L * 1024 * 1024); } catch (IOException ignored) { }
             ResourceDeleteResult result = new ThemeResourceManager(project.getRoot(), allProjectLuaSource()).delete(resource.getRelativePath());
             if (result instanceof ResourceDeleteResult.Deleted) {
-                try { if (importedProjectTreeUri != null) deleteImportedResource(local); project = ThemeProject.Companion.discover(project.getRoot()); workspace.setStatus("Deleted " + resource.getRelativePath()); }
-                catch (Exception error) { if (backup != null) try { File restore = new File(project.getRoot(), resource.getRelativePath()); restore.getParentFile().mkdirs(); try (FileOutputStream output = new FileOutputStream(restore)) { output.write(backup); output.getFD().sync(); } } catch (Exception ignored) { } try { project = ThemeProject.Companion.discover(project.getRoot()); } catch (Exception ignored) { } workspace.setStatus("Resource delete rolled back: " + error.getMessage()); }
-            } else if (result instanceof ResourceDeleteResult.Referenced) workspace.setStatus("Delete blocked: resource is referenced"); else workspace.setStatus("Resource delete failed");
+                try { if (importedProjectTreeUri != null) deleteImportedResource(local); project = ThemeProject.Companion.discover(project.getRoot()); workspace.setStatus("已删除 " + resource.getRelativePath()); }
+                catch (Exception error) { if (backup != null) try { File restore = new File(project.getRoot(), resource.getRelativePath()); restore.getParentFile().mkdirs(); try (FileOutputStream output = new FileOutputStream(restore)) { output.write(backup); output.getFD().sync(); } } catch (Exception ignored) { } try { project = ThemeProject.Companion.discover(project.getRoot()); } catch (Exception ignored) { } workspace.setStatus("资源删除已回滚:" + error.getMessage()); }
+            } else if (result instanceof ResourceDeleteResult.Referenced) workspace.setStatus("删除被阻止:资源已被引用"); else workspace.setStatus("资源删除失败");
         }).show();
     }
 
     private void exportZip(boolean share) {
-        if (editor == null) { Toast.makeText(this, "Open a theme before exporting", Toast.LENGTH_LONG).show(); return; }
+        if (editor == null) { Toast.makeText(this, "导出前请先打开主题", Toast.LENGTH_LONG).show(); return; }
         File sourceRoot = null;
         try {
             if (workspace.getModel().layoutMode != ThemeEditorModel.LayoutMode.NONE && !syncModel(workspace.getModel())) return;
@@ -2069,7 +2138,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                 if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) { hasErrors = true; break; }
             }
             if (hasErrors) {
-                workspace.setStatus("Export blocked by Lua errors");
+                workspace.setStatus("导出被阻止:Lua 存在错误");
                 return;
             }
             sourceRoot = new File(getCacheDir(), "theme-editor-export-source-" + System.nanoTime());
@@ -2112,10 +2181,10 @@ public class ThemeEditorActivity extends ComponentActivity {
             Intent intent = new Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, contentUri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.setClipData(android.content.ClipData.newRawUri("theme", contentUri));
-            startActivity(Intent.createChooser(intent, "Share theme ZIP"));
-            workspace.setStatus("Ready to share " + zip.getName());
+            startActivity(Intent.createChooser(intent, "分享主题 ZIP"));
+            workspace.setStatus("已准备分享 " + zip.getName());
         } catch (Exception error) {
-            workspace.setStatus("Export failed: " + error.getMessage()); Toast.makeText(this, "Unable to export theme", Toast.LENGTH_LONG).show();
+            workspace.setStatus("导出失败:" + error.getMessage()); Toast.makeText(this, "无法导出主题", Toast.LENGTH_LONG).show();
         } finally { deleteDirectory(sourceRoot); }
     }
 
@@ -2159,14 +2228,14 @@ public class ThemeEditorActivity extends ComponentActivity {
     }
 
     private void savePendingSource(Uri uri) {
-        String source = pendingSaveSource; pendingSaveSource = null; if (source == null) { workspace.setStatus("No pending Lua source to save"); return; }
+        String source = pendingSaveSource; pendingSaveSource = null; if (source == null) { workspace.setStatus("没有待保存的 Lua 源代码"); return; }
         try {
             UriThemeProjectRepository target = new UriThemeProjectRepository(getContentResolver(), uri); target.write(source);
             String verified = target.read(); if (!source.equals(verified)) throw new IOException("Saved source verification mismatch");
             com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(verified); for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("Saved source failed parse verification");
             repository = target; project = null; projectSnapshot = null; currentUri = uri; importedProjectUri = null; importedProjectTreeUri = null; importedProjectTreePrefix = null; openedImportedFingerprint = null; viewModel.setCurrentUri(uri); claimSession(sessionIdentity()); editor.replaceDocument(parsed.getDocument()); openedSourceFingerprint = ThemeSaveCoordinator.Companion.fingerprint(verified); openedFingerprint = null; layoutEditable = findLayoutRoot(editor.getDocument()) != null;
-            workspace.setModel(layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(false); deleteRecoveryDraft(); workspace.setStatus("Saved and verified: " + uri); invalidateOptionsMenu();
-        } catch (Exception error) { pendingSaveSource = source; workspace.setStatus("Save failed: " + error.getMessage()); Toast.makeText(this, "Unable to save Lua source", Toast.LENGTH_LONG).show(); }
+            workspace.setModel(layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(false); deleteRecoveryDraft(); workspace.setStatus("已保存并校验:" + uri); invalidateOptionsMenu();
+        } catch (Exception error) { pendingSaveSource = source; workspace.setStatus("保存失败:" + error.getMessage()); Toast.makeText(this, "无法保存 Lua 源代码", Toast.LENGTH_LONG).show(); }
     }
 
     private void saveModel(ThemeEditorModel model) {
@@ -2177,7 +2246,7 @@ public class ThemeEditorActivity extends ComponentActivity {
                 com.osfans.trime.editor.core.ParseResult check = new ThemeLuaParser().parse(pendingSaveSource);
                 for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : check.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) throw new IOException("Lua source contains errors");
                 saveLuaLauncher.launch(new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/x-lua").putExtra(Intent.EXTRA_TITLE, "main.lua"));
-            } catch (Exception error) { pendingSaveSource = null; workspace.setStatus("Save blocked: " + error.getMessage()); }
+            } catch (Exception error) { pendingSaveSource = null; workspace.setStatus("保存被阻止:" + error.getMessage()); }
             return;
         }
         String previousSource = null;
@@ -2185,8 +2254,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             if (editor == null) editor = new ThemeEditor(com.osfans.trime.editor.core.ThemeDefaults.INSTANCE.document());
             if (!isCurrentStyleFile()) {
                 if (!layoutEditable || model.layoutMode == ThemeEditorModel.LayoutMode.NONE) {
-                    workspace.setStatus("This Lua file has no structured keyboard layout");
-                    Toast.makeText(this, "Open a keyboard Lua file before editing", Toast.LENGTH_LONG).show();
+                    workspace.setStatus("此 Lua 文件没有结构化键盘布局");
+                    Toast.makeText(this, "编辑前请先打开键盘 Lua 文件", Toast.LENGTH_LONG).show();
                     return;
                 }
                 if (!syncModel(model)) return;
@@ -2219,17 +2288,17 @@ public class ThemeEditorActivity extends ComponentActivity {
             workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel());
             viewModel.setDirty(false);
             deleteRecoveryDraft();
-            workspace.setStatus("Saved and verified");
+            workspace.setStatus("已保存并校验");
         } catch (Exception error) {
             if (previousSource != null && importedProjectTreeUri != null) try { repository.write(previousSource); openedSourceFingerprint = ThemeSaveCoordinator.Companion.fingerprint(previousSource); } catch (Exception ignored) { }
-            workspace.setStatus("Save failed: " + error.getMessage());
-            Toast.makeText(this, "Unable to save theme", Toast.LENGTH_LONG).show();
+            workspace.setStatus("保存失败:" + error.getMessage());
+            Toast.makeText(this, "无法保存主题", Toast.LENGTH_LONG).show();
         }
     }
 
     private void showSaveConflict() {
-        workspace.setStatus("External file changed; unsaved editor draft retained");
-        new android.app.AlertDialog.Builder(this).setTitle("Theme changed outside editor").setMessage("Reloading discards the current in-memory draft. Cancel keeps it available for source copy or ZIP export.").setNegativeButton("Keep draft", null).setPositiveButton("Reload disk", (dialog, which) -> reloadRepositoryAfterConflict()).show();
+        workspace.setStatus("外部文件已更改;已保留编辑器中的未保存草稿");
+        new android.app.AlertDialog.Builder(this).setTitle("主题已在编辑器外部更改").setMessage("重新加载会丢弃当前内存草稿;保留草稿后仍可复制源代码或导出 ZIP。").setNegativeButton("保留草稿", null).setPositiveButton("重新加载磁盘文件", (dialog, which) -> reloadRepositoryAfterConflict()).show();
     }
 
     private void reloadRepositoryAfterConflict() {
@@ -2240,8 +2309,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             editor.replaceDocument(parsed.getDocument()); openedSourceFingerprint = ThemeSaveCoordinator.Companion.fingerprint(repository.read()); layoutEditable = findLayoutRoot(editor.getDocument()) != null;
             if (repository instanceof DirectoryThemeProjectRepository) openedFingerprint = ThemeSourceFingerprint.Companion.capture(((DirectoryThemeProjectRepository) repository).getSelected().getFile());
             if (project != null) projectSnapshot = ThemeProjectSnapshot.Companion.load(project, new ThemeLuaParser());
-            workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(false); deleteRecoveryDraft(); workspace.setStatus("Reloaded external theme source");
-        } catch (Exception error) { workspace.setStatus("Reload failed: " + error.getMessage()); Toast.makeText(this, "Unable to reload external theme", Toast.LENGTH_LONG).show(); }
+            workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(false); deleteRecoveryDraft(); workspace.setStatus("已重新加载外部主题源代码");
+        } catch (Exception error) { workspace.setStatus("重新加载失败:" + error.getMessage()); Toast.makeText(this, "无法重新加载外部主题", Toast.LENGTH_LONG).show(); }
     }
 
     private String recoveryIdentity() {
@@ -2258,8 +2327,8 @@ public class ThemeEditorActivity extends ComponentActivity {
             String source = readSmallText(draft, 4 * 1024 * 1024); com.osfans.trime.editor.core.ParseResult parsed = new ThemeLuaParser().parse(source);
             for (com.osfans.trime.editor.core.ThemeDiagnostic diagnostic : parsed.getDiagnostics()) if (diagnostic.getSeverity() == com.osfans.trime.editor.core.Severity.ERROR) { deleteRecoveryDraft(); return; }
             recoveryPrompted = true;
-            new android.app.AlertDialog.Builder(this).setTitle("Recover unsaved theme draft?").setMessage("A valid private draft exists for this Lua file.").setNegativeButton("Discard draft", (dialog, which) -> deleteRecoveryDraft()).setPositiveButton("Recover", (dialog, which) -> {
-                editor.replaceDocument(parsed.getDocument()); layoutEditable = findLayoutRoot(editor.getDocument()) != null; workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(true); workspace.setStatus("Recovered private draft; save to commit");
+            new android.app.AlertDialog.Builder(this).setTitle("恢复未保存的主题草稿?").setMessage("此 Lua 文件存在有效的私有草稿。").setNegativeButton("丢弃草稿", (dialog, which) -> deleteRecoveryDraft()).setPositiveButton("恢复", (dialog, which) -> {
+                editor.replaceDocument(parsed.getDocument()); layoutEditable = findLayoutRoot(editor.getDocument()) != null; workspace.setModel(isCurrentStyleFile() ? stylePreviewModel(editor.getDocument()) : layoutEditable ? toUiModel(editor.getDocument()) : new ThemeEditorModel()); viewModel.setDirty(true); workspace.setStatus("已恢复私有草稿;请保存以提交更改");
             }).show();
         } catch (Exception error) { deleteRecoveryDraft(); }
     }

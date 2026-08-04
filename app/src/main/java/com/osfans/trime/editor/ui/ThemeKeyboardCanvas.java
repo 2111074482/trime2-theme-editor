@@ -38,7 +38,7 @@ public final class ThemeKeyboardCanvas extends View {
     private final java.util.HashMap<String, float[]> dragStarts = new java.util.HashMap<>();
     private float transformScaleX, transformScaleY, transformLeft, transformTop;
 
-    public ThemeKeyboardCanvas(Context context) { super(context); touchSlop = android.view.ViewConfiguration.get(context).getScaledTouchSlop(); setFocusable(true); setContentDescription("Keyboard theme preview canvas"); }
+    public ThemeKeyboardCanvas(Context context) { super(context); touchSlop = android.view.ViewConfiguration.get(context).getScaledTouchSlop(); setFocusable(true); setContentDescription("键盘主题预览画布"); }
     public void setListener(Listener listener) { this.listener = listener; }
     public void setReadOnly(boolean value) { readOnly = value; }
     public void setAppendSelection(boolean value) { appendSelection = value; }
@@ -125,20 +125,54 @@ public final class ThemeKeyboardCanvas extends View {
     private void drawDeviceMeta(Canvas canvas) {
         drawMetaPill(canvas, 0f, -24f, 24f, "●  实时预览", 0xff6ce5ad);
         String orientation = model.previewHeight >= model.previewWidth ? "竖屏" : "横屏";
-        String device = Math.round(model.previewWidth) + " × " + Math.round(model.previewHeight) + " · " + orientation;
+        String device = Math.round(model.previewWidth) + " × " + Math.round(model.previewHeight) + " 像素 · " + orientation;
         drawMetaPill(canvas, 25f, -24f, 42f, device, 0xff858da1);
-        drawMetaPill(canvas, 68f, -24f, 32f, model.layoutMode.name() + " · " + model.keys.size() + " keys", 0xff858da1);
+        drawMetaPill(canvas, 68f, -24f, 32f, layoutModeLabel(model.layoutMode) + " · " + model.keys.size() + " 个按键", 0xff858da1);
         if (!previewOnly) drawDimensionIndicators(canvas);
+    }
+
+    private static String layoutModeLabel(ThemeEditorModel.LayoutMode mode) {
+        if (mode == ThemeEditorModel.LayoutMode.ROWS) return "行布局(rows)";
+        if (mode == ThemeEditorModel.LayoutMode.FLEX_BOX) return "弹性布局(flexbox)";
+        if (mode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) return "绝对按键(keys)";
+        if (mode == ThemeEditorModel.LayoutMode.KEY_MAPS) return "按键映射(key_maps)";
+        return "无布局(none)";
+    }
+
+    private static String preeditInlineLabel(String mode) {
+        if ("none".equals(mode)) return "关闭";
+        if ("input".equals(mode)) return "输入区";
+        if ("composition".equals(mode)) return "组合区";
+        if ("preview".equals(mode)) return "预览区";
+        return "自定义(" + safeText(mode, "未指定") + ")";
+    }
+
+    private static String compositionPositionLabel(String position) {
+        if ("fixed".equals(position)) return "固定";
+        if ("drag".equals(position)) return "可拖动";
+        if ("left".equals(position)) return "左侧";
+        if ("right".equals(position)) return "右侧";
+        if ("top".equals(position)) return "顶部";
+        if ("bottom".equals(position)) return "底部";
+        if ("right_up".equals(position) || "top_right".equals(position)) return "右上";
+        if ("bottom_right".equals(position)) return "右下";
+        return "自定义(" + safeText(position, "未指定") + ")";
+    }
+
+    private static String compositionMovableLabel(String movable) {
+        if ("true".equals(movable)) return "开启";
+        if ("once".equals(movable)) return "单次";
+        return "自定义(" + safeText(movable, "未指定") + ")";
     }
 
     private void drawDimensionIndicators(Canvas canvas) {
         paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(.25f); paint.setColor(0x668b7cff);
         canvas.drawLine(0f, -15.8f, 100f, -15.8f, paint); canvas.drawLine(0f, -17f, 0f, -14.6f, paint); canvas.drawLine(100f, -17f, 100f, -14.6f, paint);
         paint.setStyle(Paint.Style.FILL); paint.setColor(0xff858da1); paint.setTextAlign(Paint.Align.CENTER); paint.setTextSize(2f);
-        canvas.drawText(Math.round(model.previewWidth) + " px", 50f, -16.5f, paint);
+        canvas.drawText(Math.round(model.previewWidth) + " 像素", 50f, -16.5f, paint);
         paint.setStyle(Paint.Style.STROKE); paint.setColor(0x5555d7ff); canvas.drawLine(103f, -12f, 103f, stageBottom, paint);
         paint.setStyle(Paint.Style.FILL); paint.setColor(0xff758096); paint.setTextAlign(Paint.Align.LEFT);
-        canvas.drawText(Math.round(model.previewHeight) + " px", 104f, (stageBottom - 12f) / 2f, paint);
+        canvas.drawText(Math.round(model.previewHeight) + " 像素", 104f, (stageBottom - 12f) / 2f, paint);
     }
 
     private void drawMetaPill(Canvas canvas, float x, float y, float width, String text, int color) {
@@ -232,7 +266,10 @@ public final class ThemeKeyboardCanvas extends View {
     private static String safeText(String value, String fallback) { return value == null || value.isEmpty() ? (fallback == null ? "" : fallback) : value; }
     private String displayLabel(ThemeEditorModel.Key key) {
         if ("schema_name".equals(key.label)) return model.schemaName;
-        if ("Enter".equals(key.label) || "Return".equals(key.click)) return model.editorActionLabel;
+        if ("Enter".equals(key.label) || "Return".equals(key.click)) {
+            String action = model.editorActionLabel;
+            return "Enter".equals(action) ? "回车(Enter)" : action;
+        }
         return key.label == null ? "" : key.label;
     }
 
@@ -305,7 +342,7 @@ public final class ThemeKeyboardCanvas extends View {
         drawPlaceholderRow(canvas, "QWERTYUIOP", 2f, 4f, 9.1f, 14f);
         drawPlaceholderRow(canvas, "ASDFGHJKL", 6.6f, 21f, 9.1f, 14f);
         drawPlaceholderRow(canvas, new String[]{"⇧", "Z", "X", "C", "V", "B", "N", "M", "⌫"}, 2f, 38f, 9.1f, 14f);
-        String[] labels = {"符", "中/En", ",", "Trime", "。", "↵"};
+        String[] labels = {"符", "中/英", ",", "同文(Trime)", "。", "↵"};
         float[] widths = {11f, 15f, 9f, 35f, 9f, 15f};
         float x = 2f;
         for (int i = 0; i < labels.length; i++) {
@@ -393,13 +430,13 @@ public final class ThemeKeyboardCanvas extends View {
         if (model.candidateComments) {
             paint.setTextAlign(Paint.Align.RIGHT); paint.setTextSize(Math.max(1.5f, Math.min(2.6f, model.candidateCommentTextSize / 5f)));
             paint.setColor(model.pressedPreview ? model.candidatePressedCommentTextColor : model.candidateCommentTextColor);
-            canvas.drawText("comment", 97, y + 2.5f, paint);
+            canvas.drawText("注释", 97, y + 2.5f, paint);
         }
     }
 
     private float drawPlainPreeditPreview(Canvas canvas, float y) {
         float height = Math.max(6f, Math.min(12f, model.preeditTextSize / 3.5f));
-        panel(canvas, 2, y, 96, height, model.compositionText + " | preedit",
+        panel(canvas, 2, y, 96, height, model.compositionText + " | 预编辑",
                 model.preeditBackgroundColor, model.preeditTextColor,
                 Math.max(2f, Math.min(4.5f, model.preeditTextSize / 5.5f)));
         if (!model.compositionPreviewSourceResolved) {
@@ -419,18 +456,19 @@ public final class ThemeKeyboardCanvas extends View {
         float height = Math.max(7f, Math.min(18f, sourceHeight / 4.5f));
         float x = compositionPreviewX(width);
         StringBuilder text = new StringBuilder(model.compositionText);
-        text.append(" | inline:").append(model.preeditInlineMode);
-        text.append(" | ").append(model.compositionPosition);
-        if (!"false".equals(model.compositionMovable)) text.append(" | move:").append(model.compositionMovable);
-        if (model.compositionMaxEntries == -1) text.append(" | entries:all");
-        else text.append(" | entries:").append(model.compositionMaxEntries);
-        if (model.compositionMaxLength > 0) text.append(" | wrap:").append(model.compositionMaxLength);
-        if (model.compositionStickyLines > 0) text.append(" | sticky:").append(model.compositionStickyLines);
-        if (model.compositionAllPhrases) text.append(" | phrases");
-        if (!model.compositionUseCursor) text.append(" | no-cursor");
-        if (model.inputMode == ThemeEditorModel.InputMode.ASCII) text.append(" | ASCII");
-        if (model.previewPaging) text.append(" | paging");
-        if (model.previewHasMenu) text.append(" | menu");
+        text.append(" | 内嵌:").append(preeditInlineLabel(model.preeditInlineMode));
+        text.append(" | 位置:").append(compositionPositionLabel(model.compositionPosition));
+        if (!"false".equals(model.compositionMovable))
+            text.append(" | 移动:").append(compositionMovableLabel(model.compositionMovable));
+        if (model.compositionMaxEntries == -1) text.append(" | 条目:全部");
+        else text.append(" | 条目:").append(model.compositionMaxEntries);
+        if (model.compositionMaxLength > 0) text.append(" | 换行长度:").append(model.compositionMaxLength);
+        if (model.compositionStickyLines > 0) text.append(" | 固定行:").append(model.compositionStickyLines);
+        if (model.compositionAllPhrases) text.append(" | 显示全部短语");
+        if (!model.compositionUseCursor) text.append(" | 隐藏光标");
+        if (model.inputMode == ThemeEditorModel.InputMode.ASCII) text.append(" | 英文模式(ASCII)");
+        if (model.previewPaging) text.append(" | 分页状态");
+        if (model.previewHasMenu) text.append(" | 菜单状态");
         int panelBackground = model.pressedPreview ? model.compositionPressedBackgroundColor : model.compositionBackgroundColor;
         int panelText = model.pressedPreview ? model.compositionPressedTextColor : model.compositionTextColor;
         panel(canvas, x, y, width, height, text.toString(), panelBackground, panelText, Math.max(2f, Math.min(4.5f, model.compositionTextSize / 5.5f)));
@@ -490,7 +528,7 @@ public final class ThemeKeyboardCanvas extends View {
         paint.setColor(textColor); paint.setTextAlign(Paint.Align.LEFT); paint.setTextSize(3.2f);
         canvas.drawText(title, x + 2, y + 5, paint);
         RectF content = new RectF(x + 1, y + 7, x + width - 1, y + height - 1);
-        if (tab != null) content = drawPanelBar(canvas, content, tab, "TAB  常用  最近  更多", background, textColor, true);
+        if (tab != null) content = drawPanelBar(canvas, content, tab, "标签页  常用  最近  更多", background, textColor, true);
         if (preview == ThemeEditorModel.PreviewPanel.CANDIDATE_EXPANDED && model.candidateExpandedFilterBar.show) {
             content = drawFilterBar(canvas, content, model.candidateExpandedFilterBar, textColor);
         }
@@ -589,14 +627,25 @@ public final class ThemeKeyboardCanvas extends View {
     }
 
     private static String keySummary(java.util.List<String> keys) {
-        if (keys == null || keys.isEmpty()) return "(无 keys)";
+        if (keys == null || keys.isEmpty()) return "(无按键)";
         StringBuilder result = new StringBuilder();
         for (String key : keys) {
             if (result.length() > 0) result.append("  ");
-            result.append(key == null || key.isEmpty() ? "∅" : key);
+            result.append(panelKeyLabel(key));
             if (result.length() > 48) { result.append(" ..."); break; }
         }
         return result.toString();
+    }
+
+    private static String panelKeyLabel(String key) {
+        if (key == null || key.isEmpty()) return "∅";
+        if ("hide".equals(key)) return "隐藏(hide)";
+        if ("page_up".equals(key)) return "上一页(page_up)";
+        if ("page_down".equals(key)) return "下一页(page_down)";
+        if ("char_filter".equals(key)) return "字符筛选(char_filter)";
+        if ("BackSpace".equals(key)) return "退格(BackSpace)";
+        if ("undo".equals(key)) return "撤销(undo)";
+        return "按键(" + key + ")";
     }
 
     private void panel(Canvas canvas, float x, float y, float width, float height, String text, int color, int textColor) {

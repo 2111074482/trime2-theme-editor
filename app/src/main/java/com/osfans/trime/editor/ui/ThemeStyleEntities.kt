@@ -225,7 +225,8 @@ object ThemeStyleEntities {
     private fun parseAssignmentValue(text: String): ThemeValue {
         val parsed = ThemeLuaParser().parse(text.trim())
         require(parsed.diagnostics.none { it.severity == Severity.ERROR }) { "实体语句无效" }
-        return parsed.document.nodes.firstOrNull { it.assignment }?.value ?: error("实体语句不是赋值语句")
+        val path = parsed.document.sourceStatements.singleOrNull()?.path ?: error("实体语句不是单一赋值语句")
+        return parsed.document.get(path) ?: error("无法读取实体赋值:$path")
     }
 
     private fun parseValid(source: String, label: String) = ThemeLuaParser().parse(source).also { parsed ->

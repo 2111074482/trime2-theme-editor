@@ -213,7 +213,9 @@ object ThemeLuaCommentFilter {
                 if (commentEquals >= 0) {
                     val close = findLongBracketEnd(source, index + 2, commentEquals)
                     val end = if (close < 0) source.length else close
-                    for (position in index until end) if (source[position] == '\n' || source[position] == '\r') result.append(source[position])
+                    // A lexical block comment is removed as one unit. Its following line break is
+                    // processed normally, avoiding extra blank lines from comment-internal newlines.
+                    if (close < 0 && source.substring(index, end).any { it == '\n' || it == '\r' }) result.append('\n')
                     index = end
                 } else {
                     while (index < source.length && source[index] != '\n' && source[index] != '\r') index++

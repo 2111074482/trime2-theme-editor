@@ -311,8 +311,9 @@ object ThemeLayoutCodec {
         val heightChanged = key.height != key.sourceHeight
         val xChanged = key.x != key.sourceX
         val yChanged = key.y != key.sourceY
-        if (original is ThemeValue.LuaString && !labelChanged && !eventChanged && !widthChanged && !heightChanged && (!absolute || (!xChanged && !yChanged))) {
-            return original
+        if (original is ThemeValue.LuaString && !eventChanged && !widthChanged && !heightChanged && (!absolute || (!xChanged && !yChanged))) {
+            if (!labelChanged) return original
+            if (key.ownerId.startsWith("key_map_")) return ThemeValue.LuaString(key.label)
         }
         val fields = LinkedHashMap((original as? ThemeValue.LuaTable)?.fields ?: emptyMap())
         if (original is ThemeValue.LuaString) fields["click"] = ThemeValue.LuaString(key.click.ifEmpty { original.value })

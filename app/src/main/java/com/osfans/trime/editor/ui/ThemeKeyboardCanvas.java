@@ -8,11 +8,15 @@ package com.osfans.trime.editor.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RadialGradient;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 
 public final class ThemeKeyboardCanvas extends View {
+    public enum InteractionMode { SELECT, PAN }
+
     public interface Listener { void onKeySelected(ThemeEditorModel.Key key); void onKeyMoveStarted(); void onKeyMoved(); void onKeyMoveFinished(ThemeEditorModel.Key key); }
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final int touchSlop;
@@ -24,6 +28,13 @@ public final class ThemeKeyboardCanvas extends View {
     private boolean readOnly;
     private boolean appendSelection;
     private boolean removeSelectionOnTap;
+    private boolean gridVisible = true;
+    private boolean previewOnly;
+    private InteractionMode interactionMode = InteractionMode.SELECT;
+    private ThemeEditorModel.Key pressedKey;
+    private float panStartX, panStartY;
+    private float pinchStartDistance, pinchStartZoom;
+    private boolean panning, pinching;
     private final java.util.HashMap<String, float[]> dragStarts = new java.util.HashMap<>();
     private float transformScaleX, transformScaleY, transformLeft, transformTop;
 
@@ -35,9 +46,37 @@ public final class ThemeKeyboardCanvas extends View {
     public ThemeEditorModel.Key getSelectedKey() { return selected; }
     public void setSelectedKey(ThemeEditorModel.Key key) { selected = key; invalidate(); }
 
+    /** Workspace-facing canvas controls. These affect only the viewport, never source structure. */
+    public void setInteractionMode(InteractionMode mode) { interactionMode = mode == null ? InteractionMode.SELECT : mode; cancelGestureState(); invalidate(); }
+    public void setInteractionMode(String mode) { setInteractionMode("pan".equalsIgnoreCase(mode) ? InteractionMode.PAN : InteractionMode.SELECT); }
+    public void setCanvasMode(String mode) { setInteractionMode(mode); }
+    public InteractionMode getInteractionMode() { return interactionMode; }
+    public void setSelectionMode() { setInteractionMode(InteractionMode.SELECT); }
+    public void setPanMode() { setInteractionMode(InteractionMode.PAN); }
+    public void setGridVisible(boolean visible) { gridVisible = visible; invalidate(); }
+    public boolean isGridVisible() { return gridVisible; }
+    public void toggleGrid() { setGridVisible(!gridVisible); }
+    public void setPreviewOnly(boolean value) { previewOnly = value; cancelGestureState(); invalidate(); }
+    public void setPreviewMode(boolean value) { setPreviewOnly(value); }
+    public boolean isPreviewOnly() { return previewOnly; }
+    public float getZoom() { return safeZoom(model.previewZoom); }
+    public void setZoom(float zoom) { model.previewZoom = clamp(zoom, .25f, 4f); invalidate(); }
+    public void zoomIn() { setZoom(getZoom() + .1f); }
+    public void zoomOut() { setZoom(getZoom() - .1f); }
+    public void fitToCanvas() { model.previewZoom = 1f; model.previewPanX = 0f; model.previewPanY = 0f; invalidate(); }
+    public void fitToViewport(boolean ignored) { fitToCanvas(); }
+    public void resetViewport() { fitToCanvas(); }
+    public void setViewportPan(float x, float y) { model.previewPanX = finite(x, 0f); model.previewPanY = finite(y, 0f); invalidate(); }
+    public float getViewportPanX() { return model.previewPanX; }
+    public float getViewportPanY() { return model.previewPanY; }
+
+    private static float finite(float value, float fallback) { return Float.isNaN(value) || Float.isInfinite(value) ? fallback : value; }
+    private static float clamp(float value, float min, float max) { return Math.max(min, Math.min(max, finite(value, min))); }
+    private static float safeZoom(float zoom) { return clamp(zoom, .25f, 4f); }
+
     private static final float STAGE_LEFT = -3f;
-    private static final float STAGE_RIGHT = 104f;
-    private static final float STAGE_TOP = -27f;
+    private static final float STAGE_RIGHT = 116f;
+    private static final float STAGE_TOP = -48f;
     private static final float MIN_STAGE_BOTTOM = 85f;
     private float stageBottom = MIN_STAGE_BOTTOM;
 
@@ -54,19 +93,28 @@ public final class ThemeKeyboardCanvas extends View {
     }
 
     private void drawCanvasBackground(Canvas canvas) {
-        canvas.drawColor(0xff080b13);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(1f);
-        float minor = Math.max(12f, getResources().getDisplayMetrics().density * 8f);
-        float major = minor * 5f;
-        paint.setColor(0x0cffffff);
-        for (float x = 0; x <= getWidth(); x += minor) canvas.drawLine(x, 0, x, getHeight(), paint);
-        for (float y = 0; y <= getHeight(); y += minor) canvas.drawLine(0, y, getWidth(), y, paint);
-        paint.setColor(0x13ffffff);
-        for (float x = 0; x <= getWidth(); x += major) canvas.drawLine(x, 0, x, getHeight(), paint);
-        for (float y = 0; y <= getHeight(); y += major) canvas.drawLine(0, y, getWidth(), y, paint);
+        canvas.drawColor(0xff070a12);
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0x18000000);
+        paint.setShader(new RadialGradient(getWidth() * .52f, getHeight() * .48f,
+                Math.max(1f, Math.max(getWidth(), getHeight()) * .72f),
+                new int[]{0xff172033, 0xff0c111d, 0xff060810}, null, Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
+        paint.setShader(null);
+        if (gridVisible && !previewOnly) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(1f);
+            float minor = Math.max(12f, getResources().getDisplayMetrics().density * 8f);
+            float major = minor * 5f;
+            float ox = model.previewPanX % minor, oy = model.previewPanY % minor;
+            paint.setColor(0x0cffffff);
+            for (float x = ox; x <= getWidth(); x += minor) canvas.drawLine(x, 0, x, getHeight(), paint);
+            for (float y = oy; y <= getHeight(); y += minor) canvas.drawLine(0, y, getWidth(), y, paint);
+            paint.setColor(0x16ffffff);
+            for (float x = model.previewPanX % major; x <= getWidth(); x += major) canvas.drawLine(x, 0, x, getHeight(), paint);
+            for (float y = model.previewPanY % major; y <= getHeight(); y += major) canvas.drawLine(0, y, getWidth(), y, paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(0x19000000);
         canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
     }
 
@@ -79,7 +127,18 @@ public final class ThemeKeyboardCanvas extends View {
         String orientation = model.previewHeight >= model.previewWidth ? "竖屏" : "横屏";
         String device = Math.round(model.previewWidth) + " × " + Math.round(model.previewHeight) + " · " + orientation;
         drawMetaPill(canvas, 25f, -24f, 42f, device, 0xff858da1);
-        drawMetaPill(canvas, 68f, -24f, 32f, model.layoutMode.name(), 0xff858da1);
+        drawMetaPill(canvas, 68f, -24f, 32f, model.layoutMode.name() + " · " + model.keys.size() + " keys", 0xff858da1);
+        if (!previewOnly) drawDimensionIndicators(canvas);
+    }
+
+    private void drawDimensionIndicators(Canvas canvas) {
+        paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(.25f); paint.setColor(0x668b7cff);
+        canvas.drawLine(0f, -15.8f, 100f, -15.8f, paint); canvas.drawLine(0f, -17f, 0f, -14.6f, paint); canvas.drawLine(100f, -17f, 100f, -14.6f, paint);
+        paint.setStyle(Paint.Style.FILL); paint.setColor(0xff858da1); paint.setTextAlign(Paint.Align.CENTER); paint.setTextSize(2f);
+        canvas.drawText(Math.round(model.previewWidth) + " px", 50f, -16.5f, paint);
+        paint.setStyle(Paint.Style.STROKE); paint.setColor(0x5555d7ff); canvas.drawLine(103f, -12f, 103f, stageBottom, paint);
+        paint.setStyle(Paint.Style.FILL); paint.setColor(0xff758096); paint.setTextAlign(Paint.Align.LEFT);
+        canvas.drawText(Math.round(model.previewHeight) + " px", 104f, (stageBottom - 12f) / 2f, paint);
     }
 
     private void drawMetaPill(Canvas canvas, float x, float y, float width, String text, int color) {
@@ -104,7 +163,9 @@ public final class ThemeKeyboardCanvas extends View {
             for (ThemeEditorModel.Key key : model.keys) contentBottom = Math.max(contentBottom, key.y + key.height);
         }
         stageBottom = Math.max(MIN_STAGE_BOTTOM, contentBottom + 5f);
-        RectF shadow = new RectF(-2.2f, -14.2f, 102.2f, stageBottom);
+        float chromeTop = -14.2f - (model.showToolbar ? Math.max(0f, model.toolbarHeight + 1f) : 0f)
+                - (model.showComposition ? 9f : 0f);
+        RectF shadow = new RectF(-2.2f, chromeTop, 102.2f, stageBottom);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(0x55000000);
         canvas.drawRoundRect(new RectF(shadow.left + 1.2f, shadow.top + 2f, shadow.right + 1.2f, shadow.bottom + 2f), 5.2f, 5.2f, paint);
@@ -117,8 +178,15 @@ public final class ThemeKeyboardCanvas extends View {
 
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(0x28ffffff);
-        canvas.drawRoundRect(new RectF(44f, -12.3f, 56f, -11.3f), .6f, .6f, paint);
-        drawShellCandidateBar(canvas);
+        canvas.drawRoundRect(new RectF(44f, chromeTop + 1.8f, 56f, chromeTop + 2.8f), .6f, .6f, paint);
+        float previewY = -10f;
+        if (model.showCandidate) drawCandidatePreview(canvas, previewY); else drawShellCandidateBar(canvas);
+        if (model.showToolbar) drawToolbarPreview(canvas, previewY - model.toolbarHeight - 1f);
+        if (model.showComposition) {
+            float compositionY = previewY - (model.showToolbar ? model.toolbarHeight + 1f : 0f) - 8f;
+            if (model.compositionWindowEnabled) drawCompositionPreview(canvas, compositionY);
+            else drawPlainPreeditPreview(canvas, compositionY);
+        }
 
         if (model.previewPanel != ThemeEditorModel.PreviewPanel.KEYBOARD) {
             drawPanelPreview(canvas, model.previewPanel, 1f);
@@ -128,6 +196,44 @@ public final class ThemeKeyboardCanvas extends View {
         } else {
             drawModelKeys(canvas);
         }
+        if (!previewOnly) drawCanvasAdornments(canvas);
+    }
+
+    private void drawCanvasAdornments(Canvas canvas) {
+        int overflow = overflowCount();
+        if (selected != null) {
+            RectF tag = new RectF(Math.max(0f, selected.x), Math.max(-1f, selected.y - 4.2f),
+                    Math.min(100f, selected.x + Math.max(18f, selected.width)), Math.max(2f, selected.y - .8f));
+            paint.setStyle(Paint.Style.FILL); paint.setColor(0xee241f3c); canvas.drawRoundRect(tag, 1f, 1f, paint);
+            paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(.25f); paint.setColor(0x999b8cff); canvas.drawRoundRect(tag, 1f, 1f, paint);
+            paint.setStyle(Paint.Style.FILL); paint.setColor(0xffd3ccff); paint.setTextAlign(Paint.Align.CENTER); paint.setTextSize(1.9f);
+            canvas.drawText("按键 / " + safeText(selected.label, selected.id), tag.centerX(), tag.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+        }
+        if (overflow > 0) {
+            RectF badge = new RectF(73f, stageBottom + .8f, 100f, stageBottom + 6.5f);
+            paint.setStyle(Paint.Style.FILL); paint.setColor(0xee351923); canvas.drawRoundRect(badge, 1.3f, 1.3f, paint);
+            paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(.3f); paint.setColor(0x99ff6e87); canvas.drawRoundRect(badge, 1.3f, 1.3f, paint);
+            paint.setStyle(Paint.Style.FILL); paint.setColor(0xffff9cab); paint.setTextAlign(Paint.Align.CENTER); paint.setTextSize(2f);
+            canvas.drawText("△ " + overflow + " 个按键溢出", badge.centerX(), badge.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+        }
+    }
+
+    private int overflowCount() {
+        int count = 0;
+        for (ThemeEditorModel.Key key : model.keys) {
+            String label = displayLabel(key);
+            boolean outside = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > 80f;
+            boolean cramped = key.width < 2.8f || (!label.isEmpty() && label.length() * Math.max(1.4f, model.keyTextSize * .52f) > key.width);
+            if (outside || cramped) count++;
+        }
+        return count;
+    }
+
+    private static String safeText(String value, String fallback) { return value == null || value.isEmpty() ? (fallback == null ? "" : fallback) : value; }
+    private String displayLabel(ThemeEditorModel.Key key) {
+        if ("schema_name".equals(key.label)) return model.schemaName;
+        if ("Enter".equals(key.label) || "Return".equals(key.click)) return model.editorActionLabel;
+        return key.label == null ? "" : key.label;
     }
 
     private void drawShellCandidateBar(Canvas canvas) {
@@ -157,16 +263,18 @@ public final class ThemeKeyboardCanvas extends View {
         for (ThemeEditorModel.Key key : model.keys) {
             RectF bounds = new RectF(key.x, key.y, key.x + key.width, key.y + key.height);
             boolean primary = key == selected;
+            boolean pressed = key == pressedKey || (model.pressedPreview && primary);
+            boolean overflow = key.x < 0f || key.y < 0f || key.x + key.width > 100f || key.y + key.height > 80f;
             boolean inSelection = model.selectedIds.contains(key.id);
             float radius = Math.max(.7f, Math.min(model.keyCornerRadius, Math.min(key.width, key.height) / 2f));
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(0x66000000);
             canvas.drawRoundRect(new RectF(bounds.left, bounds.top + .8f, bounds.right, bounds.bottom + .8f), radius, radius, paint);
-            paint.setColor(model.pressedPreview && primary ? model.pressedKeyBackgroundColor : key.fillColor);
+            paint.setColor(pressed ? model.pressedKeyBackgroundColor : key.fillColor);
             canvas.drawRoundRect(bounds, radius, radius, paint);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(primary ? 1.05f : inSelection ? .7f : .25f);
-            paint.setColor(primary ? 0xffa797ff : inSelection ? 0xff8170e7 : 0x35ffffff);
+            paint.setStrokeWidth(primary ? 1.05f : inSelection ? .7f : overflow ? .65f : .25f);
+            paint.setColor(primary ? 0xffa797ff : inSelection ? 0xff8170e7 : overflow ? 0xffff6e87 : 0x35ffffff);
             canvas.drawRoundRect(bounds, radius, radius, paint);
             if (primary) {
                 paint.setStrokeWidth(.35f);
@@ -174,15 +282,19 @@ public final class ThemeKeyboardCanvas extends View {
                 canvas.drawRoundRect(new RectF(bounds.left - .6f, bounds.top - .6f, bounds.right + .6f, bounds.bottom + .6f), radius + .6f, radius + .6f, paint);
             }
             paint.setStyle(Paint.Style.FILL);
-            paint.setColor(model.pressedPreview && primary ? model.pressedKeyTextColor : key.textColor);
+            paint.setColor(pressed ? model.pressedKeyTextColor : key.textColor);
             paint.setTextAlign(Paint.Align.CENTER);
             paint.setTextSize(Math.max(2f, Math.min(model.keyTextSize, key.height * .48f)));
-            String displayLabel = "schema_name".equals(key.label) ? model.schemaName
-                    : "Enter".equals(key.label) || "Return".equals(key.click) ? model.editorActionLabel : key.label;
-            if (displayLabel == null) displayLabel = "";
+            String displayLabel = displayLabel(key);
             canvas.save();
             canvas.clipRect(bounds);
             canvas.drawText(displayLabel, bounds.centerX(), bounds.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+            String hint = !key.longClick.isEmpty() ? key.longClick : !key.swipeUp.isEmpty() ? key.swipeUp : "";
+            if (!hint.isEmpty() && !hint.equals(displayLabel)) {
+                paint.setTextSize(Math.max(1.25f, Math.min(2.2f, key.height * .2f))); paint.setTextAlign(Paint.Align.RIGHT);
+                paint.setColor(pressed ? model.pressedKeyTextColor : key.textColor);
+                canvas.drawText(hint, bounds.right - .8f, bounds.top + 2.2f, paint);
+            }
             canvas.restore();
         }
     }
@@ -243,7 +355,7 @@ public final class ThemeKeyboardCanvas extends View {
         paint.setColor(0xffc8c0ff);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setTextSize(2.5f);
-        canvas.drawText("未加载可编辑键盘源", notice.centerX(), notice.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
+        canvas.drawText("示意占位 · 不可编辑 · 非源内容", notice.centerX(), notice.centerY() - (paint.ascent() + paint.descent()) / 2f, paint);
     }
 
     private void drawToolbarPreview(Canvas canvas, float y) {
@@ -507,7 +619,7 @@ public final class ThemeKeyboardCanvas extends View {
         stageBottom = contentStageBottom();
         float availableWidth = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
         float availableHeight = Math.max(1f, getHeight() - getPaddingTop() - getPaddingBottom());
-        float visualBottom = stageBottom + 3f; // Includes the shell's lower shadow.
+        float visualBottom = stageBottom + 7f; // Includes the shell shadow and overflow badge.
         float stageWidth = STAGE_RIGHT - STAGE_LEFT;
         float stageHeight = visualBottom - STAGE_TOP;
         float fitScale = Math.min(availableWidth / stageWidth, availableHeight / stageHeight);
@@ -543,14 +655,48 @@ public final class ThemeKeyboardCanvas extends View {
         if (selected == null || !model.selectedIds.contains(selected.id)) selected = lastSelectedKey();
     }
 
+    private void cancelGestureState() {
+        dragStarts.clear(); removeSelectionOnTap = false; moved = false; panning = false; pinching = false; pressedKey = null;
+    }
+
+    private static float pointerDistance(MotionEvent event) {
+        if (event.getPointerCount() < 2) return 0f;
+        float dx = event.getX(1) - event.getX(0), dy = event.getY(1) - event.getY(0);
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+    private void beginPan(float x, float y) {
+        downX = x; downY = y; panStartX = model.previewPanX; panStartY = model.previewPanY;
+        panning = true; moved = false; pressedKey = null; dragStarts.clear(); removeSelectionOnTap = false;
+    }
+
     @Override public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getActionMasked()) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_POINTER_DOWN && event.getPointerCount() >= 2) {
+            pinchStartDistance = Math.max(1f, pointerDistance(event)); pinchStartZoom = getZoom();
+            pinching = true; panning = false; pressedKey = null; dragStarts.clear(); removeSelectionOnTap = false;
+            return true;
+        }
+        if (action == MotionEvent.ACTION_MOVE && pinching && event.getPointerCount() >= 2) {
+            setZoom(pinchStartZoom * pointerDistance(event) / pinchStartDistance);
+            return true;
+        }
+        if (action == MotionEvent.ACTION_POINTER_UP && pinching) {
+            pinching = false;
+            int remaining = event.getActionIndex() == 0 ? 1 : 0;
+            if (remaining < event.getPointerCount()) beginPan(event.getX(remaining), event.getY(remaining));
+            return true;
+        }
+        switch (action) {
             case MotionEvent.ACTION_DOWN:
-                downX = event.getX(); downY = event.getY(); ThemeEditorModel.Key hitKey = hit(downX, downY);
+                downX = event.getX(); downY = event.getY(); moved = false;
+                if (interactionMode == InteractionMode.PAN || previewOnly) { beginPan(downX, downY); return true; }
+                ThemeEditorModel.Key hitKey = hit(downX, downY);
+                pressedKey = hitKey;
                 if (hitKey != null) {
                     removeSelectionOnTap = appendSelection && model.selectedIds.contains(hitKey.id);
                     if (appendSelection) model.selectedIds.add(hitKey.id); else { model.selectedIds.clear(); model.selectedIds.add(hitKey.id); }
-                    selected = hitKey; startX = selected.x; startY = selected.y; moved = false; dragStarts.clear();
+                    selected = hitKey; startX = selected.x; startY = selected.y; dragStarts.clear();
                     if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS && model.selectedIds.contains(selected.id)) {
                         for (ThemeEditorModel.Key key : model.keys) if (model.selectedIds.contains(key.id) && !key.editorLocked) dragStarts.put(key.id, new float[]{key.x, key.y});
                     }
@@ -559,25 +705,38 @@ public final class ThemeKeyboardCanvas extends View {
                 }
                 removeSelectionOnTap = false;
                 if (!appendSelection) { model.selectedIds.clear(); selected = null; }
-                invalidate(); if (listener != null) listener.onKeySelected(selected); return true;
+                invalidate(); if (listener != null) listener.onKeySelected(null); return true;
             case MotionEvent.ACTION_MOVE:
-                if (selected != null && !readOnly && !dragStarts.isEmpty()) {
+                if (panning) {
+                    float dx = event.getX() - downX, dy = event.getY() - downY;
+                    if (!moved && dx * dx + dy * dy < touchSlop * touchSlop) return true;
+                    model.previewPanX = panStartX + dx; model.previewPanY = panStartY + dy; moved = true; invalidate(); return true;
+                }
+                if (selected != null && !readOnly && !previewOnly && interactionMode == InteractionMode.SELECT && !dragStarts.isEmpty()) {
                     float screenDx = event.getX() - downX, screenDy = event.getY() - downY;
                     if (!moved && screenDx * screenDx + screenDy * screenDy < touchSlop * touchSlop) return true;
                     if (!moved && listener != null) listener.onKeyMoveStarted();
                     updateTransform(); float dx = screenDx / transformScaleX, dy = screenDy / transformScaleY;
-                    for (ThemeEditorModel.Key key : model.keys) { float[] start = dragStarts.get(key.id); if (start != null) { key.x = Math.max(0, Math.min(100 - key.width, start[0] + dx)); key.y = Math.max(0, Math.min(80 - key.height, start[1] + dy)); } }
-                    moved = true; invalidate(); if (listener != null) listener.onKeyMoved(); return true;
+                    for (ThemeEditorModel.Key key : model.keys) {
+                        float[] start = dragStarts.get(key.id);
+                        if (start != null) { key.x = Math.max(0, Math.min(100 - key.width, start[0] + dx)); key.y = Math.max(0, Math.min(80 - key.height, start[1] + dy)); }
+                    }
+                    moved = true; pressedKey = null; invalidate(); if (listener != null) listener.onKeyMoved();
                 }
                 return true;
             case MotionEvent.ACTION_UP:
-                if (moved && selected != null && listener != null) listener.onKeyMoveFinished(selected);
-                else if (removeSelectionOnTap && selected != null) { model.selectedIds.remove(selected.id); selected = lastSelectedKey(); invalidate(); if (listener != null) listener.onKeySelected(selected); }
-                dragStarts.clear(); removeSelectionOnTap = false; return true;
+                pressedKey = null;
+                if (!panning && moved && selected != null && listener != null) listener.onKeyMoveFinished(selected);
+                else if (!panning && removeSelectionOnTap && selected != null) {
+                    model.selectedIds.remove(selected.id); selected = lastSelectedKey(); if (listener != null) listener.onKeySelected(selected);
+                }
+                cancelGestureState(); invalidate(); return true;
             case MotionEvent.ACTION_CANCEL:
-                if (moved && selected != null && listener != null) listener.onKeyMoveFinished(selected); dragStarts.clear(); removeSelectionOnTap = false;
-                return true;
+                pressedKey = null;
+                if (!panning && moved && selected != null && listener != null) listener.onKeyMoveFinished(selected);
+                cancelGestureState(); invalidate(); return true;
             default: return true;
         }
     }
+
 }

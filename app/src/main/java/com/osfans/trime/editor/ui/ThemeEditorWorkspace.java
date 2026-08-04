@@ -25,6 +25,17 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     private final ThemeKeyboardCanvas canvas;
     private final ThemePropertyEditor properties;
     private final TextView status;
+    private final TextView statusContext;
+    private final TextView zoomValue;
+    private final LinearLayout contextBar;
+    private final LinearLayout structureContent;
+    private final Button statisticsTab;
+    private final Button layersTab;
+    private final Button historyTab;
+    private final Button selectModeButton;
+    private final Button panModeButton;
+    private final Button gridModeButton;
+    private final Button canvasPreviewButton;
     private final View propertyPanel;
     private final boolean wideLayout;
     private final Deque<ThemeEditorModel> undo = new ArrayDeque<>();
@@ -34,6 +45,11 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     private boolean applying;
     private boolean readOnly;
     private boolean appendSelection;
+    private boolean gridVisible = true;
+    private boolean canvasPreviewMode;
+    private boolean dirty;
+    private String canvasMode = "select";
+    private int structurePage;
     private String clipboardScope = "";
     private String panelPreviewSource;
     private boolean panelPreviewSourceAssigned;
@@ -50,58 +66,127 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         });
         ViewCompat.requestApplyInsets(this);
 
-        Button appendSelectButton = action("+Select", "Toggle tap-to-add or remove selection"); Button selectAllButton = action("All", "Select all keys"); Button invertButton = action("Invert", "Invert key selection"); Button rowButton = action("Row", "Select row"); Button batchButton = action("Batch...", "Batch edit selected keys"); Button clipboardButton = action("Clip...", "Internal clipboard for keys, rows, flex subtrees, pages, styles, and events"); Button rowManageButton = action("Row...", "Add copy delete or reorder rows");
-        Button previousPageButton = action("◀Page", "Previous key map page"); Button nextPageButton = action("Page▶", "Next key map page"); Button pageAddButton = action("+Page", "Add key map page"); Button pageDeleteButton = action("-Page", "Delete key map page"); Button pageManageButton = action("Page...", "Rename copy or reorder key map page");
-        Button flexButton = action("Flex", "Edit selected flex container"); Button flexManageButton = action("Flex...", "Manage flex containers"); Button absoluteButton = action("Keys...", "Absolute key alignment distribution grid and lock tools");
-        Button previewButton = action("Preview", "Preview device size orientation zoom and pan"); Button stateButton = action("State...", "Preview candidates composition panels actions and schema state"); Button eventButton = action("Event...", "Simulate selected key literal event without executing scripts"); Button modeButton = action("中文", "Switch preview input mode"); Button candidateButton = action("候选", "Toggle candidate preview"); Button toolbarButton = action("工具栏", "Toggle toolbar preview"); Button compositionButton = action("组字", "Toggle composition preview"); Button pressedButton = action("按下", "Toggle pressed preview");
-        Button addButton = action("Add", "Add key"); Button duplicateButton = action("Copy", "Copy selected key"); Button deleteButton = action("Delete", "Delete selected key");
-        Button undoButton = action("↶", "Undo last change"); Button redoButton = action("↷", "Redo last change"); Button saveButton = action("Save", "Save theme"); Button moreButton = action("⋯", "Open grouped editor actions");
+        Button appendSelectButton = action("Multi", "Toggle additive selection"); Button selectAllButton = action("All", "Select all keys"); Button invertButton = action("Invert", "Invert key selection"); Button rowButton = action("Row", "Select row"); Button batchButton = action("Batch...", "Batch edit selected keys"); Button clipboardButton = action("Clipboard...", "Internal editor clipboard"); Button rowManageButton = action("Rows...", "Manage rows");
+        Button previousPageButton = action("◀ Page", "Previous key map page"); Button nextPageButton = action("Page ▶", "Next key map page"); Button pageAddButton = action("+ Page", "Add key map page"); Button pageDeleteButton = action("− Page", "Delete key map page"); Button pageManageButton = action("Pages...", "Manage key map page");
+        Button flexButton = action("Flex", "Edit selected flex container"); Button flexManageButton = action("Flex...", "Manage flex containers"); Button absoluteButton = action("Keys...", "Absolute key tools");
+        Button previewButton = action("Preview", "Preview device settings"); Button stateButton = action("State...", "Detailed preview state"); Button eventButton = action("Event...", "Manage selected key events"); Button modeButton = action("中文", "Switch preview input mode"); Button candidateButton = action("Candidate", "Toggle candidate preview"); Button toolbarButton = action("Toolbar", "Toggle toolbar preview"); Button compositionButton = action("Compose", "Toggle composition preview"); Button pressedButton = action("Pressed", "Toggle pressed preview");
+        Button addButton = action("Key", "Add key"); Button duplicateButton = action("Copy", "Copy selected key"); Button deleteButton = action("Delete", "Delete selected key");
+        Button undoButton = action("↶", "Undo last change"); Button redoButton = action("↷", "Redo last change"); Button saveButton = action(wideLayout ? "Save theme" : "Save", "Save theme"); Button moreButton = action("⋯", "All editor operations");
 
-        LinearLayout brandBar = new LinearLayout(context); brandBar.setGravity(Gravity.CENTER_VERTICAL); brandBar.setPadding(dp(12), 0, dp(8), 0); brandBar.setBackgroundColor(Color.parseColor("#121726"));
-        TextView mark = label("T2", 15); mark.setGravity(Gravity.CENTER); mark.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); mark.setTextColor(Color.WHITE); mark.setBackground(roundedBackground("#8b7cff", 10)); brandBar.addView(mark, new LayoutParams(dp(34), dp(34)));
-        TextView heading = label(wideLayout ? "  Trime2 Studio" : "  Trime2", wideLayout ? 16 : 15); heading.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); brandBar.addView(heading, new LayoutParams(0, -1, 1));
+        LinearLayout topBar = panel(HORIZONTAL, 17); topBar.setGravity(Gravity.CENTER_VERTICAL); topBar.setPadding(dp(12), 0, dp(8), 0);
+        TextView mark = label("T2", 14); mark.setGravity(Gravity.CENTER); mark.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); mark.setBackground(roundedBackground("#8b7cff", 10)); topBar.addView(mark, new LayoutParams(dp(34), dp(34)));
+        LinearLayout brand = new LinearLayout(context); brand.setOrientation(VERTICAL); brand.setGravity(Gravity.CENTER_VERTICAL); TextView brandName = label(wideLayout ? "Trime2 Studio" : "Trime2", 13); brandName.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView project = label(wideLayout ? "Theme workspace · ● Live" : "● Live", 9); project.setTextColor(Color.parseColor("#929bb3")); brand.addView(brandName); brand.addView(project); LayoutParams brandParams = new LayoutParams(0, -1, 1); brandParams.leftMargin = dp(10); topBar.addView(brand, brandParams);
         styleTopAction(undoButton, false); styleTopAction(redoButton, false); styleTopAction(previewButton, false); styleTopAction(saveButton, true); styleTopAction(moreButton, false);
-        brandBar.addView(undoButton, topActionParams()); brandBar.addView(redoButton, topActionParams()); brandBar.addView(previewButton, topActionParams()); brandBar.addView(saveButton, topActionParams()); brandBar.addView(moreButton, topActionParams());
-        addView(brandBar, new LayoutParams(-1, dp(wideLayout ? 58 : 54)));
+        topBar.addView(undoButton, topActionParams()); topBar.addView(redoButton, topActionParams());
+        topBar.addView(previewButton, topActionParams()); topBar.addView(saveButton, new LayoutParams(dp(wideLayout ? 92 : 58), dp(38))); topBar.addView(moreButton, topActionParams());
+        LayoutParams topParams = new LayoutParams(-1, dp(58)); topParams.setMargins(dp(wideLayout ? 104 : 10), dp(10), dp(wideLayout ? 332 : 10), dp(8)); addView(topBar, topParams);
 
         canvas = new ThemeKeyboardCanvas(context); canvas.setBackgroundColor(Color.parseColor("#080b13"));
         properties = new ThemePropertyEditor(context); themePropertyEditor(properties);
-        ScrollView propertyScroll = new ScrollView(context); propertyScroll.setFillViewport(true); propertyScroll.setBackgroundColor(Color.parseColor("#121726")); propertyScroll.addView(properties, new ScrollView.LayoutParams(-1, -2));
-        LinearLayout propertyContainer = new LinearLayout(context); propertyContainer.setOrientation(VERTICAL); propertyContainer.setBackground(roundedBackground("#121726", wideLayout ? 0 : 16));
-        LinearLayout propertyHeader = new LinearLayout(context); propertyHeader.setGravity(Gravity.CENTER_VERTICAL); propertyHeader.setPadding(dp(16), 0, dp(8), 0); TextView propertyTitle = label("Properties", 14); propertyTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); propertyHeader.addView(propertyTitle, new LayoutParams(0, dp(48), 1));
-        Button closeProperties = action("Close", "Close property editor"); styleTopAction(closeProperties, false); if (!wideLayout) propertyHeader.addView(closeProperties, new LayoutParams(dp(64), dp(40))); propertyContainer.addView(propertyHeader, new LayoutParams(-1, dp(48))); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); propertyPanel = propertyContainer;
+        ScrollView propertyScroll = new ScrollView(context); propertyScroll.setFillViewport(true); propertyScroll.addView(properties, new ScrollView.LayoutParams(-1, -2));
+        LinearLayout propertyContainer = panel(VERTICAL, 20); LinearLayout propertyHeader = new LinearLayout(context); propertyHeader.setGravity(Gravity.CENTER_VERTICAL); propertyHeader.setPadding(dp(16), 0, dp(8), 0); LinearLayout titles = new LinearLayout(context); titles.setOrientation(VERTICAL); titles.setGravity(Gravity.CENTER_VERTICAL); TextView propertyTitle = label("Inspector", 14); propertyTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); TextView propertyHint = label("Selection properties", 9); propertyHint.setTextColor(Color.parseColor("#929bb3")); titles.addView(propertyTitle); titles.addView(propertyHint); propertyHeader.addView(titles, new LayoutParams(0, dp(54), 1)); Button closeProperties = action(wideLayout ? "‹" : "Close", "Close inspector"); styleTopAction(closeProperties, false); propertyHeader.addView(closeProperties, new LayoutParams(dp(wideLayout ? 40 : 64), dp(38))); propertyContainer.addView(propertyHeader, new LayoutParams(-1, dp(58))); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); propertyPanel = propertyContainer;
 
-        LinearLayout body = new LinearLayout(context); body.setOrientation(HORIZONTAL); body.setBackgroundColor(Color.parseColor("#080b13"));
-        LinearLayout componentTools = compactTools(context, appendSelectButton, addButton, rowButton, modeButton);
-        Button propertiesButton = action("Props", "Open selected key properties");
-        styleCompactAction(propertiesButton); componentTools.addView(propertiesButton, compactActionParams());
-        if (wideLayout) {
-            componentTools.setOrientation(VERTICAL); body.addView(componentTools, new LayoutParams(dp(82), -1)); body.addView(canvas, new LayoutParams(0, -1, 1)); body.addView(propertyContainer, new LayoutParams(dp(320), -1));
-        } else {
-            FrameLayout stage = new FrameLayout(context); stage.addView(canvas, new FrameLayout.LayoutParams(-1, -1)); FrameLayout.LayoutParams drawer = new FrameLayout.LayoutParams(dp(300), -1, Gravity.END); drawer.setMargins(dp(12), dp(12), dp(12), dp(12)); propertyContainer.setVisibility(GONE); stage.addView(propertyContainer, drawer); body.addView(stage, new LayoutParams(0, -1, 1));
-        }
+        selectModeButton = action("Select", "Select and move objects"); panModeButton = action("Pan", "Pan canvas"); gridModeButton = action("Grid", "Toggle grid"); canvasPreviewButton = action("Preview", "Toggle clean preview");
+        LinearLayout canvasTools = panel(HORIZONTAL, 11); canvasTools.setGravity(Gravity.CENTER); canvasTools.setPadding(dp(4), dp(4), dp(4), dp(4)); for (Button b : new Button[]{selectModeButton, panModeButton, gridModeButton, canvasPreviewButton}) { styleCanvasAction(b); canvasTools.addView(b, new LayoutParams(dp(64), dp(32))); }
+        contextBar = panel(HORIZONTAL, 11); contextBar.setGravity(Gravity.CENTER); contextBar.setPadding(dp(4), dp(3), dp(4), dp(3)); Button contextCopy = action("Copy", "Duplicate selection"); Button contextLeft = action("←", "Move selection left"); Button contextRight = action("→", "Move selection right"); Button contextStyle = action("Style", "Selected style actions"); Button contextDelete = action("Delete", "Delete selection"); for (Button b : new Button[]{contextCopy, contextLeft, contextRight, contextStyle, contextDelete}) { styleCanvasAction(b); contextBar.addView(b, new LayoutParams(dp(58), dp(30))); } contextBar.setVisibility(INVISIBLE);
+
+        LinearLayout previewStates = panel(VERTICAL, 15); previewStates.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView stateTitle = label("PREVIEW STATE", 9); stateTitle.setTextColor(Color.parseColor("#929bb3")); previewStates.addView(stateTitle, new LayoutParams(-1, dp(24))); LinearLayout stateRow1 = new LinearLayout(context), stateRow2 = new LinearLayout(context); Button chineseChip = chip("中文"), asciiChip = chip("ASCII"), composeChip = chip("Compose"), pagingChip = chip("Paging"), pressedChip = chip("Pressed"), detailChip = chip("More..."); for (Button b : new Button[]{chineseChip, asciiChip, composeChip}) stateRow1.addView(b, new LayoutParams(0, dp(30), 1)); for (Button b : new Button[]{pagingChip, pressedChip, detailChip}) stateRow2.addView(b, new LayoutParams(0, dp(30), 1)); previewStates.addView(stateRow1); previewStates.addView(stateRow2);
+
+        LinearLayout structurePanel = panel(VERTICAL, 15); structurePanel.setPadding(dp(10), dp(8), dp(10), dp(9)); TextView structureTitle = label("STRUCTURE", 9); structureTitle.setTextColor(Color.parseColor("#929bb3")); structurePanel.addView(structureTitle, new LayoutParams(-1, dp(22))); LinearLayout tabs = new LinearLayout(context); statisticsTab = chip("Statistics"); layersTab = chip("Layers"); historyTab = chip("History"); tabs.addView(statisticsTab, new LayoutParams(0, dp(29), 1)); tabs.addView(layersTab, new LayoutParams(0, dp(29), 1)); tabs.addView(historyTab, new LayoutParams(0, dp(29), 1)); structurePanel.addView(tabs); structureContent = new LinearLayout(context); structureContent.setOrientation(VERTICAL); structurePanel.addView(structureContent, new LayoutParams(-1, -2));
+        if (!wideLayout) { propertyContainer.removeView(propertyScroll); propertyContainer.addView(previewStates, new LayoutParams(-1, dp(102))); propertyContainer.addView(structurePanel, new LayoutParams(-1, -2)); propertyContainer.addView(propertyScroll, new LayoutParams(-1, 0, 1)); }
+
+        LinearLayout toolbox = panel(wideLayout ? VERTICAL : HORIZONTAL, 20); toolbox.setGravity(Gravity.CENTER); toolbox.setPadding(dp(6), dp(6), dp(6), dp(6)); TextView toolboxTitle = label(wideLayout ? "COMPONENTS" : "", 8); toolboxTitle.setTextColor(Color.parseColor("#7f879c")); if (wideLayout) toolbox.addView(toolboxTitle, new LayoutParams(-1, dp(28))); Button propertiesButton = action("Inspect", "Open inspector"); for (Button b : new Button[]{appendSelectButton, addButton, rowButton, candidateButton, propertiesButton}) { styleCompactAction(b); toolbox.addView(b, wideLayout ? new LayoutParams(dp(68), dp(50)) : compactActionParams()); }
+
+        FrameLayout stage = new FrameLayout(context); stage.setClipChildren(false); stage.addView(canvas, new FrameLayout.LayoutParams(-1, -1));
+        FrameLayout.LayoutParams toolsParams = new FrameLayout.LayoutParams(dp(272), dp(40), Gravity.TOP | Gravity.CENTER_HORIZONTAL); toolsParams.topMargin = dp(4); stage.addView(canvasTools, toolsParams);
+        FrameLayout.LayoutParams contextParams = new FrameLayout.LayoutParams(dp(300), dp(38), Gravity.TOP | Gravity.CENTER_HORIZONTAL); contextParams.topMargin = dp(48); stage.addView(contextBar, contextParams);
+        if (wideLayout) { FrameLayout.LayoutParams previewParams = new FrameLayout.LayoutParams(dp(184), dp(102), Gravity.TOP | Gravity.START); previewParams.setMargins(dp(12), dp(62), 0, 0); stage.addView(previewStates, previewParams); FrameLayout.LayoutParams structureParams = new FrameLayout.LayoutParams(dp(200), -2, Gravity.BOTTOM | Gravity.START); structureParams.setMargins(dp(12), 0, 0, dp(12)); stage.addView(structurePanel, structureParams); }
+
+        LinearLayout body = new LinearLayout(context); body.setOrientation(HORIZONTAL); body.setClipChildren(false);
+        if (wideLayout) { LayoutParams toolboxParams = new LayoutParams(dp(82), -1); toolboxParams.setMargins(dp(18), dp(8), dp(8), dp(8)); body.addView(toolbox, toolboxParams); body.addView(stage, new LayoutParams(0, -1, 1)); LayoutParams inspectorParams = new LayoutParams(dp(300), -1); inspectorParams.setMargins(dp(8), dp(8), dp(18), dp(8)); body.addView(propertyContainer, inspectorParams); }
+        else { propertyContainer.setVisibility(GONE); FrameLayout.LayoutParams drawer = new FrameLayout.LayoutParams(dp(300), -1, Gravity.END); drawer.setMargins(dp(12), dp(52), dp(10), dp(10)); stage.addView(propertyContainer, drawer); body.addView(stage, new LayoutParams(0, -1, 1)); }
         addView(body, new LayoutParams(-1, 0, 1));
-        if (!wideLayout) { HorizontalScrollView bottomScroll = new HorizontalScrollView(context); bottomScroll.setHorizontalScrollBarEnabled(false); bottomScroll.setFillViewport(true); bottomScroll.setBackgroundColor(Color.parseColor("#121726")); bottomScroll.addView(componentTools, new HorizontalScrollView.LayoutParams(-2, dp(58))); addView(bottomScroll, new LayoutParams(-1, dp(58))); }
-        status = label("Ready", 12); status.setPadding(dp(12), 0, dp(12), 0); status.setSingleLine(true); status.setEllipsize(android.text.TextUtils.TruncateAt.END); status.setTextColor(Color.parseColor("#929bb3")); status.setBackgroundColor(Color.parseColor("#0d111d")); status.setContentDescription("Editor status"); addView(status, new LayoutParams(-1, dp(28)));
+        if (!wideLayout) { HorizontalScrollView bottomScroll = new HorizontalScrollView(context); bottomScroll.setHorizontalScrollBarEnabled(false); bottomScroll.addView(toolbox, new HorizontalScrollView.LayoutParams(-2, dp(62))); LayoutParams bottomTools = new LayoutParams(-1, dp(66)); bottomTools.setMargins(dp(10), dp(3), dp(10), dp(3)); addView(bottomScroll, bottomTools); }
 
-        final Button[] selectionActions = {appendSelectButton, selectAllButton, invertButton, rowButton, batchButton};
-        final Button[] structureActions = {addButton, duplicateButton, deleteButton, rowManageButton, flexButton, flexManageButton, absoluteButton};
-        final Button[] pageActions = {previousPageButton, nextPageButton, pageAddButton, pageDeleteButton, pageManageButton};
-        final Button[] previewActions = {stateButton, eventButton, modeButton, candidateButton, toolbarButton, compositionButton, pressedButton};
-        final Button[] dataActions = {clipboardButton};
-        moreButton.setOnClickListener(v -> showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions));
-        propertiesButton.setOnClickListener(v -> showProperties(true)); closeProperties.setOnClickListener(v -> showProperties(false));
-        appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ Select" : "+Select"); setStatus(appendSelection ? "Tap keys to add or remove them from selection" : "Tap selects one key"); });
-        selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection());
-        rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
-        previousPageButton.setOnClickListener(v -> switchKeyMapPage(-1)); nextPageButton.setOnClickListener(v -> switchKeyMapPage(1)); pageAddButton.setOnClickListener(v -> addKeyMapPage()); pageDeleteButton.setOnClickListener(v -> deleteKeyMapPage()); pageManageButton.setOnClickListener(v -> manageKeyMapPage());
-        flexButton.setOnClickListener(v -> editSelectedFlex()); flexManageButton.setOnClickListener(v -> manageFlexContainers()); absoluteButton.setOnClickListener(v -> manageAbsoluteKeys()); previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("Select a key first"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
-        modeButton.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; modeButton.setText(model.inputMode.name()); canvas.invalidate(); setStatus("Preview mode: " + model.inputMode.name()); }); candidateButton.setOnClickListener(v -> { model.showCandidate = !model.showCandidate; canvas.invalidate(); setStatus("Candidate preview " + (model.showCandidate ? "on" : "off")); }); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("Toolbar preview " + (model.showToolbar ? "on" : "off")); }); compositionButton.setOnClickListener(v -> { model.showComposition = !model.showComposition; canvas.invalidate(); setStatus("Composition preview " + (model.showComposition ? "on" : "off")); }); pressedButton.setOnClickListener(v -> { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); setStatus("Pressed preview " + (model.pressedPreview ? "on" : "off")); });
-        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); });
-        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; int count = selectedKeys().size(); setStatus(count == 0 ? "No selection" : count == 1 ? "Selected " + key.label : "Selected " + count + " keys"); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("Move key, release to finish"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } });
-        properties.setListener(new ThemePropertyEditor.Listener() { public void onPropertyChangeStarted() { changeStarted(); } public void onPropertyChanged() { canvas.invalidate(); setStatus("Edited " + (canvas.getSelectedKey() == null ? "theme" : canvas.getSelectedKey().label)); if (callbacks != null) callbacks.onModelChanged(model.copy()); } });
-        setModel(ThemeEditorModel.sample());
+        LinearLayout statusBar = panel(HORIZONTAL, 13); statusBar.setGravity(Gravity.CENTER_VERTICAL); statusBar.setPadding(dp(12), 0, dp(6), 0); status = label("All changes saved", 10); status.setTextColor(Color.parseColor("#8d95a9")); status.setSingleLine(true); status.setEllipsize(android.text.TextUtils.TruncateAt.END); statusBar.addView(status, new LayoutParams(0, -1, 1)); statusContext = label("", 9); statusContext.setTextColor(Color.parseColor("#697287")); if (wideLayout) statusBar.addView(statusContext, new LayoutParams(-2, -1)); Button zoomOut = action("−", "Zoom out"); Button zoomIn = action("+", "Zoom in"); Button fit = action("Fit", "Fit canvas"); zoomValue = label("100%", 10); zoomValue.setGravity(Gravity.CENTER); for (Button b : new Button[]{zoomOut, zoomIn, fit}) styleCanvasAction(b); statusBar.addView(zoomOut, new LayoutParams(dp(32), dp(30))); statusBar.addView(zoomValue, new LayoutParams(dp(48), dp(30))); statusBar.addView(zoomIn, new LayoutParams(dp(32), dp(30))); statusBar.addView(fit, new LayoutParams(dp(42), dp(30))); LayoutParams statusParams = new LayoutParams(-1, dp(42)); statusParams.setMargins(dp(wideLayout ? 120 : 10), dp(4), dp(wideLayout ? 340 : 10), dp(10)); addView(statusBar, statusParams);
+
+        final Button[] selectionActions = {appendSelectButton, selectAllButton, invertButton, rowButton, batchButton}; final Button[] structureActions = {addButton, duplicateButton, deleteButton, rowManageButton, flexButton, flexManageButton, absoluteButton}; final Button[] pageActions = {previousPageButton, nextPageButton, pageAddButton, pageDeleteButton, pageManageButton}; final Button[] previewActions = {previewButton, stateButton, eventButton, modeButton, candidateButton, toolbarButton, compositionButton, pressedButton}; final Button[] dataActions = {clipboardButton};
+        moreButton.setOnClickListener(v -> showActionGroups(selectionActions, structureActions, pageActions, previewActions, dataActions)); propertiesButton.setOnClickListener(v -> showProperties(true)); closeProperties.setOnClickListener(v -> showProperties(false));
+        appendSelectButton.setOnClickListener(v -> { appendSelection = !appendSelection; canvas.setAppendSelection(appendSelection); appendSelectButton.setText(appendSelection ? "✓ Multi" : "Multi"); setStatus(appendSelection ? "Additive selection enabled" : "Single selection enabled"); }); selectAllButton.setOnClickListener(v -> selectAllKeys()); invertButton.setOnClickListener(v -> invertSelection()); rowButton.setOnClickListener(v -> selectCurrentRow()); batchButton.setOnClickListener(v -> showBatchEditor()); clipboardButton.setOnClickListener(v -> showClipboardActions()); rowManageButton.setOnClickListener(v -> manageRows());
+        previousPageButton.setOnClickListener(v -> switchKeyMapPage(-1)); nextPageButton.setOnClickListener(v -> switchKeyMapPage(1)); pageAddButton.setOnClickListener(v -> addKeyMapPage()); pageDeleteButton.setOnClickListener(v -> deleteKeyMapPage()); pageManageButton.setOnClickListener(v -> manageKeyMapPage()); flexButton.setOnClickListener(v -> editSelectedFlex()); flexManageButton.setOnClickListener(v -> manageFlexContainers()); absoluteButton.setOnClickListener(v -> manageAbsoluteKeys());
+        previewButton.setOnClickListener(v -> showPreviewSettings()); stateButton.setOnClickListener(v -> showPreviewState()); eventButton.setOnClickListener(v -> { ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) setStatus("Select a key first"); else if (callbacks != null) callbacks.onManageKeyEvents(key.copy()); else showSelectedEventPreview(); });
+        modeButton.setOnClickListener(v -> cycleInputMode(modeButton)); candidateButton.setOnClickListener(v -> toggleCandidate()); toolbarButton.setOnClickListener(v -> { model.showToolbar = !model.showToolbar; canvas.invalidate(); setStatus("Toolbar preview " + (model.showToolbar ? "on" : "off")); }); compositionButton.setOnClickListener(v -> toggleComposition()); pressedButton.setOnClickListener(v -> togglePressed());
+        addButton.setOnClickListener(v -> addKey()); duplicateButton.setOnClickListener(v -> duplicateSelected()); deleteButton.setOnClickListener(v -> deleteSelected()); undoButton.setOnClickListener(v -> undo()); redoButton.setOnClickListener(v -> redo()); saveButton.setOnClickListener(v -> { if (!canEdit()) return; properties.commit(); if (callbacks != null) callbacks.onSave(model.copy()); dirty = false; setStatus("All changes saved"); });
+        contextCopy.setOnClickListener(v -> duplicateSelected()); contextLeft.setOnClickListener(v -> moveSelection(-1)); contextRight.setOnClickListener(v -> moveSelection(1)); contextStyle.setOnClickListener(v -> showStyleActions()); contextDelete.setOnClickListener(v -> deleteSelected());
+        selectModeButton.setOnClickListener(v -> setCanvasMode("select")); panModeButton.setOnClickListener(v -> setCanvasMode("pan")); gridModeButton.setOnClickListener(v -> toggleGrid()); canvasPreviewButton.setOnClickListener(v -> toggleCanvasPreview()); zoomOut.setOnClickListener(v -> setCanvasZoom(model.previewZoom - .1f)); zoomIn.setOnClickListener(v -> setCanvasZoom(model.previewZoom + .1f)); fit.setOnClickListener(v -> fitCanvas());
+        chineseChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.CHINESE; canvas.invalidate(); setStatus("Preview state: Chinese"); }); asciiChip.setOnClickListener(v -> { model.inputMode = ThemeEditorModel.InputMode.ASCII; canvas.invalidate(); setStatus("Preview state: ASCII"); }); composeChip.setOnClickListener(v -> toggleComposition()); pagingChip.setOnClickListener(v -> { model.previewPaging = !model.previewPaging; canvas.invalidate(); setStatus("Paging state " + (model.previewPaging ? "on" : "off")); }); pressedChip.setOnClickListener(v -> togglePressed()); detailChip.setOnClickListener(v -> showPreviewState()); statisticsTab.setOnClickListener(v -> showStructurePage(0)); layersTab.setOnClickListener(v -> showStructurePage(1)); historyTab.setOnClickListener(v -> showStructurePage(2));
+        canvas.setListener(new ThemeKeyboardCanvas.Listener() { public void onKeySelected(ThemeEditorModel.Key key) { properties.commit(); refreshSelectionEditor(key); if (key != null && !wideLayout) showProperties(true); if (key != null && model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX && !key.ownerId.isEmpty()) model.selectedFlexContainerId = key.ownerId; contextBar.setVisibility(key == null && model.selectedIds.isEmpty() ? INVISIBLE : VISIBLE); setStatus(key == null ? "No selection" : selectedKeys().size() > 1 ? "Selected " + selectedKeys().size() + " keys" : "Selected " + key.label); if (callbacks != null) callbacks.onSelectionChanged(key); } public void onKeyMoveStarted() { changeStarted(); } public void onKeyMoved() { canvas.invalidate(); setStatus("Moving selection"); } public void onKeyMoveFinished(ThemeEditorModel.Key key) { finishKeyMove(key); } });
+        properties.setListener(new ThemePropertyEditor.Listener() { public void onPropertyChangeStarted() { changeStarted(); } public void onPropertyChanged() { canvas.invalidate(); dirty = true; setStatus("Edited " + (canvas.getSelectedKey() == null ? "theme" : canvas.getSelectedKey().label)); if (callbacks != null) callbacks.onModelChanged(model.copy()); } });
+        setModel(ThemeEditorModel.sample()); setCanvasMode("select"); showStructurePage(0);
     }
+
+
+    private LinearLayout panel(int orientation, int radius) {
+        LinearLayout view = new LinearLayout(getContext()); view.setOrientation(orientation);
+        android.graphics.drawable.GradientDrawable background = roundedBackground("#d9121726", radius);
+        background.setStroke(dp(1), Color.parseColor("#2bffffff")); view.setBackground(background); view.setElevation(dp(8)); return view;
+    }
+
+    private Button chip(String text) { Button button = action(text, text); styleCanvasAction(button); button.setTextSize(9); return button; }
+    private void styleCanvasAction(Button button) { button.setTextSize(10); button.setTextColor(Color.parseColor("#b8bfd0")); button.setBackground(roundedBackground("#191f30", 8)); button.setPadding(dp(5), 0, dp(5), 0); }
+
+    /** Canvas owners may implement these optional methods without coupling this workspace to a new API revision. */
+    private void canvasCommand(String method, Class<?> type, Object value) {
+        try { canvas.getClass().getMethod(method, type).invoke(canvas, value); }
+        catch (ReflectiveOperationException ignored) { canvas.invalidate(); }
+    }
+    private void setCanvasMode(String mode) {
+        canvasMode = mode; canvasCommand("setInteractionMode", String.class, mode); canvasCommand("setCanvasMode", String.class, mode);
+        boolean select = "select".equals(mode); selectModeButton.setText(select ? "✓ Select" : "Select"); panModeButton.setText(select ? "Pan" : "✓ Pan");
+        canvas.setReadOnly(readOnly || !select); setStatus(select ? "Select mode" : "Pan canvas mode");
+    }
+    private void toggleGrid() { gridVisible = !gridVisible; canvasCommand("setGridVisible", boolean.class, gridVisible); gridModeButton.setText(gridVisible ? "✓ Grid" : "Grid"); setStatus("Grid " + (gridVisible ? "visible" : "hidden")); }
+    private void toggleCanvasPreview() { canvasPreviewMode = !canvasPreviewMode; canvasCommand("setPreviewMode", boolean.class, canvasPreviewMode); canvasPreviewButton.setText(canvasPreviewMode ? "✓ Preview" : "Preview"); contextBar.setVisibility(canvasPreviewMode ? INVISIBLE : selectedKeys().isEmpty() ? INVISIBLE : VISIBLE); setStatus(canvasPreviewMode ? "Clean preview mode" : "Editor preview mode"); }
+    private void setCanvasZoom(float zoom) { model.previewZoom = Math.max(.5f, Math.min(4f, zoom)); canvasCommand("setZoom", float.class, model.previewZoom); canvas.invalidate(); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); setStatus("Zoom " + zoomValue.getText()); }
+    private void fitCanvas() { model.previewZoom = 1f; model.previewPanX = 0; model.previewPanY = 0; canvasCommand("fitToViewport", boolean.class, true); canvas.invalidate(); zoomValue.setText("100%"); setStatus("Canvas fitted"); }
+
+    private void cycleInputMode(Button source) { model.inputMode = ThemeEditorModel.InputMode.values()[(model.inputMode.ordinal() + 1) % ThemeEditorModel.InputMode.values().length]; source.setText(model.inputMode.name()); canvas.invalidate(); setStatus("Preview mode: " + model.inputMode.name()); }
+    private void toggleCandidate() { model.showCandidate = !model.showCandidate; canvas.invalidate(); setStatus("Candidate preview " + (model.showCandidate ? "on" : "off")); }
+    private void toggleComposition() { model.showComposition = !model.showComposition; canvas.invalidate(); setStatus("Composition preview " + (model.showComposition ? "on" : "off")); }
+    private void togglePressed() { model.pressedPreview = !model.pressedPreview; canvas.invalidate(); setStatus("Pressed preview " + (model.pressedPreview ? "on" : "off")); }
+
+    private void moveSelection(int direction) {
+        java.util.List<ThemeEditorModel.Key> keys = selectedKeys(); if (keys.isEmpty()) { setStatus("Select one or more keys first"); return; }
+        if (!changeStarted()) return;
+        if (model.layoutMode == ThemeEditorModel.LayoutMode.ABSOLUTE_KEYS) for (ThemeEditorModel.Key key : keys) if (!key.editorLocked) { key.x += direction; clampAbsolute(key); }
+        else { ThemeEditorModel.Key primary = canvas.getSelectedKey(); int from = model.keys.indexOf(primary), to = Math.max(0, Math.min(model.keys.size() - 1, from + direction)); if (from >= 0 && from != to) java.util.Collections.swap(model.keys, from, to); }
+        persistCurrentKeyMapPage(); notifyModelChanged(direction < 0 ? "Moved selection left" : "Moved selection right");
+    }
+    private void showStyleActions() {
+        ThemeEditorModel.Key key = canvas.getSelectedKey(); if (key == null) { setStatus("Select a key first"); return; }
+        String[] actions = {"Copy complete style", "Paste style", "Batch style...", "Edit style reference in Inspector"};
+        new android.app.AlertDialog.Builder(getContext()).setTitle("Style · " + key.label).setItems(actions, (dialog, which) -> {
+            if (which == 0) copySelectedStyle(); else if (which == 1) pasteClipboard(); else if (which == 2) showBatchEditor(); else showProperties(true);
+        }).setNegativeButton("Close", null).show();
+    }
+
+    private void showStructurePage(int page) {
+        structurePage = page; statisticsTab.setText(page == 0 ? "✓ Statistics" : "Statistics"); layersTab.setText(page == 1 ? "✓ Layers" : "Layers"); historyTab.setText(page == 2 ? "✓ History" : "History"); refreshStructurePanel();
+    }
+    private void refreshStructurePanel() {
+        if (structureContent == null || model == null) return; structureContent.removeAllViews();
+        if (structurePage == 0) {
+            addStructureRow("Layout", model.layoutMode.name().toLowerCase(java.util.Locale.ROOT)); addStructureRow("Keys", String.valueOf(model.keys.size())); addStructureRow("Selected", String.valueOf(selectedKeys().size()));
+            int groups = model.layoutMode == ThemeEditorModel.LayoutMode.ROWS ? model.rows.size() : model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX ? model.flexContainers.size() : model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS ? model.keyMapPages.size() : 0; addStructureRow("Groups", String.valueOf(groups)); addStructureRow("Preview", Math.round(model.previewWidth) + "×" + Math.round(model.previewHeight));
+        } else if (structurePage == 1) {
+            addStructureRow("Candidate", model.showCandidate ? "visible" : "hidden"); addStructureRow("Toolbar", model.showToolbar ? "visible" : "hidden"); addStructureRow("Composition", model.showComposition ? "visible" : "hidden");
+            if (model.layoutMode == ThemeEditorModel.LayoutMode.ROWS) for (ThemeEditorModel.Row row : model.rows) addStructureRow("↳ " + row.id, countOwner(row.id) + " keys");
+            else if (model.layoutMode == ThemeEditorModel.LayoutMode.FLEX_BOX) for (ThemeEditorModel.FlexContainer flex : model.flexContainers) addStructureRow("↳ " + flex.id, countOwner(flex.id) + " keys");
+            else if (model.layoutMode == ThemeEditorModel.LayoutMode.KEY_MAPS) for (int i = 0; i < model.keyMapPages.size(); i++) addStructureRow((i == model.selectedKeyMapPage ? "● " : "↳ ") + model.keyMapPages.get(i).name, model.keyMapPages.get(i).keys.size() + " keys");
+        } else { addStructureRow("Current state", dirty ? "modified" : "saved"); addStructureRow("Undo steps", String.valueOf(undo.size())); addStructureRow("Redo steps", String.valueOf(redo.size())); ThemeEditorModel.Key key = canvas.getSelectedKey(); addStructureRow("Selection", key == null ? "none" : key.label); }
+    }
+    private int countOwner(String owner) { int count = 0; for (ThemeEditorModel.Key key : model.keys) if (owner.equals(key.ownerId)) count++; return count; }
+    private void addStructureRow(String name, String value) { LinearLayout row = new LinearLayout(getContext()); row.setGravity(Gravity.CENTER_VERTICAL); TextView left = label(name, 9), right = label(value, 9); left.setTextColor(Color.parseColor("#858da1")); right.setTextColor(Color.parseColor("#c7cedc")); right.setGravity(Gravity.END | Gravity.CENTER_VERTICAL); row.addView(left, new LayoutParams(0, dp(25), 1)); row.addView(right, new LayoutParams(-2, dp(25))); structureContent.addView(row); }
 
     private void showPreviewState() {
         LinearLayout fields = new LinearLayout(getContext()); fields.setOrientation(VERTICAL); fields.setPadding(24, 8, 24, 8);
@@ -731,7 +816,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
 
     private void selectOnly(ThemeEditorModel.Key key) { model.selectedIds.clear(); if (key != null) model.selectedIds.add(key.id); canvas.setModel(model); canvas.setSelectedKey(key); properties.bind(key); }
 
-    private void notifyModelChanged(String message) { canvas.setModel(model); refreshSelectionEditor(canvas.getSelectedKey()); if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus(message); }
+    private void notifyModelChanged(String message) { dirty = true; canvas.setModel(model); refreshSelectionEditor(canvas.getSelectedKey()); if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus(message); }
 
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private android.graphics.drawable.GradientDrawable roundedBackground(String color, int radiusDp) { android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable(); drawable.setColor(Color.parseColor(color)); drawable.setCornerRadius(dp(radiusDp)); return drawable; }
@@ -752,7 +837,7 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         } else if (view instanceof android.view.ViewGroup) view.setBackgroundColor(Color.TRANSPARENT);
         if (view instanceof android.view.ViewGroup) { android.view.ViewGroup group = (android.view.ViewGroup) view; for (int i = 0; i < group.getChildCount(); i++) themePropertyEditor(group.getChildAt(i)); }
     }
-    private void showProperties(boolean visible) { if (wideLayout) return; propertyPanel.setVisibility(visible ? VISIBLE : GONE); if (visible) propertyPanel.bringToFront(); }
+    private void showProperties(boolean visible) { propertyPanel.setVisibility(visible ? VISIBLE : GONE); if (visible) propertyPanel.bringToFront(); }
     private void showActionGroups(Button[] selection, Button[] structure, Button[] pages, Button[] preview, Button[] data) { String[] groups = {"Selection and batch", "Keys and layout", "Key map pages", "Preview and events", "Clipboard"}; Button[][] actions = {selection, structure, pages, preview, data}; new android.app.AlertDialog.Builder(getContext()).setTitle("Editor actions").setItems(groups, (dialog, which) -> showActionList(groups[which], actions[which])).setNegativeButton("Close", null).show(); }
     private void showActionList(String title, Button[] actions) { String[] labels = new String[actions.length]; for (int i = 0; i < actions.length; i++) labels[i] = actions[i].getText().toString(); new android.app.AlertDialog.Builder(getContext()).setTitle(title).setItems(labels, (dialog, which) -> actions[which].performClick()).setNegativeButton("Close", null).show(); }
     public void setCallbacks(ThemeEditorCallbacks callbacks) { this.callbacks = callbacks; }
@@ -1279,10 +1364,10 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     ThemeEditorClipboard.Payload styleEntityClipboard() { ThemeEditorClipboard.Payload value = ThemeEditorClipboard.get(); return value != null && value.type == ThemeEditorClipboard.Type.STYLE_ENTITY ? value : null; }
     boolean isCrossProjectClipboard(ThemeEditorClipboard.Payload value) { return value != null && !java.util.Objects.equals(value.projectIdentity, clipboardScope); }
     void applyStyleEntityReference(java.util.List<ThemeEditorModel.Key> keys, String styleId) { if (keys == null || keys.isEmpty()) { setStatus("Style entity created; no target keys were selected"); return; } if (!changeStarted()) return; int count = 0; for (ThemeEditorModel.Key snapshot : keys) { ThemeEditorModel.Key key = model.find(snapshot.id); if (key != null) { key.keyStyle = styleId; count++; } } persistCurrentKeyMapPage(); refreshSelectionEditor(canvas.getSelectedKey()); notifyModelChanged("Applied pasted style entity " + styleId + " to " + count + " keys as one undo step"); }
-    public void setReadOnly(boolean value) { readOnly = value; canvas.setReadOnly(value); properties.setReadOnly(value); if (value) setStatus("Read-only session"); }
+    public void setReadOnly(boolean value) { readOnly = value; canvas.setReadOnly(value || !"select".equals(canvasMode)); properties.setReadOnly(value); if (value) setStatus("Read-only session"); }
     private boolean canEdit() { if (!readOnly) return true; setStatus("Read-only: another session owns this project"); return false; }
-    public void setModel(ThemeEditorModel value) { model = value == null ? ThemeEditorModel.sample() : value.copy(); applyPanelPreviewSource(model); undo.clear(); redo.clear(); canvas.setModel(model); properties.setLayoutMode(model.layoutMode); properties.bind(null); setStatus("Ready"); }
-    public void setModelKeepingHistory(ThemeEditorModel value) { if (value == null) return; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>(model.selectedIds); model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); for (String id : selected) if (model.find(id) != null) model.selectedIds.add(id); canvas.setModel(model); ThemeEditorModel.Key key = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(key); properties.setLayoutMode(model.layoutMode); refreshSelectionEditor(key); }
+    public void setModel(ThemeEditorModel value) { model = value == null ? ThemeEditorModel.sample() : value.copy(); applyPanelPreviewSource(model); undo.clear(); redo.clear(); dirty = false; canvas.setModel(model); properties.setLayoutMode(model.layoutMode); properties.bind(null); zoomValue.setText(Math.round(model.previewZoom * 100) + "%"); contextBar.setVisibility(INVISIBLE); setStatus("Ready"); }
+    public void setModelKeepingHistory(ThemeEditorModel value) { if (value == null) return; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<>(model.selectedIds); model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); for (String id : selected) if (model.find(id) != null) model.selectedIds.add(id); canvas.setModel(model); ThemeEditorModel.Key key = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(key); properties.setLayoutMode(model.layoutMode); refreshSelectionEditor(key); setStatus("Workspace refreshed"); }
     public void updatePreviewColors(ThemeEditorModel value) {
         if (value == null) return;
         model.backgroundColor = value.backgroundColor;
@@ -1298,11 +1383,11 @@ public final class ThemeEditorWorkspace extends LinearLayout {
         model.symbolIndicatorColor = value.symbolIndicatorColor;
         for (ThemeEditorModel.Key source : value.keys) { ThemeEditorModel.Key target = model.find(source.id); if (target != null) { target.fillColor = source.fillColor; target.textColor = source.textColor; } }
         applyPanelPreviewSource(model);
-        canvas.invalidate();
+        canvas.invalidate(); refreshStructurePanel();
     }
     public boolean replaceModelAsAtomic(ThemeEditorModel value, String message) { if (value == null) return false; properties.commit(); if (!changeStarted()) return false; model = value.copy(); applyPanelPreviewSource(model); model.selectedIds.clear(); canvas.setModel(model); canvas.setSelectedKey(null); properties.setLayoutMode(model.layoutMode); properties.bind(null); if (callbacks != null) callbacks.onModelChanged(model.copy()); setStatus(message); return true; }
     public ThemeEditorModel getModel() { properties.commit(); persistCurrentKeyMapPage(); return model.copy(); }
-    private boolean changeStarted() { if (!canEdit()) return false; if (applying) return true; if (undo.isEmpty() || !same(undo.peek(), model)) undo.push(model.copy()); redo.clear(); return true; }
+    private boolean changeStarted() { if (!canEdit()) return false; dirty = true; if (applying) return true; if (undo.isEmpty() || !same(undo.peek(), model)) undo.push(model.copy()); redo.clear(); return true; }
     private boolean same(ThemeEditorModel a, ThemeEditorModel b) {
         if (a.layoutMode != b.layoutMode || a.selectedKeyMapPage != b.selectedKeyMapPage || !java.util.Objects.equals(a.selectedFlexContainerId, b.selectedFlexContainerId) || a.flexContainers.size() != b.flexContainers.size() || a.keyMapPages.size() != b.keyMapPages.size() || a.rows.size() != b.rows.size() || a.backgroundColor != b.backgroundColor || a.keys.size() != b.keys.size()) return false;
         for (int i = 0; i < a.rows.size(); i++) { ThemeEditorModel.Row x = a.rows.get(i), y = b.rows.get(i); if (!x.id.equals(y.id) || x.height != y.height || x.sourceHeight != y.sourceHeight || x.width != y.width) return false; }
@@ -1314,5 +1399,5 @@ public final class ThemeEditorWorkspace extends LinearLayout {
     private void restore(ThemeEditorModel value) { applying = true; String selectedId = canvas.getSelectedKey() == null ? null : canvas.getSelectedKey().id; model = value.copy(); applyPanelPreviewSource(model); canvas.setModel(model); ThemeEditorModel.Key restored = selectedId == null ? null : model.find(selectedId); canvas.setSelectedKey(restored); refreshSelectionEditor(restored); applying = false; }
     public void undo() { if (!canEdit()) return; properties.commit(); if (undo.isEmpty()) { setStatus("Nothing to undo"); return; } redo.push(model.copy()); restore(undo.pop()); if (callbacks != null) callbacks.onUndo(model.copy()); setStatus("Undone"); }
     public void redo() { if (!canEdit()) return; properties.commit(); if (redo.isEmpty()) { setStatus("Nothing to redo"); return; } undo.push(model.copy()); restore(redo.pop()); if (callbacks != null) callbacks.onRedo(model.copy()); setStatus("Redone"); }
-    public void setStatus(String message) { status.setText(message); }
+    public void setStatus(String message) { status.setText((dirty ? "● Modified · " : "● Saved · ") + message); if (statusContext != null && model != null) statusContext.setText(model.layoutMode.name().toLowerCase(java.util.Locale.ROOT) + " · " + model.keys.size() + " keys · " + selectedKeys().size() + " selected   "); refreshStructurePanel(); }
 }
